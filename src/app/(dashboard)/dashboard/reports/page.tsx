@@ -549,10 +549,10 @@ export default function ReportsPage() {
 
   if (isLoading) {
     return (
-      <div className="p-8">
+      <div className="p-4 md:p-8">
         <div className="animate-pulse space-y-6">
           <div className="h-8 bg-gray-200 rounded w-48"></div>
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[...Array(4)].map((_, i) => (
               <div key={i} className="h-32 bg-gray-200 rounded-xl"></div>
             ))}
@@ -564,33 +564,35 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Reports & Analytics</h1>
-          <p className="text-gray-500 mt-1">View performance metrics and generate reports</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Select
-            value={dateRange}
-            onChange={(e) => setDateRange(e.target.value)}
-            options={[
-              { value: 'this_month', label: 'This Month' },
-              { value: 'last_month', label: 'Last Month' },
-              { value: 'this_year', label: 'This Year' },
-              { value: 'all_time', label: 'All Time' },
-            ]}
-            className="w-40"
-          />
-          <Button leftIcon={<Download className="w-4 h-4" />} variant="secondary" onClick={handleExportOverview}>
-            Export Overview
-          </Button>
+      <div className="mb-6 md:mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900">Reports & Analytics</h1>
+            <p className="text-gray-500 mt-1 text-sm md:text-base">View performance metrics and generate reports</p>
+          </div>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+            <Select
+              value={dateRange}
+              onChange={(e) => setDateRange(e.target.value)}
+              options={[
+                { value: 'this_month', label: 'This Month' },
+                { value: 'last_month', label: 'Last Month' },
+                { value: 'this_year', label: 'This Year' },
+                { value: 'all_time', label: 'All Time' },
+              ]}
+              className="w-full sm:w-40"
+            />
+            <Button leftIcon={<Download className="w-4 h-4" />} variant="secondary" onClick={handleExportOverview} className="w-full sm:w-auto">
+              Export Overview
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 md:mb-8">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="p-2 bg-blue-100 rounded-lg">

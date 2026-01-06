@@ -167,43 +167,45 @@ export default function HostelPage() {
 
   if (!canAccessModule('hostel')) {
     return (
-      <div className="p-8 text-center">
+      <div className="p-4 md:p-8 text-center">
         <Home className="w-12 h-12 text-gray-300 mx-auto mb-4" />
         <h2 className="text-xl font-semibold text-gray-900 mb-2">Hostel Module Not Enabled</h2>
-        <p className="text-gray-500">Contact your administrator to enable the hostel management module.</p>
+        <p className="text-gray-500 text-sm md:text-base">Contact your administrator to enable the hostel management module.</p>
       </div>
     )
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Hostel Management</h1>
-          <p className="text-gray-500 mt-1">Manage hostel blocks, rooms, and allocations</p>
-        </div>
-        <div className="flex gap-3">
-          <Link href="/dashboard/hostel/allocations">
-            <Button variant="outline" leftIcon={<UserPlus className="w-4 h-4" />}>
-              Allocations
-            </Button>
-          </Link>
-          <Link href="/dashboard/hostel/rooms">
-            <Button variant="outline" leftIcon={<DoorOpen className="w-4 h-4" />}>
-              All Rooms
-            </Button>
-          </Link>
-          <Link href="/dashboard/hostel/blocks/new">
-            <Button leftIcon={<Plus className="w-4 h-4" />}>
-              Add Block
-            </Button>
-          </Link>
+      <div className="mb-6 md:mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900">Hostel Management</h1>
+            <p className="text-gray-500 mt-1 text-sm md:text-base">Manage hostel blocks, rooms, and allocations</p>
+          </div>
+          <div className="flex flex-wrap gap-2 sm:gap-3">
+            <Link href="/dashboard/hostel/allocations" className="flex-1 sm:flex-none">
+              <Button variant="outline" leftIcon={<UserPlus className="w-4 h-4" />} className="w-full sm:w-auto">
+                Allocations
+              </Button>
+            </Link>
+            <Link href="/dashboard/hostel/rooms" className="flex-1 sm:flex-none">
+              <Button variant="outline" leftIcon={<DoorOpen className="w-4 h-4" />} className="w-full sm:w-auto">
+                All Rooms
+              </Button>
+            </Link>
+            <Link href="/dashboard/hostel/blocks/new" className="w-full sm:w-auto">
+              <Button leftIcon={<Plus className="w-4 h-4" />} className="w-full sm:w-auto">
+                Add Block
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 mb-6 md:mb-8">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-blue-100">
