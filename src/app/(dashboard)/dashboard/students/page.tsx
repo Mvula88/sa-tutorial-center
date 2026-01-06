@@ -298,218 +298,153 @@ export default function StudentsPage() {
 
       {/* Filters */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
-        <div className="flex flex-col gap-4">
-          {/* Primary filters row */}
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search by name, student number, or phone..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none"
-                />
-              </div>
-            </div>
-            <div className="flex gap-3 flex-wrap">
-              <Select
-                options={[
-                  { value: 'active', label: 'Active' },
-                  { value: 'inactive', label: 'Inactive' },
-                  { value: 'graduated', label: 'Graduated' },
-                  { value: 'withdrawn', label: 'Withdrawn' },
-                ]}
-                placeholder="All Status"
-                value={statusFilter}
-                onChange={(e) => {
-                  setStatusFilter(e.target.value)
-                  setCurrentPage(1)
-                }}
-                className="w-36"
-              />
-              <Select
-                options={[
-                  { value: 'male', label: 'Male' },
-                  { value: 'female', label: 'Female' },
-                  { value: 'other', label: 'Other' },
-                ]}
-                placeholder="All Gender"
-                value={genderFilter}
-                onChange={(e) => {
-                  setGenderFilter(e.target.value)
-                  setCurrentPage(1)
-                }}
-                className="w-36"
-              />
-              <button
-                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                className={`flex items-center gap-2 px-3 py-2 border rounded-lg transition-colors ${
-                  showAdvancedFilters || gradeFilter || subjectFilter || paymentStatusFilter || paymentMonthFilter
-                    ? 'border-blue-500 bg-blue-50 text-blue-600'
-                    : 'border-gray-300 text-gray-600 hover:bg-gray-50'
-                }`}
-              >
-                <SlidersHorizontal className="w-4 h-4" />
-                <span className="text-sm font-medium">More Filters</span>
-                {(gradeFilter || subjectFilter || paymentStatusFilter || paymentMonthFilter) && (
-                  <span className="w-5 h-5 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center">
-                    {[gradeFilter, subjectFilter, paymentStatusFilter, paymentMonthFilter].filter(Boolean).length}
-                  </span>
-                )}
-              </button>
-            </div>
+        {/* Main filters row - all inline */}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Search */}
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search name, ID, or phone..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none text-sm"
+            />
           </div>
 
-          {/* Advanced filters row */}
-          {showAdvancedFilters && (
-            <div className="flex flex-wrap gap-3 pt-3 border-t border-gray-100">
-              <Select
-                options={grades.map(g => ({ value: g, label: g }))}
-                placeholder="All Grades"
-                value={gradeFilter}
-                onChange={(e) => {
-                  setGradeFilter(e.target.value)
-                  setCurrentPage(1)
-                }}
-                className="w-36"
-              />
-              <Select
-                options={subjects.map(s => ({ value: s.id, label: s.name }))}
-                placeholder="All Subjects"
-                value={subjectFilter}
-                onChange={(e) => {
-                  setSubjectFilter(e.target.value)
-                  setCurrentPage(1)
-                }}
-                className="w-44"
-              />
-              <div className="flex items-center gap-2 px-3 py-1 bg-gray-50 rounded-lg border border-gray-200">
-                <span className="text-xs text-gray-500 font-medium">Payment:</span>
-                <Select
-                  options={[
-                    { value: '1', label: 'Jan' },
-                    { value: '2', label: 'Feb' },
-                    { value: '3', label: 'Mar' },
-                    { value: '4', label: 'Apr' },
-                    { value: '5', label: 'May' },
-                    { value: '6', label: 'Jun' },
-                    { value: '7', label: 'Jul' },
-                    { value: '8', label: 'Aug' },
-                    { value: '9', label: 'Sep' },
-                    { value: '10', label: 'Oct' },
-                    { value: '11', label: 'Nov' },
-                    { value: '12', label: 'Dec' },
-                  ]}
-                  placeholder="Month"
-                  value={paymentMonthFilter}
-                  onChange={(e) => {
-                    setPaymentMonthFilter(e.target.value)
-                    setCurrentPage(1)
-                  }}
-                  className="w-24"
-                />
-                <Select
-                  options={[
-                    { value: (new Date().getFullYear() - 1).toString(), label: (new Date().getFullYear() - 1).toString() },
-                    { value: new Date().getFullYear().toString(), label: new Date().getFullYear().toString() },
-                    { value: (new Date().getFullYear() + 1).toString(), label: (new Date().getFullYear() + 1).toString() },
-                  ]}
-                  value={paymentYearFilter}
-                  onChange={(e) => {
-                    setPaymentYearFilter(e.target.value)
-                    setCurrentPage(1)
-                  }}
-                  className="w-24"
-                />
-                <Select
-                  options={[
-                    { value: 'paid', label: 'Paid' },
-                    { value: 'partial', label: 'Partial' },
-                    { value: 'unpaid', label: 'Unpaid' },
-                  ]}
-                  placeholder="Status"
-                  value={paymentStatusFilter}
-                  onChange={(e) => {
-                    setPaymentStatusFilter(e.target.value)
-                    setCurrentPage(1)
-                  }}
-                  className="w-28"
-                />
-              </div>
-              {(gradeFilter || subjectFilter || paymentStatusFilter || paymentMonthFilter) && (
-                <button
-                  onClick={() => {
-                    setGradeFilter('')
-                    setSubjectFilter('')
-                    setPaymentStatusFilter('')
-                    setPaymentMonthFilter('')
-                    setCurrentPage(1)
-                  }}
-                  className="flex items-center gap-1 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                  Clear Filters
-                </button>
-              )}
-            </div>
-          )}
+          {/* Quick filters */}
+          <Select
+            options={[
+              { value: 'active', label: 'Active' },
+              { value: 'inactive', label: 'Inactive' },
+              { value: 'graduated', label: 'Graduated' },
+              { value: 'withdrawn', label: 'Withdrawn' },
+            ]}
+            placeholder="Status"
+            value={statusFilter}
+            onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1) }}
+            className="w-28"
+          />
+          <Select
+            options={[
+              { value: 'male', label: 'Male' },
+              { value: 'female', label: 'Female' },
+            ]}
+            placeholder="Gender"
+            value={genderFilter}
+            onChange={(e) => { setGenderFilter(e.target.value); setCurrentPage(1) }}
+            className="w-28"
+          />
+          <Select
+            options={grades.map(g => ({ value: g, label: `Grade ${g}` }))}
+            placeholder="Grade"
+            value={gradeFilter}
+            onChange={(e) => { setGradeFilter(e.target.value); setCurrentPage(1) }}
+            className="w-28"
+          />
+          <Select
+            options={subjects.map(s => ({ value: s.id, label: s.name }))}
+            placeholder="Subject"
+            value={subjectFilter}
+            onChange={(e) => { setSubjectFilter(e.target.value); setCurrentPage(1) }}
+            className="w-36"
+          />
 
-          {/* Active filters display */}
+          {/* Payment filter group */}
+          <div className="flex items-center gap-1 px-2 py-1 bg-amber-50 rounded-lg border border-amber-200">
+            <span className="text-xs text-amber-700 font-medium px-1">Payment:</span>
+            <Select
+              options={[
+                { value: '1', label: 'Jan' }, { value: '2', label: 'Feb' }, { value: '3', label: 'Mar' },
+                { value: '4', label: 'Apr' }, { value: '5', label: 'May' }, { value: '6', label: 'Jun' },
+                { value: '7', label: 'Jul' }, { value: '8', label: 'Aug' }, { value: '9', label: 'Sep' },
+                { value: '10', label: 'Oct' }, { value: '11', label: 'Nov' }, { value: '12', label: 'Dec' },
+              ]}
+              placeholder="Month"
+              value={paymentMonthFilter}
+              onChange={(e) => { setPaymentMonthFilter(e.target.value); setCurrentPage(1) }}
+              className="w-20"
+            />
+            <Select
+              options={[
+                { value: (new Date().getFullYear() - 1).toString(), label: (new Date().getFullYear() - 1).toString() },
+                { value: new Date().getFullYear().toString(), label: new Date().getFullYear().toString() },
+                { value: (new Date().getFullYear() + 1).toString(), label: (new Date().getFullYear() + 1).toString() },
+              ]}
+              value={paymentYearFilter}
+              onChange={(e) => { setPaymentYearFilter(e.target.value); setCurrentPage(1) }}
+              className="w-20"
+            />
+            <Select
+              options={[
+                { value: 'paid', label: 'Paid' },
+                { value: 'partial', label: 'Partial' },
+                { value: 'unpaid', label: 'Unpaid' },
+              ]}
+              placeholder="Status"
+              value={paymentStatusFilter}
+              onChange={(e) => { setPaymentStatusFilter(e.target.value); setCurrentPage(1) }}
+              className="w-24"
+            />
+          </div>
+
+          {/* Clear all button */}
           {(statusFilter || genderFilter || gradeFilter || subjectFilter || paymentStatusFilter || paymentMonthFilter) && (
-            <div className="flex flex-wrap gap-2 pt-2">
-              {statusFilter && (
-                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
-                  Status: {statusFilter}
-                  <button onClick={() => { setStatusFilter(''); setCurrentPage(1) }} className="hover:text-blue-900">
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              )}
-              {genderFilter && (
-                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
-                  Gender: {genderFilter}
-                  <button onClick={() => { setGenderFilter(''); setCurrentPage(1) }} className="hover:text-blue-900">
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              )}
-              {gradeFilter && (
-                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
-                  Grade: {gradeFilter}
-                  <button onClick={() => { setGradeFilter(''); setCurrentPage(1) }} className="hover:text-blue-900">
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              )}
-              {subjectFilter && (
-                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
-                  Subject: {subjects.find(s => s.id === subjectFilter)?.name}
-                  <button onClick={() => { setSubjectFilter(''); setCurrentPage(1) }} className="hover:text-blue-900">
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              )}
-              {paymentMonthFilter && (
-                <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 text-xs rounded-full">
-                  Month: {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][parseInt(paymentMonthFilter) - 1]} {paymentYearFilter}
-                  <button onClick={() => { setPaymentMonthFilter(''); setCurrentPage(1) }} className="hover:text-amber-900">
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              )}
-              {paymentStatusFilter && (
-                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
-                  Payment: {paymentStatusFilter}
-                  <button onClick={() => { setPaymentStatusFilter(''); setCurrentPage(1) }} className="hover:text-blue-900">
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              )}
-            </div>
+            <button
+              onClick={() => {
+                setStatusFilter(''); setGenderFilter(''); setGradeFilter('')
+                setSubjectFilter(''); setPaymentStatusFilter(''); setPaymentMonthFilter('')
+                setCurrentPage(1)
+              }}
+              className="flex items-center gap-1 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            >
+              <X className="w-4 h-4" />
+              Clear
+            </button>
           )}
         </div>
+
+        {/* Active filters tags */}
+        {(statusFilter || genderFilter || gradeFilter || subjectFilter || paymentStatusFilter || paymentMonthFilter) && (
+          <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-100">
+            {statusFilter && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
+                {statusFilter}
+                <button onClick={() => { setStatusFilter(''); setCurrentPage(1) }}><X className="w-3 h-3" /></button>
+              </span>
+            )}
+            {genderFilter && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                {genderFilter}
+                <button onClick={() => { setGenderFilter(''); setCurrentPage(1) }}><X className="w-3 h-3" /></button>
+              </span>
+            )}
+            {gradeFilter && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+                Grade {gradeFilter}
+                <button onClick={() => { setGradeFilter(''); setCurrentPage(1) }}><X className="w-3 h-3" /></button>
+              </span>
+            )}
+            {subjectFilter && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-cyan-100 text-cyan-700 text-xs rounded-full">
+                {subjects.find(s => s.id === subjectFilter)?.name}
+                <button onClick={() => { setSubjectFilter(''); setCurrentPage(1) }}><X className="w-3 h-3" /></button>
+              </span>
+            )}
+            {paymentMonthFilter && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 text-xs rounded-full">
+                {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][parseInt(paymentMonthFilter) - 1]} {paymentYearFilter}
+                <button onClick={() => { setPaymentMonthFilter(''); setCurrentPage(1) }}><X className="w-3 h-3" /></button>
+              </span>
+            )}
+            {paymentStatusFilter && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 text-xs rounded-full">
+                {paymentStatusFilter}
+                <button onClick={() => { setPaymentStatusFilter(''); setCurrentPage(1) }}><X className="w-3 h-3" /></button>
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Table */}

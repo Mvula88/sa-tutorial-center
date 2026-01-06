@@ -15,6 +15,8 @@ import {
   CreditCard,
   Calendar,
   Download,
+  X,
+  TrendingUp,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -50,13 +52,17 @@ export default function PaymentsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [methodFilter, setMethodFilter] = useState('')
-  const [dateFilter, setDateFilter] = useState('')
+  const [dateFromFilter, setDateFromFilter] = useState('')
+  const [dateToFilter, setDateToFilter] = useState('')
+  const [monthFilter, setMonthFilter] = useState('')
+  const [yearFilter, setYearFilter] = useState(new Date().getFullYear().toString())
   const [currentPage, setCurrentPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
+  const [totalAmount, setTotalAmount] = useState(0)
 
   useEffect(() => {
     fetchPayments()
-  }, [user?.center_id, currentPage, methodFilter, dateFilter])
+  }, [user?.center_id, currentPage, methodFilter, dateFromFilter, dateToFilter, monthFilter, yearFilter])
 
   async function fetchPayments() {
     if (!user?.center_id) return
@@ -84,12 +90,21 @@ export default function PaymentsPage() {
       if (methodFilter) {
         query = query.eq('payment_method', methodFilter)
       }
-      if (dateFilter) {
-        const startDate = new Date(dateFilter)
-        const endDate = new Date(dateFilter)
-        endDate.setDate(endDate.getDate() + 1)
-        query = query.gte('payment_date', startDate.toISOString())
-          .lt('payment_date', endDate.toISOString())
+
+      // Date range filter
+      if (dateFromFilter) {
+        query = query.gte('payment_date', `${dateFromFilter}T00:00:00`)
+      }
+      if (dateToFilter) {
+        query = query.lte('payment_date', `${dateToFilter}T23:59:59`)
+      }
+
+      // Month/Year filter
+      if (monthFilter && yearFilter) {
+        const startOfMonth = `${yearFilter}-${monthFilter.padStart(2, '0')}-01T00:00:00`
+        const lastDay = new Date(parseInt(yearFilter), parseInt(monthFilter), 0).getDate()
+        const endOfMonth = `${yearFilter}-${monthFilter.padStart(2, '0')}-${lastDay}T23:59:59`
+        query = query.gte('payment_date', startOfMonth).lte('payment_date', endOfMonth)
       }
 
       // Pagination
@@ -115,6 +130,10 @@ export default function PaymentsPage() {
 
       setPayments(filteredPayments)
       setTotalCount(count || 0)
+
+      // Calculate total amount for filtered results
+      const total = filteredPayments.reduce((sum, p) => sum + p.amount, 0)
+      setTotalAmount(total)
     } catch (error) {
       console.error('Error fetching payments:', error)
       toast.error('Failed to fetch payments')
@@ -164,60 +183,167 @@ export default function PaymentsPage() {
         </Link>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search by student name, number, or reference..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none"
-              />
+      {/* Summary Card */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-green-100">
+              <TrendingUp className="w-5 h-5 text-green-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Total (This View)</p>
+              <p className="text-xl font-bold text-green-600">N$ {totalAmount.toFixed(2)}</p>
             </div>
           </div>
-          <div className="flex gap-3">
-            <Select
-              options={[
-                { value: 'cash', label: 'Cash' },
-                { value: 'bank_transfer', label: 'Bank Transfer' },
-                { value: 'card', label: 'Card' },
-                { value: 'mobile_money', label: 'Mobile Money' },
-              ]}
-              placeholder="All Methods"
-              value={methodFilter}
-              onChange={(e) => {
-                setMethodFilter(e.target.value)
-                setCurrentPage(1)
-              }}
-              className="w-40"
-            />
-            <input
-              type="date"
-              value={dateFilter}
-              onChange={(e) => {
-                setDateFilter(e.target.value)
-                setCurrentPage(1)
-              }}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none"
-            />
-            {(methodFilter || dateFilter) && (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setMethodFilter('')
-                  setDateFilter('')
-                  setCurrentPage(1)
-                }}
-              >
-                Clear
-              </Button>
-            )}
+        </div>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-blue-100">
+              <CreditCard className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Transactions</p>
+              <p className="text-xl font-bold text-gray-900">{totalCount}</p>
+            </div>
           </div>
         </div>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-purple-100">
+              <Calendar className="w-5 h-5 text-purple-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Period</p>
+              <p className="text-xl font-bold text-gray-900">
+                {monthFilter
+                  ? `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][parseInt(monthFilter) - 1]} ${yearFilter}`
+                  : dateFromFilter || dateToFilter
+                    ? 'Custom Range'
+                    : 'All Time'}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Search */}
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search student or reference..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none text-sm"
+            />
+          </div>
+
+          {/* Method Filter */}
+          <Select
+            options={[
+              { value: 'cash', label: 'Cash' },
+              { value: 'bank_transfer', label: 'Bank Transfer' },
+              { value: 'card', label: 'Card' },
+              { value: 'mobile_money', label: 'Mobile Money' },
+            ]}
+            placeholder="Method"
+            value={methodFilter}
+            onChange={(e) => { setMethodFilter(e.target.value); setCurrentPage(1) }}
+            className="w-32"
+          />
+
+          {/* Month/Year Quick Filter */}
+          <div className="flex items-center gap-1 px-2 py-1 bg-purple-50 rounded-lg border border-purple-200">
+            <span className="text-xs text-purple-700 font-medium px-1">Month:</span>
+            <Select
+              options={[
+                { value: '1', label: 'Jan' }, { value: '2', label: 'Feb' }, { value: '3', label: 'Mar' },
+                { value: '4', label: 'Apr' }, { value: '5', label: 'May' }, { value: '6', label: 'Jun' },
+                { value: '7', label: 'Jul' }, { value: '8', label: 'Aug' }, { value: '9', label: 'Sep' },
+                { value: '10', label: 'Oct' }, { value: '11', label: 'Nov' }, { value: '12', label: 'Dec' },
+              ]}
+              placeholder="All"
+              value={monthFilter}
+              onChange={(e) => { setMonthFilter(e.target.value); setDateFromFilter(''); setDateToFilter(''); setCurrentPage(1) }}
+              className="w-20"
+            />
+            <Select
+              options={[
+                { value: (new Date().getFullYear() - 1).toString(), label: (new Date().getFullYear() - 1).toString() },
+                { value: new Date().getFullYear().toString(), label: new Date().getFullYear().toString() },
+                { value: (new Date().getFullYear() + 1).toString(), label: (new Date().getFullYear() + 1).toString() },
+              ]}
+              value={yearFilter}
+              onChange={(e) => { setYearFilter(e.target.value); setCurrentPage(1) }}
+              className="w-20"
+            />
+          </div>
+
+          {/* Date Range Filter */}
+          <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 rounded-lg border border-blue-200">
+            <span className="text-xs text-blue-700 font-medium px-1">From:</span>
+            <input
+              type="date"
+              value={dateFromFilter}
+              onChange={(e) => { setDateFromFilter(e.target.value); setMonthFilter(''); setCurrentPage(1) }}
+              className="px-2 py-1 border border-gray-300 rounded text-sm w-32"
+            />
+            <span className="text-xs text-blue-700 font-medium px-1">To:</span>
+            <input
+              type="date"
+              value={dateToFilter}
+              onChange={(e) => { setDateToFilter(e.target.value); setMonthFilter(''); setCurrentPage(1) }}
+              className="px-2 py-1 border border-gray-300 rounded text-sm w-32"
+            />
+          </div>
+
+          {/* Clear All */}
+          {(methodFilter || dateFromFilter || dateToFilter || monthFilter) && (
+            <button
+              onClick={() => {
+                setMethodFilter(''); setDateFromFilter(''); setDateToFilter(''); setMonthFilter('')
+                setCurrentPage(1)
+              }}
+              className="flex items-center gap-1 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            >
+              <X className="w-4 h-4" />
+              Clear
+            </button>
+          )}
+        </div>
+
+        {/* Active filters tags */}
+        {(methodFilter || dateFromFilter || dateToFilter || monthFilter) && (
+          <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-100">
+            {methodFilter && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
+                {PAYMENT_METHODS[methodFilter]}
+                <button onClick={() => { setMethodFilter(''); setCurrentPage(1) }}><X className="w-3 h-3" /></button>
+              </span>
+            )}
+            {monthFilter && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][parseInt(monthFilter) - 1]} {yearFilter}
+                <button onClick={() => { setMonthFilter(''); setCurrentPage(1) }}><X className="w-3 h-3" /></button>
+              </span>
+            )}
+            {dateFromFilter && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+                From: {dateFromFilter}
+                <button onClick={() => { setDateFromFilter(''); setCurrentPage(1) }}><X className="w-3 h-3" /></button>
+              </span>
+            )}
+            {dateToFilter && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+                To: {dateToFilter}
+                <button onClick={() => { setDateToFilter(''); setCurrentPage(1) }}><X className="w-3 h-3" /></button>
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Table */}
@@ -235,11 +361,11 @@ export default function PaymentsPage() {
             <CreditCard className="w-12 h-12 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No payments found</h3>
             <p className="text-gray-500 mb-4">
-              {searchQuery || methodFilter || dateFilter
+              {searchQuery || methodFilter || dateFromFilter || dateToFilter || monthFilter
                 ? 'Try adjusting your filters'
                 : 'Get started by recording your first payment'}
             </p>
-            {!searchQuery && !methodFilter && !dateFilter && (
+            {!searchQuery && !methodFilter && !dateFromFilter && !dateToFilter && !monthFilter && (
               <Link href="/dashboard/payments/new">
                 <Button leftIcon={<Plus className="w-4 h-4" />}>
                   Record Payment

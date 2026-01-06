@@ -1351,7 +1351,7 @@ export default function StudentDetailPage() {
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <label className="block text-sm font-medium text-gray-700">
-                        Select Months
+                        Select Months to Generate
                       </label>
                       <div className="flex gap-2">
                         <button
@@ -1372,24 +1372,76 @@ export default function StudentDetailPage() {
                       </div>
                     </div>
                     <div className="grid grid-cols-3 gap-2">
-                      {monthNames.map((month, index) => (
-                        <label
-                          key={month}
-                          className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors ${
-                            selectedMonths.includes(index)
-                              ? 'border-blue-500 bg-blue-50 text-blue-700'
-                              : 'border-gray-200 hover:bg-gray-50'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selectedMonths.includes(index)}
-                            onChange={() => toggleMonth(index)}
-                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                          />
-                          <span className="text-sm font-medium">{month.slice(0, 3)}</span>
-                        </label>
-                      ))}
+                      {monthNames.map((month, index) => {
+                        const feeMonth = `${selectedYear}-${String(index + 1).padStart(2, '0')}-01`
+                        const existingFee = studentFees.find(f => f.fee_month === feeMonth && f.fee_type === 'tuition')
+                        const hasPayments = existingFee && existingFee.amount_paid > 0
+
+                        if (existingFee) {
+                          return (
+                            <div
+                              key={month}
+                              className="flex items-center justify-between p-3 rounded-lg border border-green-300 bg-green-50"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                                <span className="text-sm font-medium text-green-700">{month.slice(0, 3)}</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFeeToDelete(existingFee)
+                                  setDeleteFeeModalOpen(true)
+                                }}
+                                disabled={hasPayments}
+                                className={`p-1 rounded transition-colors ${
+                                  hasPayments
+                                    ? 'text-gray-300 cursor-not-allowed'
+                                    : 'text-red-400 hover:text-red-600 hover:bg-red-50'
+                                }`}
+                                title={hasPayments ? 'Cannot delete - has payments' : 'Delete this fee'}
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          )
+                        }
+
+                        return (
+                          <label
+                            key={month}
+                            className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors ${
+                              selectedMonths.includes(index)
+                                ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                : 'border-gray-200 hover:bg-gray-50'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedMonths.includes(index)}
+                              onChange={() => toggleMonth(index)}
+                              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            />
+                            <span className="text-sm font-medium">{month.slice(0, 3)}</span>
+                          </label>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Legend */}
+                  <div className="flex items-center gap-4 text-xs text-gray-500">
+                    <div className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                      <span>Fee exists</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="w-4 h-4 border-2 border-blue-500 rounded bg-blue-50"></span>
+                      <span>To generate</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="w-4 h-4 border border-gray-300 rounded"></span>
+                      <span>Available</span>
                     </div>
                   </div>
 
@@ -1404,10 +1456,6 @@ export default function StudentDetailPage() {
                       </p>
                     </div>
                   )}
-
-                  <p className="text-xs text-gray-500">
-                    Fee records will only be created for months that don't already have fees.
-                  </p>
                 </>
               )}
             </div>
