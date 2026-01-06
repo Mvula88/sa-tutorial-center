@@ -101,20 +101,20 @@ export default function NewStudentPage() {
     const supabase = createClient()
     const { data } = await supabase
       .from('tutorial_centers')
-      .select('registration_fee, late_payment_penalty, payment_due_day, terms_and_conditions, payment_months')
+      .select('default_registration_fee, late_payment_penalty, payment_due_day, terms_and_conditions, payment_months')
       .eq('id', user.center_id)
       .single()
 
     if (data) {
       const centerData = data as {
-        registration_fee: number
+        default_registration_fee: number
         late_payment_penalty: number
         payment_due_day: number
         terms_and_conditions: string | null
         payment_months: number[] | null
       }
       setCenterSettings({
-        registration_fee: centerData.registration_fee || 300,
+        registration_fee: centerData.default_registration_fee || 300,
         late_payment_penalty: centerData.late_payment_penalty || 70,
         payment_due_day: centerData.payment_due_day || 5,
         terms_and_conditions: centerData.terms_and_conditions,
@@ -281,6 +281,7 @@ export default function NewStudentPage() {
       if (typedStudent && registrationFee > 0) {
         const registrationDate = new Date()
         const feeMonth = `${registrationDate.getFullYear()}-${String(registrationDate.getMonth() + 1).padStart(2, '0')}-01`
+        const dueDateStr = registrationDate.toISOString().split('T')[0]
 
         const { error: feeError } = await supabase
           .from('student_fees')
@@ -291,8 +292,7 @@ export default function NewStudentPage() {
             fee_month: feeMonth,
             amount_due: registrationFee,
             amount_paid: 0,
-            balance: registrationFee,
-            due_date: registrationDate.toISOString(),
+            due_date: dueDateStr,
             status: 'unpaid',
           } as never)
 
