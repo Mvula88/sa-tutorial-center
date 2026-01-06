@@ -204,6 +204,17 @@ export async function allocatePayment(
 
         if (updateError) throw updateError
 
+        // If this is a registration fee and it's now fully paid, update the student record
+        if (fee.fee_type === 'registration' && newStatus === 'paid') {
+          await supabase
+            .from('students')
+            .update({
+              registration_fee_paid: true,
+              registration_fee_paid_date: new Date().toISOString(),
+            } as never)
+            .eq('id', studentId)
+        }
+
         allocations.push({
           feeId: fee.id,
           month: fee.fee_month,

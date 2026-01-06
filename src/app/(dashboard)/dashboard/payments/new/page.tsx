@@ -210,6 +210,17 @@ export default function RecordPaymentPage() {
               status: newStatus
             } as never)
             .eq('id', formData.student_fee_id)
+
+          // If this is a registration fee and it's now fully paid, update the student record
+          if (selectedFee.fee_type === 'registration' && newStatus === 'paid') {
+            await supabase
+              .from('students')
+              .update({
+                registration_fee_paid: true,
+                registration_fee_paid_date: new Date().toISOString(),
+              } as never)
+              .eq('id', formData.student_id)
+          }
         }
       }
 

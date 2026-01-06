@@ -277,6 +277,30 @@ export default function NewStudentPage() {
         }
       }
 
+      // Create registration fee record in student_fees table
+      if (typedStudent && registrationFee > 0) {
+        const registrationDate = new Date()
+        const feeMonth = `${registrationDate.getFullYear()}-${String(registrationDate.getMonth() + 1).padStart(2, '0')}-01`
+
+        const { error: feeError } = await supabase
+          .from('student_fees')
+          .insert({
+            center_id: user.center_id,
+            student_id: typedStudent.id,
+            fee_type: 'registration',
+            fee_month: feeMonth,
+            amount_due: registrationFee,
+            amount_paid: 0,
+            balance: registrationFee,
+            due_date: registrationDate.toISOString(),
+            status: 'unpaid',
+          } as never)
+
+        if (feeError) {
+          console.error('Error creating registration fee:', feeError)
+        }
+      }
+
       toast.success('Student registered successfully!')
       router.push(`/dashboard/students/${typedStudent?.id}`)
     } catch (error) {

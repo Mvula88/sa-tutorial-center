@@ -1199,10 +1199,20 @@ export default function StudentDetailPage() {
                       <td className="px-6 py-4 text-gray-900">
                         {new Date(fee.fee_month).toLocaleDateString('en-ZA', { year: 'numeric', month: 'long' })}
                       </td>
-                      <td className="px-6 py-4 text-gray-900 capitalize">{fee.fee_type}</td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                          fee.fee_type === 'registration'
+                            ? 'bg-purple-100 text-purple-700'
+                            : 'bg-blue-100 text-blue-700'
+                        }`}>
+                          {fee.fee_type === 'registration' ? 'Registration' : 'Tuition'}
+                        </span>
+                      </td>
                       <td className="px-6 py-4 text-right text-gray-900">N$ {fee.amount_due.toFixed(2)}</td>
                       <td className="px-6 py-4 text-right text-green-600">N$ {fee.amount_paid.toFixed(2)}</td>
-                      <td className="px-6 py-4 text-right font-medium text-red-600">N$ {fee.balance.toFixed(2)}</td>
+                      <td className={`px-6 py-4 text-right font-medium ${fee.balance > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                        N$ {fee.balance.toFixed(2)}
+                      </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
                           fee.status === 'paid' ? 'bg-green-100 text-green-700' :
