@@ -101,8 +101,8 @@ export default function ClientDetailPage() {
     const supabase = createClient()
 
     try {
-      const { data, error } = await supabase
-        .from('clients')
+      const { data, error } = await (supabase
+        .from('clients') as any)
         .select('*')
         .eq('id', clientId)
         .single()
@@ -121,8 +121,8 @@ export default function ClientDetailPage() {
     const supabase = createClient()
 
     try {
-      const { data, error } = await supabase
-        .from('client_payments')
+      const { data, error } = await (supabase
+        .from('client_payments') as any)
         .select('*')
         .eq('client_id', clientId)
         .order('payment_date', { ascending: false })
@@ -140,7 +140,7 @@ export default function ClientDetailPage() {
     const supabase = createClient()
 
     try {
-      const { error } = await supabase.from('client_payments').insert({
+      const { error } = await (supabase.from('client_payments') as any).insert({
         client_id: clientId,
         payment_type: paymentForm.payment_type,
         amount: paymentForm.amount,
@@ -156,8 +156,8 @@ export default function ClientDetailPage() {
 
       // If setup fee payment, update client
       if (paymentForm.payment_type === 'setup_fee' && client) {
-        await supabase
-          .from('clients')
+        await (supabase
+          .from('clients') as any)
           .update({
             setup_fee_paid: true,
             setup_fee_paid_date: paymentForm.payment_date,
@@ -193,8 +193,8 @@ export default function ClientDetailPage() {
     const supabase = createClient()
 
     try {
-      const { error } = await supabase
-        .from('clients')
+      const { error } = await (supabase
+        .from('clients') as any)
         .update({ contract_status: newStatus })
         .eq('id', clientId)
 

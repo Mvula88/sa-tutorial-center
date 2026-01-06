@@ -66,8 +66,8 @@ export default function ClientsPage() {
     const supabase = createClient()
 
     try {
-      let query = supabase
-        .from('clients')
+      let query = (supabase
+        .from('clients') as any)
         .select('*')
         .order('created_at', { ascending: false })
 
@@ -95,8 +95,8 @@ export default function ClientsPage() {
     const supabase = createClient()
 
     try {
-      const { data: clientsData } = await supabase
-        .from('clients')
+      const { data: clientsData } = await (supabase
+        .from('clients') as any)
         .select('*')
 
       const allClients = (clientsData || []) as Client[]
@@ -118,8 +118,8 @@ export default function ClientsPage() {
       }).length
 
       // Get overdue invoices count
-      const { count: overdueCount } = await supabase
-        .from('client_invoices')
+      const { count: overdueCount } = await (supabase
+        .from('client_invoices') as any)
         .select('*', { count: 'exact', head: true })
         .eq('status', 'overdue')
 

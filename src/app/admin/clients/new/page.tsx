@@ -74,8 +74,8 @@ export default function NewClientPage() {
     const supabase = createClient()
 
     try {
-      const { data, error } = await supabase
-        .from('clients')
+      const { data, error } = await (supabase
+        .from('clients') as any)
         .insert({
           business_name: formData.business_name,
           trading_as: formData.trading_as || null,
