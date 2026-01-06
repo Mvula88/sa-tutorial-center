@@ -1,0 +1,1388 @@
+'use client'
+
+import { useEffect, useState, useRef } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
+import { useAuthStore } from '@/stores/auth-store'
+import { Button } from '@/components/ui/button'
+import { ConfirmModal } from '@/components/ui/modal'
+import {
+  ArrowLeft,
+  Pencil,
+  Trash2,
+  Printer,
+  User,
+  Phone,
+  Mail,
+  Calendar,
+  BookOpen,
+  CreditCard,
+  FileText,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Plus,
+  Receipt,
+  Loader2,
+  CalendarPlus,
+} from 'lucide-react'
+import toast from 'react-hot-toast'
+import { generateMonthlyFees } from '@/lib/fee-utils'
+
+interface Student {
+  id: string
+  student_number: string | null
+  full_name: string
+  surname: string | null
+  first_name: string | null
+  email: string | null
+  phone: string | null
+  gender: string | null
+  date_of_birth: string | null
+  id_number: string | null
+  grade: string | null
+  school_name: string | null
+  health_conditions: string | null
+  photo_url: string | null
+  parent_name: string | null
+  parent_phone: string | null
+  parent_email: string | null
+  relationship: string | null
+  payer_name: string | null
+  payer_id_number: string | null
+  payer_phone: string | null
+  payer_relationship: string | null
+  registration_fee_paid: boolean
+  registration_fee_amount: number
+  terms_accepted: boolean
+  terms_accepted_date: string | null
+  status: string
+  registration_date: string
+  created_at: string
+}
+
+interface Subject {
+  id: string
+  name: string
+  code: string | null
+  monthly_fee: number
+}
+
+interface Center {
+  name: string
+  email: string | null
+  phone: string | null
+  address: string | null
+  logo_url: string | null
+  primary_color: string | null
+  secondary_color: string | null
+  bank_name: string | null
+  account_number: string | null
+  branch_code: string | null
+  registration_fee: number
+  late_payment_penalty: number
+  payment_due_day: number
+}
+
+interface StudentFee {
+  id: string
+  fee_month: string
+  fee_type: string
+  amount_due: number
+  amount_paid: number
+  balance: number
+  status: string
+}
+
+interface Payment {
+  id: string
+  amount: number
+  payment_method: string | null
+  payment_date: string
+  reference_number: string | null
+}
+
+export default function StudentDetailPage() {
+  const params = useParams()
+  const studentId = params.id as string
+  const router = useRouter()
+  const { user } = useAuthStore()
+  const printRef = useRef<HTMLDivElement>(null)
+
+  const [student, setStudent] = useState<Student | null>(null)
+  const [subjects, setSubjects] = useState<Subject[]>([])
+  const [center, setCenter] = useState<Center | null>(null)
+  const [studentFees, setStudentFees] = useState<StudentFee[]>([])
+  const [payments, setPayments] = useState<Payment[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [activeTab, setActiveTab] = useState<'info' | 'fees'>('info')
+
+  // Fee generation state
+  const [showGenerateFeesModal, setShowGenerateFeesModal] = useState(false)
+  const [isGeneratingFees, setIsGeneratingFees] = useState(false)
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
+  const [selectedMonths, setSelectedMonths] = useState<number[]>([])
+
+  // Month names for display
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ]
+
+  // Toggle month selection
+  const toggleMonth = (monthIndex: number) => {
+    setSelectedMonths(prev =>
+      prev.includes(monthIndex)
+        ? prev.filter(m => m !== monthIndex)
+        : [...prev, monthIndex].sort((a, b) => a - b)
+    )
+  }
+
+  // Select all months
+  const selectAllMonths = () => {
+    setSelectedMonths([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
+  }
+
+  // Clear all months
+  const clearAllMonths = () => {
+    setSelectedMonths([])
+  }
+
+  useEffect(() => {
+    if (studentId && user?.center_id) {
+      fetchStudent()
+      fetchCenter()
+      fetchStudentFees()
+      fetchPayments()
+    }
+  }, [studentId, user?.center_id])
+
+  async function fetchStudent() {
+    const supabase = createClient()
+
+    try {
+      // Fetch student
+      const { data: studentData, error: studentError } = await supabase
+        .from('students')
+        .select('*')
+        .eq('id', studentId)
+        .single()
+
+      if (studentError) throw studentError
+      setStudent(studentData as Student)
+
+      // Fetch enrolled subjects
+      const { data: enrollments } = await supabase
+        .from('student_subjects')
+        .select('subject:subjects(id, name, code, monthly_fee)')
+        .eq('student_id', studentId)
+        .eq('is_active', true)
+
+      if (enrollments) {
+        type EnrollmentData = { subject: Subject | null }
+        const subjectsList = (enrollments as EnrollmentData[])
+          .map((e) => e.subject)
+          .filter((s): s is Subject => s !== null)
+        setSubjects(subjectsList)
+      }
+    } catch (error) {
+      console.error('Error fetching student:', error)
+      toast.error('Failed to load student details')
+      router.push('/dashboard/students')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  async function fetchCenter() {
+    if (!user?.center_id) return
+
+    const supabase = createClient()
+    const { data } = await supabase
+      .from('tutorial_centers')
+      .select('name, email, phone, address, logo_url, primary_color, secondary_color, bank_name, account_number, branch_code, registration_fee, late_payment_penalty, payment_due_day')
+      .eq('id', user.center_id)
+      .single()
+
+    if (data) {
+      setCenter(data as Center)
+    }
+  }
+
+  async function fetchStudentFees() {
+    const supabase = createClient()
+    const { data } = await supabase
+      .from('student_fees')
+      .select('*')
+      .eq('student_id', studentId)
+      .order('fee_month', { ascending: false })
+
+    setStudentFees((data || []) as StudentFee[])
+  }
+
+  async function fetchPayments() {
+    const supabase = createClient()
+    const { data } = await supabase
+      .from('payments')
+      .select('id, amount, payment_method, payment_date, reference_number')
+      .eq('student_id', studentId)
+      .order('payment_date', { ascending: false })
+      .limit(10)
+
+    setPayments((data || []) as Payment[])
+  }
+
+  async function handleDelete() {
+    if (!student) return
+
+    setIsDeleting(true)
+    const supabase = createClient()
+
+    try {
+      const { error } = await supabase
+        .from('students')
+        .delete()
+        .eq('id', student.id)
+
+      if (error) throw error
+
+      toast.success('Student deleted successfully')
+      router.push('/dashboard/students')
+    } catch (error) {
+      console.error('Error deleting student:', error)
+      toast.error('Failed to delete student')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  async function handleGenerateFees() {
+    if (!student || !user?.center_id || selectedMonths.length === 0) return
+
+    setIsGeneratingFees(true)
+    const supabase = createClient()
+
+    try {
+      // Get student's active subject enrollments
+      const { data: enrollments, error: enrollError } = await supabase
+        .from('student_subjects')
+        .select(`
+          id,
+          subject_id,
+          subject:subjects(id, name, monthly_fee)
+        `)
+        .eq('student_id', student.id)
+        .eq('is_active', true)
+
+      if (enrollError) throw enrollError
+
+      if (!enrollments || enrollments.length === 0) {
+        toast.error('No subjects enrolled')
+        return
+      }
+
+      // Calculate monthly tuition from all subjects
+      type EnrollmentWithSubject = { subject: { monthly_fee: number } | null }
+      const monthlyTuition = (enrollments as unknown as EnrollmentWithSubject[]).reduce(
+        (sum, e) => sum + (e.subject?.monthly_fee || 0),
+        0
+      )
+
+      // Generate fee records for each selected month
+      const feeRecords: Array<{
+        center_id: string
+        student_id: string
+        fee_month: string
+        fee_type: string
+        amount_due: number
+        amount_paid: number
+        status: string
+        due_date: string
+      }> = []
+
+      // Get existing fees to avoid duplicates
+      const monthDates = selectedMonths.map(m =>
+        `${selectedYear}-${String(m + 1).padStart(2, '0')}-01`
+      )
+
+      const { data: existingFees } = await supabase
+        .from('student_fees')
+        .select('fee_month')
+        .eq('student_id', student.id)
+        .in('fee_month', monthDates)
+
+      const typedExistingFees = (existingFees || []) as { fee_month: string }[]
+      const existingMonths = new Set(
+        typedExistingFees.map(f => f.fee_month)
+      )
+
+      for (const monthIndex of selectedMonths) {
+        const feeMonth = `${selectedYear}-${String(monthIndex + 1).padStart(2, '0')}-01`
+
+        if (!existingMonths.has(feeMonth) && monthlyTuition > 0) {
+          // Due date is 7th of the month
+          const dueDate = new Date(selectedYear, monthIndex, 7)
+
+          feeRecords.push({
+            center_id: user.center_id,
+            student_id: student.id,
+            fee_month: feeMonth,
+            fee_type: 'tuition',
+            amount_due: monthlyTuition,
+            amount_paid: 0,
+            status: 'unpaid',
+            due_date: dueDate.toISOString().split('T')[0],
+          })
+        }
+      }
+
+      if (feeRecords.length === 0) {
+        toast.success('All selected fees already exist')
+        setShowGenerateFeesModal(false)
+        return
+      }
+
+      // Insert fee records
+      const { error: insertError } = await supabase
+        .from('student_fees')
+        .insert(feeRecords as never)
+
+      if (insertError) throw insertError
+
+      toast.success(`Generated ${feeRecords.length} monthly fee records`)
+      fetchStudentFees() // Refresh the fees list
+      setShowGenerateFeesModal(false)
+      setSelectedMonths([]) // Reset selection
+    } catch (error) {
+      console.error('Error generating fees:', error)
+      toast.error('Failed to generate fees')
+    } finally {
+      setIsGeneratingFees(false)
+    }
+  }
+
+  async function handlePrint() {
+    const printContent = printRef.current
+    if (!printContent) return
+
+    const printWindow = window.open('', '', 'width=800,height=600')
+    if (!printWindow) return
+
+    const monthlyTotal = subjects.reduce((sum, s) => sum + s.monthly_fee, 0)
+    const registrationFee = center?.registration_fee || 300
+    const yearlyTotal = (monthlyTotal * 9) + registrationFee
+
+    const brandColor = center?.primary_color || '#1E40AF'
+
+    // Convert logo URL to base64 data URL for print window
+    let logoDataUrl = ''
+    if (center?.logo_url) {
+      try {
+        const response = await fetch(center.logo_url)
+        const blob = await response.blob()
+        logoDataUrl = await new Promise((resolve) => {
+          const reader = new FileReader()
+          reader.onloadend = () => resolve(reader.result as string)
+          reader.readAsDataURL(blob)
+        })
+      } catch (e) {
+        console.error('Failed to load logo for print:', e)
+      }
+    }
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Registration Form - ${student?.full_name}</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: Arial, sans-serif; font-size: 12px; line-height: 1.4; padding: 20px; }
+          .header { text-align: center; margin-bottom: 20px; border-bottom: 3px solid ${brandColor}; padding-bottom: 15px; }
+          .header h1 { color: ${brandColor}; font-size: 24px; margin-bottom: 5px; }
+          .header p { color: #666; font-size: 11px; }
+          .logo { width: 70px; height: 70px; object-fit: contain; margin-bottom: 10px; }
+          .section { margin-bottom: 20px; }
+          .section-title { background: ${brandColor}; color: white; padding: 8px 15px; font-weight: bold; margin-bottom: 10px; }
+          .row { display: flex; margin-bottom: 8px; }
+          .label { width: 180px; font-weight: bold; }
+          .value { flex: 1; border-bottom: 1px dotted #ccc; padding-left: 10px; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+          th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+          th { background: #f5f5f5; }
+          .checkbox { width: 15px; height: 15px; border: 1px solid #333; display: inline-block; margin-right: 5px; text-align: center; line-height: 13px; }
+          .checkbox.checked::after { content: '✓'; }
+          .financial-box { background: #f9f9f9; padding: 15px; border: 1px solid #ddd; margin-top: 10px; }
+          .terms { font-size: 10px; line-height: 1.5; }
+          .terms li { margin-bottom: 5px; }
+          .signature-section { display: flex; justify-content: space-between; margin-top: 30px; }
+          .signature-box { width: 45%; }
+          .signature-line { border-bottom: 1px solid #333; margin-top: 40px; margin-bottom: 5px; }
+          .photo-box { width: 100px; height: 120px; border: 1px solid #ccc; float: right; text-align: center; line-height: 120px; color: #999; font-size: 10px; }
+          .page-break { page-break-before: always; }
+          @media print {
+            body { padding: 0; }
+            .no-print { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          ${logoDataUrl ? `<img src="${logoDataUrl}" class="logo" alt="Logo">` : ''}
+          <h1>${center?.name || 'Tutorial Center'}</h1>
+          <p>Tel: ${center?.phone || ''} | Email: ${center?.email || ''}</p>
+          ${center?.address ? `<p>${center.address}</p>` : ''}
+        </div>
+
+        <div class="photo-box">Student Photo</div>
+
+        <h2 style="text-align: center; margin-bottom: 20px; color: ${brandColor};">REGISTRATION AND ENROLLMENT FORM ${new Date().getFullYear()}</h2>
+
+        <div class="section">
+          <div class="section-title">STUDENT INFORMATION</div>
+          <div class="row"><span class="label">Surname:</span><span class="value">${student?.surname || ''}</span></div>
+          <div class="row"><span class="label">First Name:</span><span class="value">${student?.first_name || ''}</span></div>
+          <div class="row"><span class="label">Gender:</span><span class="value">${student?.gender || ''}</span></div>
+          <div class="row"><span class="label">Date of Birth:</span><span class="value">${student?.date_of_birth ? new Date(student.date_of_birth).toLocaleDateString() : ''}</span></div>
+          <div class="row"><span class="label">ID Number:</span><span class="value">${student?.id_number || ''}</span></div>
+          <div class="row"><span class="label">Mobile Number:</span><span class="value">${student?.phone || ''}</span></div>
+          <div class="row"><span class="label">Parent/Guardian Number:</span><span class="value">${student?.parent_phone || ''}</span></div>
+          <div class="row"><span class="label">Health Conditions:</span><span class="value">${student?.health_conditions || 'None'}</span></div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">SUBJECTS ENROLLED</div>
+          <p style="margin-bottom: 10px;"><strong>NB:</strong> Registration fee N$${registrationFee.toFixed(2)} which is non-refundable</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Subject</th>
+                <th style="width: 60px;">Tick</th>
+                <th style="width: 150px;">Tutorial Fee per Month</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${subjects.map(s => `
+                <tr>
+                  <td>${s.name}</td>
+                  <td style="text-align: center;"><span class="checkbox checked"></span></td>
+                  <td>N$${s.monthly_fee.toFixed(2)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="section">
+          <div class="section-title">FINANCIAL INFORMATION</div>
+          <div class="financial-box">
+            <p><strong>TOTAL DUE TO US:</strong> N$${yearlyTotal.toFixed(2)}</p>
+            <p><strong>INSTALMENT PAYMENT:</strong> N$${monthlyTotal.toFixed(2)} per month (9 months)</p>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">PAYMENT DETAILS</div>
+          <div class="row"><span class="label">Name of Person Responsible:</span><span class="value">${student?.payer_name || ''}</span></div>
+          <div class="row"><span class="label">ID Number:</span><span class="value">${student?.payer_id_number || ''}</span></div>
+          <div class="row"><span class="label">Mobile Number:</span><span class="value">${student?.payer_phone || ''}</span></div>
+        </div>
+
+        <div class="page-break"></div>
+
+        <div class="header">
+          ${logoDataUrl ? `<img src="${logoDataUrl}" class="logo" alt="Logo">` : ''}
+          <h1>${center?.name || 'Tutorial Center'}</h1>
+          <p>Tel: ${center?.phone || ''} | Email: ${center?.email || ''}</p>
+        </div>
+
+        <div class="section">
+          <div class="row"><span class="label">Student's Name:</span><span class="value">${student?.full_name || ''}</span></div>
+          <div class="row"><span class="label">Cell Number:</span><span class="value">${student?.phone || ''}</span></div>
+          <div class="row"><span class="label">ID Number:</span><span class="value">${student?.id_number || ''}</span></div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">STUDENT ACKNOWLEDGEMENT OF FINANCIAL OBLIGATION</div>
+          <ul class="terms">
+            <li>By my Enrollment at ${center?.name || 'this Tutorial Center'}, I acknowledge that I am receiving an educational benefit and that the costs associated with that benefit are payable for 9 months.</li>
+            <li>By registering and checking in for classes, I acknowledge financial responsibility for the confirmed yearly tuition fee resulting from this registration; tuition and all fees assessed to my student account.</li>
+            <li>I understand that tuition fees must be paid on time before/on the ${center?.payment_due_day || 5}th of every month, and no excuses will be tolerated regarding failure of payment.</li>
+            <li>I understand that registration fees under any circumstances, are non-refundable.</li>
+            <li>I understand that ${center?.name || 'the College'} will place a penalty fee of N$${(center?.late_payment_penalty || 70).toFixed(2)} on my account if I have not made payment on a timely basis.</li>
+            <li>I understand that the College will prevent class attendance and other essential services until the tuition fee is paid.</li>
+            <li>Should it be necessary for ${center?.name || 'the College'} to place my account with a debt collection agency, I acknowledge that I will be liable for all reasonable collection agency fees.</li>
+            <li>I authorize ${center?.name || 'the College'} or its agents to contact me at the number listed during this registration.</li>
+          </ul>
+          <p style="margin-top: 15px; font-weight: bold;">By signing, I acknowledge that I understand the relevant policies and the effect of these changes on my financial aid and tuition liability, and still request to be registered as listed on this form.</p>
+        </div>
+
+        <div class="signature-section">
+          <div class="signature-box">
+            <div class="signature-line"></div>
+            <p>Student Signature</p>
+            <p style="margin-top: 10px;">Date: _______________________</p>
+          </div>
+          <div class="signature-box">
+            <div class="signature-line"></div>
+            <p>Person Responsible for Payment</p>
+            <p style="margin-top: 10px;">Date: _______________________</p>
+          </div>
+        </div>
+
+        ${center?.bank_name ? `
+        <div style="margin-top: 30px; padding: 15px; background: #f5f5f5; border: 1px solid #ddd;">
+          <p><strong>Banking Details for Payment:</strong></p>
+          <p>Bank: ${center.bank_name}</p>
+          <p>Account Number: ${center.account_number || ''}</p>
+          <p>Branch Code: ${center.branch_code || ''}</p>
+        </div>
+        ` : ''}
+
+        <script>
+          function triggerPrint() {
+            window.print();
+          }
+          // Wait for images to load before printing
+          var images = document.images;
+          var loaded = 0;
+          var total = images.length;
+          if (total === 0) {
+            triggerPrint();
+          } else {
+            for (var i = 0; i < total; i++) {
+              if (images[i].complete) {
+                loaded++;
+                if (loaded === total) triggerPrint();
+              } else {
+                images[i].onload = function() {
+                  loaded++;
+                  if (loaded === total) triggerPrint();
+                };
+                images[i].onerror = function() {
+                  loaded++;
+                  if (loaded === total) triggerPrint();
+                };
+              }
+            }
+          }
+        </script>
+      </body>
+      </html>
+    `)
+    printWindow.document.close()
+  }
+
+  async function handlePrintFeeStatement() {
+    if (!student || !center) return
+
+    const totalDue = studentFees.reduce((sum, f) => sum + f.amount_due, 0)
+    const totalPaid = studentFees.reduce((sum, f) => sum + f.amount_paid, 0)
+    const totalBalance = studentFees.reduce((sum, f) => sum + f.balance, 0)
+    const brandColor = center.primary_color || '#1E40AF'
+
+    // Convert logo URL to base64 data URL for print window
+    let logoDataUrl = ''
+    if (center.logo_url) {
+      try {
+        const response = await fetch(center.logo_url)
+        const blob = await response.blob()
+        logoDataUrl = await new Promise((resolve) => {
+          const reader = new FileReader()
+          reader.onloadend = () => resolve(reader.result as string)
+          reader.readAsDataURL(blob)
+        })
+      } catch (e) {
+        console.error('Failed to load logo for print:', e)
+      }
+    }
+
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) return
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Fee Statement - ${student.full_name}</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
+          .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid ${brandColor}; padding-bottom: 20px; }
+          .header h1 { font-size: 24px; margin-bottom: 5px; color: ${brandColor}; }
+          .header p { color: #666; font-size: 14px; }
+          .logo { width: 70px; height: 70px; object-fit: contain; margin-bottom: 10px; }
+          .title { text-align: center; margin: 20px 0; }
+          .title h2 { font-size: 20px; text-transform: uppercase; }
+          .student-info { background: #f8f8f8; padding: 15px; margin-bottom: 20px; }
+          .student-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+          .info-item label { font-size: 12px; color: #666; }
+          .info-item p { font-weight: bold; }
+          table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+          th, td { padding: 10px; text-align: left; border: 1px solid #ddd; }
+          th { background: #f5f5f5; font-size: 12px; text-transform: uppercase; }
+          .status-paid { color: #059669; font-weight: bold; }
+          .status-partial { color: #d97706; font-weight: bold; }
+          .status-unpaid { color: #dc2626; font-weight: bold; }
+          .summary { margin-top: 20px; }
+          .summary-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }
+          .summary-row.total { border-top: 2px solid #333; font-size: 18px; font-weight: bold; }
+          .balance-due { color: #dc2626; }
+          .banking { margin-top: 30px; padding: 15px; background: #f0f9ff; border: 1px solid ${brandColor}; }
+          .banking h3 { margin-bottom: 10px; color: ${brandColor}; }
+          .footer { margin-top: 40px; text-align: center; font-size: 12px; color: #666; }
+          @media print {
+            body { padding: 20px; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          ${logoDataUrl ? `<img src="${logoDataUrl}" class="logo" alt="Logo">` : ''}
+          <h1>${center.name}</h1>
+          ${center.address ? `<p>${center.address}</p>` : ''}
+          ${center.phone ? `<p>Tel: ${center.phone}</p>` : ''}
+          ${center.email ? `<p>Email: ${center.email}</p>` : ''}
+        </div>
+
+        <div class="title">
+          <h2>Fee Statement</h2>
+          <p>Generated: ${new Date().toLocaleDateString('en-ZA', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+        </div>
+
+        <div class="student-info">
+          <div class="student-info-grid">
+            <div class="info-item">
+              <label>Student Name</label>
+              <p>${student.full_name}</p>
+            </div>
+            <div class="info-item">
+              <label>Student Number</label>
+              <p>${student.student_number || 'N/A'}</p>
+            </div>
+            <div class="info-item">
+              <label>Grade/Form</label>
+              <p>${student.grade || 'N/A'}</p>
+            </div>
+            <div class="info-item">
+              <label>Contact</label>
+              <p>${student.phone || student.parent_phone || 'N/A'}</p>
+            </div>
+          </div>
+        </div>
+
+        <h3>Fee Details</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Period</th>
+              <th>Fee Type</th>
+              <th style="text-align: right">Amount Due</th>
+              <th style="text-align: right">Amount Paid</th>
+              <th style="text-align: right">Balance</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${studentFees.length > 0 ? studentFees.map(fee => `
+              <tr>
+                <td>${new Date(fee.fee_month).toLocaleDateString('en-ZA', { year: 'numeric', month: 'long' })}</td>
+                <td style="text-transform: capitalize">${fee.fee_type}</td>
+                <td style="text-align: right">N$ ${fee.amount_due.toFixed(2)}</td>
+                <td style="text-align: right">N$ ${fee.amount_paid.toFixed(2)}</td>
+                <td style="text-align: right">N$ ${fee.balance.toFixed(2)}</td>
+                <td class="status-${fee.status}">${fee.status.toUpperCase()}</td>
+              </tr>
+            `).join('') : '<tr><td colspan="6" style="text-align: center; color: #666;">No fee records found</td></tr>'}
+          </tbody>
+        </table>
+
+        <div class="summary">
+          <div class="summary-row">
+            <span>Total Amount Due</span>
+            <span>N$ ${totalDue.toFixed(2)}</span>
+          </div>
+          <div class="summary-row">
+            <span>Total Amount Paid</span>
+            <span>N$ ${totalPaid.toFixed(2)}</span>
+          </div>
+          <div class="summary-row total">
+            <span>Outstanding Balance</span>
+            <span class="${totalBalance > 0 ? 'balance-due' : ''}">N$ ${totalBalance.toFixed(2)}</span>
+          </div>
+        </div>
+
+        ${payments.length > 0 ? `
+          <h3 style="margin-top: 30px;">Recent Payments</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Reference</th>
+                <th>Method</th>
+                <th style="text-align: right">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${payments.slice(0, 5).map(p => `
+                <tr>
+                  <td>${new Date(p.payment_date).toLocaleDateString('en-ZA')}</td>
+                  <td>${p.reference_number || '-'}</td>
+                  <td style="text-transform: capitalize">${p.payment_method?.replace('_', ' ') || '-'}</td>
+                  <td style="text-align: right">N$ ${p.amount.toFixed(2)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        ` : ''}
+
+        ${center.bank_name ? `
+          <div class="banking">
+            <h3>Banking Details for Payment</h3>
+            <p><strong>Bank:</strong> ${center.bank_name}</p>
+            <p><strong>Account Number:</strong> ${center.account_number || ''}</p>
+            <p><strong>Branch Code:</strong> ${center.branch_code || ''}</p>
+            <p><strong>Reference:</strong> ${student.student_number || student.full_name}</p>
+          </div>
+        ` : ''}
+
+        <div class="footer">
+          <p>This is a computer-generated statement and does not require a signature.</p>
+          <p>For queries, please contact us at ${center.phone || center.email || 'the center office'}.</p>
+        </div>
+
+        <script>
+          function triggerPrint() {
+            window.print();
+          }
+          // Wait for images to load before printing
+          var images = document.images;
+          var loaded = 0;
+          var total = images.length;
+          if (total === 0) {
+            triggerPrint();
+          } else {
+            for (var i = 0; i < total; i++) {
+              if (images[i].complete) {
+                loaded++;
+                if (loaded === total) triggerPrint();
+              } else {
+                images[i].onload = function() {
+                  loaded++;
+                  if (loaded === total) triggerPrint();
+                };
+                images[i].onerror = function() {
+                  loaded++;
+                  if (loaded === total) triggerPrint();
+                };
+              }
+            }
+          }
+        </script>
+      </body>
+      </html>
+    `
+
+    printWindow.document.write(printContent)
+    printWindow.document.close()
+  }
+
+  if (isLoading) {
+    return (
+      <div className="p-8">
+        <div className="animate-pulse space-y-6">
+          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+          <div className="h-64 bg-gray-200 rounded-xl"></div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!student) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-gray-500">Student not found</p>
+      </div>
+    )
+  }
+
+  const monthlyTotal = subjects.reduce((sum, s) => sum + s.monthly_fee, 0)
+  const registrationFee = center?.registration_fee || 300
+
+  const getStatusBadge = (status: string) => {
+    const styles: Record<string, { bg: string; icon: React.ReactNode }> = {
+      active: { bg: 'bg-green-100 text-green-700', icon: <CheckCircle className="w-4 h-4" /> },
+      inactive: { bg: 'bg-gray-100 text-gray-700', icon: <XCircle className="w-4 h-4" /> },
+      graduated: { bg: 'bg-blue-100 text-blue-700', icon: <CheckCircle className="w-4 h-4" /> },
+      withdrawn: { bg: 'bg-red-100 text-red-700', icon: <AlertCircle className="w-4 h-4" /> },
+    }
+    return styles[status] || styles.inactive
+  }
+
+  const statusBadge = getStatusBadge(student.status)
+
+  return (
+    <div className="p-8" ref={printRef}>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <Link
+            href="/dashboard/students"
+            className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 mb-4"
+          >
+            <ArrowLeft className="w-4 h-4 mr-1" />
+            Back to Students
+          </Link>
+          <h1 className="text-2xl font-bold text-gray-900">{student.full_name}</h1>
+          <p className="text-gray-500 mt-1">Student ID: {student.student_number || 'Not assigned'}</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" leftIcon={<Printer className="w-4 h-4" />} onClick={handlePrint}>
+            Print Form
+          </Button>
+          <Link href={`/dashboard/students/${student.id}/edit`}>
+            <Button variant="secondary" leftIcon={<Pencil className="w-4 h-4" />}>
+              Edit
+            </Button>
+          </Link>
+          <Button
+            variant="danger"
+            leftIcon={<Trash2 className="w-4 h-4" />}
+            onClick={() => setDeleteModalOpen(true)}
+          >
+            Delete
+          </Button>
+        </div>
+      </div>
+
+      {/* Status Badge and Tabs */}
+      <div className="flex items-center justify-between mb-6">
+        <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${statusBadge.bg}`}>
+          {statusBadge.icon}
+          {student.status.charAt(0).toUpperCase() + student.status.slice(1)}
+        </span>
+        <div className="flex bg-gray-100 rounded-lg p-1">
+          <button
+            onClick={() => setActiveTab('info')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === 'info'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Student Info
+          </button>
+          <button
+            onClick={() => setActiveTab('fees')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === 'fees'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Fees & Payments
+          </button>
+        </div>
+      </div>
+
+      {activeTab === 'info' ? (
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Info */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Personal Information */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <User className="w-5 h-5 text-gray-400" />
+              Personal Information
+            </h2>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-500">Full Name</p>
+                <p className="font-medium">{student.full_name}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Gender</p>
+                <p className="font-medium capitalize">{student.gender || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Date of Birth</p>
+                <p className="font-medium">
+                  {student.date_of_birth
+                    ? new Date(student.date_of_birth).toLocaleDateString()
+                    : '-'}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">ID Number</p>
+                <p className="font-medium">{student.id_number || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Grade/Form</p>
+                <p className="font-medium">{student.grade || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">School</p>
+                <p className="font-medium">{student.school_name || '-'}</p>
+              </div>
+              {student.health_conditions && (
+                <div className="col-span-2">
+                  <p className="text-sm text-gray-500">Health Conditions</p>
+                  <p className="font-medium">{student.health_conditions}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Contact Information */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <Phone className="w-5 h-5 text-gray-400" />
+              Contact Information
+            </h2>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-500">Phone</p>
+                <p className="font-medium">{student.phone || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Email</p>
+                <p className="font-medium">{student.email || '-'}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Parent/Guardian */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Parent/Guardian</h2>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-500">Name</p>
+                <p className="font-medium">{student.parent_name || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Relationship</p>
+                <p className="font-medium capitalize">{student.relationship || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Phone</p>
+                <p className="font-medium">{student.parent_phone || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Email</p>
+                <p className="font-medium">{student.parent_email || '-'}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Person Responsible for Payment */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-gray-400" />
+              Person Responsible for Payment
+            </h2>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-500">Name</p>
+                <p className="font-medium">{student.payer_name || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">ID Number</p>
+                <p className="font-medium">{student.payer_id_number || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Phone</p>
+                <p className="font-medium">{student.payer_phone || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Relationship</p>
+                <p className="font-medium capitalize">{student.payer_relationship || '-'}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-6">
+          {/* Enrolled Subjects */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-gray-400" />
+              Enrolled Subjects
+            </h2>
+            {subjects.length > 0 ? (
+              <div className="space-y-3">
+                {subjects.map((subject) => (
+                  <div key={subject.id} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
+                    <span className="font-medium">{subject.name}</span>
+                    <span className="text-gray-600">N${subject.monthly_fee.toFixed(2)}</span>
+                  </div>
+                ))}
+                <div className="pt-3 border-t border-gray-200">
+                  <div className="flex justify-between font-semibold">
+                    <span>Monthly Total</span>
+                    <span>N${monthlyTotal.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-gray-500 text-sm">No subjects enrolled</p>
+            )}
+          </div>
+
+          {/* Financial Summary */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <FileText className="w-5 h-5 text-gray-400" />
+              Financial Summary
+            </h2>
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Registration Fee</span>
+                <span className={student.registration_fee_paid ? 'text-green-600' : 'text-amber-600'}>
+                  N${registrationFee.toFixed(2)}
+                  {student.registration_fee_paid && ' (Paid)'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Monthly Fee</span>
+                <span>N${monthlyTotal.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Yearly Total (9 months)</span>
+                <span>N${(monthlyTotal * 9 + registrationFee).toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div className="mt-4 pt-4 border-t">
+              <Link href={`/dashboard/payments?student=${student.id}`}>
+                <Button variant="outline" className="w-full">
+                  View Payment History
+                </Button>
+              </Link>
+            </div>
+          </div>
+
+          {/* Registration Info */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Registration Info</h2>
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Registered</span>
+                <span>{new Date(student.registration_date).toLocaleDateString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Terms Accepted</span>
+                <span className={student.terms_accepted ? 'text-green-600' : 'text-red-600'}>
+                  {student.terms_accepted ? 'Yes' : 'No'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      ) : (
+      /* Fees & Payments Tab */
+      <div className="space-y-6">
+        {/* Actions Bar */}
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900">Fees & Payment History</h2>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              leftIcon={<CalendarPlus className="w-4 h-4" />}
+              onClick={() => setShowGenerateFeesModal(true)}
+            >
+              Generate Fees
+            </Button>
+            <Button
+              variant="outline"
+              leftIcon={<Receipt className="w-4 h-4" />}
+              onClick={handlePrintFeeStatement}
+            >
+              Print Statement
+            </Button>
+            <Link href={`/dashboard/payments/new?student=${student.id}`}>
+              <Button leftIcon={<Plus className="w-4 h-4" />}>
+                Record Payment
+              </Button>
+            </Link>
+          </div>
+        </div>
+
+        {/* Balance Summary */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <p className="text-sm text-gray-500 mb-1">Total Due</p>
+            <p className="text-2xl font-bold text-gray-900">
+              N$ {studentFees.reduce((sum, f) => sum + f.amount_due, 0).toFixed(2)}
+            </p>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <p className="text-sm text-gray-500 mb-1">Total Paid</p>
+            <p className="text-2xl font-bold text-green-600">
+              N$ {studentFees.reduce((sum, f) => sum + f.amount_paid, 0).toFixed(2)}
+            </p>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <p className="text-sm text-gray-500 mb-1">Outstanding Balance</p>
+            <p className={`text-2xl font-bold ${studentFees.reduce((sum, f) => sum + f.balance, 0) > 0 ? 'text-red-600' : 'text-gray-900'}`}>
+              N$ {studentFees.reduce((sum, f) => sum + f.balance, 0).toFixed(2)}
+            </p>
+          </div>
+        </div>
+
+        {/* Fee Records */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100">
+            <h3 className="font-semibold text-gray-900">Fee Records</h3>
+          </div>
+          {studentFees.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-100">
+                  <tr>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Period</th>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                    <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Amount Due</th>
+                    <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Paid</th>
+                    <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {studentFees.map((fee) => (
+                    <tr key={fee.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 text-gray-900">
+                        {new Date(fee.fee_month).toLocaleDateString('en-ZA', { year: 'numeric', month: 'long' })}
+                      </td>
+                      <td className="px-6 py-4 text-gray-900 capitalize">{fee.fee_type}</td>
+                      <td className="px-6 py-4 text-right text-gray-900">N$ {fee.amount_due.toFixed(2)}</td>
+                      <td className="px-6 py-4 text-right text-green-600">N$ {fee.amount_paid.toFixed(2)}</td>
+                      <td className="px-6 py-4 text-right font-medium text-red-600">N$ {fee.balance.toFixed(2)}</td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                          fee.status === 'paid' ? 'bg-green-100 text-green-700' :
+                          fee.status === 'partial' ? 'bg-amber-100 text-amber-700' :
+                          'bg-red-100 text-red-700'
+                        }`}>
+                          {fee.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="p-8 text-center">
+              <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500">No fee records found</p>
+            </div>
+          )}
+        </div>
+
+        {/* Recent Payments */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 className="font-semibold text-gray-900">Recent Payments</h3>
+            <Link href={`/dashboard/payments?student=${student.id}`} className="text-sm text-blue-600 hover:text-blue-700">
+              View All
+            </Link>
+          </div>
+          {payments.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-100">
+                  <tr>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Reference</th>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
+                    <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {payments.map((payment) => (
+                    <tr key={payment.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 text-gray-900">
+                        {new Date(payment.payment_date).toLocaleDateString('en-ZA')}
+                      </td>
+                      <td className="px-6 py-4 text-gray-500">{payment.reference_number || '-'}</td>
+                      <td className="px-6 py-4 text-gray-900 capitalize">{payment.payment_method?.replace('_', ' ') || '-'}</td>
+                      <td className="px-6 py-4 text-right font-semibold text-green-600">N$ {payment.amount.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="p-8 text-center">
+              <CreditCard className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500">No payments recorded yet</p>
+              <Link href={`/dashboard/payments/new?student=${student.id}`}>
+                <Button variant="outline" className="mt-4" leftIcon={<Plus className="w-4 h-4" />}>
+                  Record First Payment
+                </Button>
+              </Link>
+            </div>
+          )}
+        </div>
+      </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={handleDelete}
+        title="Delete Student"
+        message={`Are you sure you want to delete "${student.full_name}"? This action cannot be undone and will remove all associated records.`}
+        confirmText="Delete"
+        isLoading={isDeleting}
+      />
+
+      {/* Generate Fees Modal */}
+      {showGenerateFeesModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-gray-100">
+              <h2 className="text-lg font-semibold text-gray-900">Generate Monthly Fees</h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Select the months where payment is expected for {student.full_name}
+              </p>
+            </div>
+
+            <div className="p-6 space-y-4 overflow-y-auto flex-1">
+              {subjects.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-amber-600 mb-2">No subjects enrolled</p>
+                  <p className="text-sm text-gray-500">
+                    Please enroll the student in subjects before generating fees.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="bg-blue-50 rounded-lg p-4">
+                    <p className="text-sm text-gray-700">
+                      <strong>Enrolled Subjects:</strong> {subjects.length}
+                    </p>
+                    <p className="text-sm text-gray-700">
+                      <strong>Monthly Fee:</strong> N$ {subjects.reduce((sum, s) => sum + s.monthly_fee, 0).toFixed(2)}
+                    </p>
+                  </div>
+
+                  {/* Year selector */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Select Year
+                    </label>
+                    <select
+                      value={selectedYear}
+                      onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none"
+                    >
+                      {[selectedYear - 1, selectedYear, selectedYear + 1].map(year => (
+                        <option key={year} value={year}>{year}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Month selection */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Select Months
+                      </label>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={selectAllMonths}
+                          className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                        >
+                          Select All
+                        </button>
+                        <span className="text-gray-300">|</span>
+                        <button
+                          type="button"
+                          onClick={clearAllMonths}
+                          className="text-xs text-gray-500 hover:text-gray-700 font-medium"
+                        >
+                          Clear All
+                        </button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      {monthNames.map((month, index) => (
+                        <label
+                          key={month}
+                          className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors ${
+                            selectedMonths.includes(index)
+                              ? 'border-blue-500 bg-blue-50 text-blue-700'
+                              : 'border-gray-200 hover:bg-gray-50'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedMonths.includes(index)}
+                            onChange={() => toggleMonth(index)}
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <span className="text-sm font-medium">{month.slice(0, 3)}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Summary */}
+                  {selectedMonths.length > 0 && (
+                    <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                      <p className="text-sm text-green-800">
+                        <strong>{selectedMonths.length} month{selectedMonths.length > 1 ? 's' : ''}</strong> selected
+                      </p>
+                      <p className="text-sm text-green-700">
+                        Total to generate: <strong>N$ {(subjects.reduce((sum, s) => sum + s.monthly_fee, 0) * selectedMonths.length).toFixed(2)}</strong>
+                      </p>
+                    </div>
+                  )}
+
+                  <p className="text-xs text-gray-500">
+                    Fee records will only be created for months that don't already have fees.
+                  </p>
+                </>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-gray-100 flex gap-3 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowGenerateFeesModal(false)
+                  setSelectedMonths([])
+                }}
+              >
+                Cancel
+              </Button>
+              {subjects.length > 0 && (
+                <Button
+                  onClick={handleGenerateFees}
+                  disabled={isGeneratingFees || selectedMonths.length === 0}
+                  leftIcon={
+                    isGeneratingFees ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <CalendarPlus className="w-4 h-4" />
+                    )
+                  }
+                >
+                  {isGeneratingFees ? 'Generating...' : `Generate ${selectedMonths.length} Fee${selectedMonths.length !== 1 ? 's' : ''}`}
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
