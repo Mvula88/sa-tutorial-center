@@ -234,6 +234,7 @@ export function Sidebar() {
 // Super Admin Sidebar
 const adminNavItems: NavItem[] = [
   { label: 'Dashboard', href: '/admin', icon: <LayoutDashboard className="w-5 h-5" /> },
+  { label: 'Clients', href: '/admin/clients', icon: <FileText className="w-5 h-5" /> },
   { label: 'Tutorial Centers', href: '/admin/centers', icon: <Building2 className="w-5 h-5" /> },
   { label: 'All Users', href: '/admin/users', icon: <Users className="w-5 h-5" /> },
   { label: 'Reports', href: '/admin/reports', icon: <FileText className="w-5 h-5" /> },
