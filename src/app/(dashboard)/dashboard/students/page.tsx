@@ -56,6 +56,8 @@ export default function StudentsPage() {
   const [gradeFilter, setGradeFilter] = useState('')
   const [subjectFilter, setSubjectFilter] = useState('')
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('')
+  const [paymentMonthFilter, setPaymentMonthFilter] = useState('')
+  const [paymentYearFilter, setPaymentYearFilter] = useState(new Date().getFullYear().toString())
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
@@ -72,7 +74,7 @@ export default function StudentsPage() {
 
   useEffect(() => {
     fetchStudents()
-  }, [user?.center_id, currentPage, statusFilter, genderFilter, gradeFilter, subjectFilter, paymentStatusFilter])
+  }, [user?.center_id, currentPage, statusFilter, genderFilter, gradeFilter, subjectFilter, paymentStatusFilter, paymentMonthFilter, paymentYearFilter])
 
   async function fetchSubjects() {
     if (!user?.center_id) return
@@ -126,14 +128,22 @@ export default function StudentsPage() {
 
       // If filtering by payment status, get student IDs with outstanding/paid fees
       let studentIdsFromPayment: string[] | null = null
-      if (paymentStatusFilter) {
-        const { data: studentFees } = await supabase
+      if (paymentStatusFilter || paymentMonthFilter) {
+        let feeQuery = supabase
           .from('student_fees')
-          .select('student_id, amount_due, amount_paid')
+          .select('student_id, amount_due, amount_paid, fee_month')
           .eq('center_id', user.center_id)
 
+        // Filter by specific month if selected
+        if (paymentMonthFilter && paymentYearFilter) {
+          const feeMonth = `${paymentYearFilter}-${paymentMonthFilter.padStart(2, '0')}-01`
+          feeQuery = feeQuery.eq('fee_month', feeMonth)
+        }
+
+        const { data: studentFees } = await feeQuery
+
         if (studentFees) {
-          interface FeeData { student_id: string; amount_due: number; amount_paid: number }
+          interface FeeData { student_id: string; amount_due: number; amount_paid: number; fee_month: string }
           const typedFees = studentFees as FeeData[]
           const studentPaymentMap = new Map<string, { total: number; paid: number }>()
           typedFees.forEach(fee => {
@@ -145,16 +155,24 @@ export default function StudentsPage() {
           })
 
           studentIdsFromPayment = []
-          studentPaymentMap.forEach((value, studentId) => {
-            const outstanding = value.total - value.paid
-            if (paymentStatusFilter === 'paid' && outstanding <= 0) {
+
+          if (paymentStatusFilter) {
+            studentPaymentMap.forEach((value, studentId) => {
+              const outstanding = value.total - value.paid
+              if (paymentStatusFilter === 'paid' && outstanding <= 0 && value.total > 0) {
+                studentIdsFromPayment!.push(studentId)
+              } else if (paymentStatusFilter === 'unpaid' && outstanding > 0 && value.paid === 0) {
+                studentIdsFromPayment!.push(studentId)
+              } else if (paymentStatusFilter === 'partial' && outstanding > 0 && value.paid > 0) {
+                studentIdsFromPayment!.push(studentId)
+              }
+            })
+          } else if (paymentMonthFilter) {
+            // If only month filter without status, show students who have fees for that month
+            studentPaymentMap.forEach((value, studentId) => {
               studentIdsFromPayment!.push(studentId)
-            } else if (paymentStatusFilter === 'unpaid' && outstanding > 0 && value.paid === 0) {
-              studentIdsFromPayment!.push(studentId)
-            } else if (paymentStatusFilter === 'partial' && outstanding > 0 && value.paid > 0) {
-              studentIdsFromPayment!.push(studentId)
-            }
-          })
+            })
+          }
         }
       }
 
@@ -328,16 +346,16 @@ export default function StudentsPage() {
               <button
                 onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
                 className={`flex items-center gap-2 px-3 py-2 border rounded-lg transition-colors ${
-                  showAdvancedFilters || gradeFilter || subjectFilter || paymentStatusFilter
+                  showAdvancedFilters || gradeFilter || subjectFilter || paymentStatusFilter || paymentMonthFilter
                     ? 'border-blue-500 bg-blue-50 text-blue-600'
                     : 'border-gray-300 text-gray-600 hover:bg-gray-50'
                 }`}
               >
                 <SlidersHorizontal className="w-4 h-4" />
                 <span className="text-sm font-medium">More Filters</span>
-                {(gradeFilter || subjectFilter || paymentStatusFilter) && (
+                {(gradeFilter || subjectFilter || paymentStatusFilter || paymentMonthFilter) && (
                   <span className="w-5 h-5 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center">
-                    {[gradeFilter, subjectFilter, paymentStatusFilter].filter(Boolean).length}
+                    {[gradeFilter, subjectFilter, paymentStatusFilter, paymentMonthFilter].filter(Boolean).length}
                   </span>
                 )}
               </button>
@@ -367,26 +385,66 @@ export default function StudentsPage() {
                 }}
                 className="w-44"
               />
-              <Select
-                options={[
-                  { value: 'paid', label: 'Fully Paid' },
-                  { value: 'partial', label: 'Partial Payment' },
-                  { value: 'unpaid', label: 'Unpaid' },
-                ]}
-                placeholder="Payment Status"
-                value={paymentStatusFilter}
-                onChange={(e) => {
-                  setPaymentStatusFilter(e.target.value)
-                  setCurrentPage(1)
-                }}
-                className="w-44"
-              />
-              {(gradeFilter || subjectFilter || paymentStatusFilter) && (
+              <div className="flex items-center gap-2 px-3 py-1 bg-gray-50 rounded-lg border border-gray-200">
+                <span className="text-xs text-gray-500 font-medium">Payment:</span>
+                <Select
+                  options={[
+                    { value: '1', label: 'Jan' },
+                    { value: '2', label: 'Feb' },
+                    { value: '3', label: 'Mar' },
+                    { value: '4', label: 'Apr' },
+                    { value: '5', label: 'May' },
+                    { value: '6', label: 'Jun' },
+                    { value: '7', label: 'Jul' },
+                    { value: '8', label: 'Aug' },
+                    { value: '9', label: 'Sep' },
+                    { value: '10', label: 'Oct' },
+                    { value: '11', label: 'Nov' },
+                    { value: '12', label: 'Dec' },
+                  ]}
+                  placeholder="Month"
+                  value={paymentMonthFilter}
+                  onChange={(e) => {
+                    setPaymentMonthFilter(e.target.value)
+                    setCurrentPage(1)
+                  }}
+                  className="w-24"
+                />
+                <Select
+                  options={[
+                    { value: (new Date().getFullYear() - 1).toString(), label: (new Date().getFullYear() - 1).toString() },
+                    { value: new Date().getFullYear().toString(), label: new Date().getFullYear().toString() },
+                    { value: (new Date().getFullYear() + 1).toString(), label: (new Date().getFullYear() + 1).toString() },
+                  ]}
+                  value={paymentYearFilter}
+                  onChange={(e) => {
+                    setPaymentYearFilter(e.target.value)
+                    setCurrentPage(1)
+                  }}
+                  className="w-24"
+                />
+                <Select
+                  options={[
+                    { value: 'paid', label: 'Paid' },
+                    { value: 'partial', label: 'Partial' },
+                    { value: 'unpaid', label: 'Unpaid' },
+                  ]}
+                  placeholder="Status"
+                  value={paymentStatusFilter}
+                  onChange={(e) => {
+                    setPaymentStatusFilter(e.target.value)
+                    setCurrentPage(1)
+                  }}
+                  className="w-28"
+                />
+              </div>
+              {(gradeFilter || subjectFilter || paymentStatusFilter || paymentMonthFilter) && (
                 <button
                   onClick={() => {
                     setGradeFilter('')
                     setSubjectFilter('')
                     setPaymentStatusFilter('')
+                    setPaymentMonthFilter('')
                     setCurrentPage(1)
                   }}
                   className="flex items-center gap-1 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -399,7 +457,7 @@ export default function StudentsPage() {
           )}
 
           {/* Active filters display */}
-          {(statusFilter || genderFilter || gradeFilter || subjectFilter || paymentStatusFilter) && (
+          {(statusFilter || genderFilter || gradeFilter || subjectFilter || paymentStatusFilter || paymentMonthFilter) && (
             <div className="flex flex-wrap gap-2 pt-2">
               {statusFilter && (
                 <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
@@ -429,6 +487,14 @@ export default function StudentsPage() {
                 <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
                   Subject: {subjects.find(s => s.id === subjectFilter)?.name}
                   <button onClick={() => { setSubjectFilter(''); setCurrentPage(1) }} className="hover:text-blue-900">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              {paymentMonthFilter && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 text-xs rounded-full">
+                  Month: {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][parseInt(paymentMonthFilter) - 1]} {paymentYearFilter}
+                  <button onClick={() => { setPaymentMonthFilter(''); setCurrentPage(1) }} className="hover:text-amber-900">
                     <X className="w-3 h-3" />
                   </button>
                 </span>

@@ -354,15 +354,6 @@ export default function NewStudentPage() {
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-6 pb-2 border-b">Student Information</h2>
 
-            {/* Photo Upload Placeholder */}
-            <div className="flex justify-center mb-6">
-              <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-400 hover:border-blue-400 hover:text-blue-500 cursor-pointer transition-colors">
-                <User className="w-8 h-8 mb-2" />
-                <span className="text-xs">Student Photo</span>
-                <span className="text-xs">(Optional)</span>
-              </div>
-            </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 label="Surname"

@@ -54,7 +54,8 @@ interface Subject {
 }
 
 export default function SubjectsPage() {
-  const { user } = useAuthStore()
+  const { user, isCenterAdmin } = useAuthStore()
+  const canEdit = isCenterAdmin() // Only center admin can edit subjects and fees
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isInitializing, setIsInitializing] = useState(false)
@@ -360,15 +361,17 @@ export default function SubjectsPage() {
             {activeCount} of {subjects.length} subjects active
           </p>
         </div>
-        <Button
-          leftIcon={<Plus className="w-4 h-4" />}
-          onClick={() => {
-            resetForm()
-            setShowModal(true)
-          }}
-        >
-          Add Custom Subject
-        </Button>
+        {canEdit && (
+          <Button
+            leftIcon={<Plus className="w-4 h-4" />}
+            onClick={() => {
+              resetForm()
+              setShowModal(true)
+            }}
+          >
+            Add Custom Subject
+          </Button>
+        )}
       </div>
 
       {/* Search */}
@@ -414,22 +417,30 @@ export default function SubjectsPage() {
                     }`}
                   >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <button
-                        onClick={() => handleToggleActive(subject)}
-                        disabled={togglingId === subject.id}
-                        className={`flex-shrink-0 w-10 h-6 rounded-full transition-colors relative ${
-                          subject.is_active ? 'bg-green-500' : 'bg-gray-300'
-                        }`}
-                      >
+                      {canEdit ? (
+                        <button
+                          onClick={() => handleToggleActive(subject)}
+                          disabled={togglingId === subject.id}
+                          className={`flex-shrink-0 w-10 h-6 rounded-full transition-colors relative ${
+                            subject.is_active ? 'bg-green-500' : 'bg-gray-300'
+                          }`}
+                        >
+                          <span
+                            className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                              subject.is_active ? 'left-5' : 'left-1'
+                            }`}
+                          />
+                          {togglingId === subject.id && (
+                            <Loader2 className="w-4 h-4 animate-spin absolute top-1 left-3 text-gray-400" />
+                          )}
+                        </button>
+                      ) : (
                         <span
-                          className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                            subject.is_active ? 'left-5' : 'left-1'
+                          className={`flex-shrink-0 w-3 h-3 rounded-full ${
+                            subject.is_active ? 'bg-green-500' : 'bg-gray-300'
                           }`}
                         />
-                        {togglingId === subject.id && (
-                          <Loader2 className="w-4 h-4 animate-spin absolute top-1 left-3 text-gray-400" />
-                        )}
-                      </button>
+                      )}
                       <div className="min-w-0">
                         <p className="font-medium text-gray-900 truncate">
                           {subject.name}
@@ -439,15 +450,17 @@ export default function SubjectsPage() {
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 ml-2">
-                      <button
-                        onClick={() => openEdit(subject)}
-                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                        title="Edit fee and details"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                    </div>
+                    {canEdit && (
+                      <div className="flex items-center gap-1 ml-2">
+                        <button
+                          onClick={() => openEdit(subject)}
+                          className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                          title="Edit fee and details"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -470,18 +483,20 @@ export default function SubjectsPage() {
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
                 <BookOpen className="w-10 h-10 text-gray-300 mx-auto mb-3" />
                 <p className="text-gray-500 mb-4">
-                  No custom subjects yet. Add subjects specific to your center.
+                  No custom subjects yet.{canEdit && ' Add subjects specific to your center.'}
                 </p>
-                <Button
-                  variant="secondary"
-                  leftIcon={<Plus className="w-4 h-4" />}
-                  onClick={() => {
-                    resetForm()
-                    setShowModal(true)
-                  }}
-                >
-                  Add Custom Subject
-                </Button>
+                {canEdit && (
+                  <Button
+                    variant="secondary"
+                    leftIcon={<Plus className="w-4 h-4" />}
+                    onClick={() => {
+                      resetForm()
+                      setShowModal(true)
+                    }}
+                  >
+                    Add Custom Subject
+                  </Button>
+                )}
               </div>
             ) : (
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -494,22 +509,30 @@ export default function SubjectsPage() {
                       }`}
                     >
                       <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <button
-                          onClick={() => handleToggleActive(subject)}
-                          disabled={togglingId === subject.id}
-                          className={`flex-shrink-0 w-10 h-6 rounded-full transition-colors relative ${
-                            subject.is_active ? 'bg-green-500' : 'bg-gray-300'
-                          }`}
-                        >
+                        {canEdit ? (
+                          <button
+                            onClick={() => handleToggleActive(subject)}
+                            disabled={togglingId === subject.id}
+                            className={`flex-shrink-0 w-10 h-6 rounded-full transition-colors relative ${
+                              subject.is_active ? 'bg-green-500' : 'bg-gray-300'
+                            }`}
+                          >
+                            <span
+                              className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                                subject.is_active ? 'left-5' : 'left-1'
+                              }`}
+                            />
+                            {togglingId === subject.id && (
+                              <Loader2 className="w-4 h-4 animate-spin absolute top-1 left-3 text-gray-400" />
+                            )}
+                          </button>
+                        ) : (
                           <span
-                            className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                              subject.is_active ? 'left-5' : 'left-1'
+                            className={`flex-shrink-0 w-3 h-3 rounded-full ${
+                              subject.is_active ? 'bg-green-500' : 'bg-gray-300'
                             }`}
                           />
-                          {togglingId === subject.id && (
-                            <Loader2 className="w-4 h-4 animate-spin absolute top-1 left-3 text-gray-400" />
-                          )}
-                        </button>
+                        )}
                         <div className="min-w-0">
                           <p className="font-medium text-gray-900 truncate">
                             {subject.name}
@@ -519,23 +542,25 @@ export default function SubjectsPage() {
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1 ml-2">
-                        <button
-                          onClick={() => openEdit(subject)}
-                          className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            setSubjectToDelete(subject)
-                            setDeleteModalOpen(true)
-                          }}
-                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+                      {canEdit && (
+                        <div className="flex items-center gap-1 ml-2">
+                          <button
+                            onClick={() => openEdit(subject)}
+                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSubjectToDelete(subject)
+                              setDeleteModalOpen(true)
+                            }}
+                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

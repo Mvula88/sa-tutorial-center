@@ -41,7 +41,8 @@ interface HostelStats {
 }
 
 export default function HostelPage() {
-  const { user, canAccessModule } = useAuthStore()
+  const { user, canAccessModule, isCenterAdmin } = useAuthStore()
+  const canEdit = isCenterAdmin() // Only center admin can manage blocks/rooms
   const [blocks, setBlocks] = useState<Block[]>([])
   const [stats, setStats] = useState<HostelStats | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -195,11 +196,13 @@ export default function HostelPage() {
                 All Rooms
               </Button>
             </Link>
-            <Link href="/dashboard/hostel/blocks/new" className="w-full sm:w-auto">
-              <Button leftIcon={<Plus className="w-4 h-4" />} className="w-full sm:w-auto">
-                Add Block
-              </Button>
-            </Link>
+            {canEdit && (
+              <Link href="/dashboard/hostel/blocks/new" className="w-full sm:w-auto">
+                <Button leftIcon={<Plus className="w-4 h-4" />} className="w-full sm:w-auto">
+                  Add Block
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -282,12 +285,14 @@ export default function HostelPage() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
           <Building className="w-12 h-12 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No hostel blocks yet</h3>
-          <p className="text-gray-500 mb-4">Get started by adding your first hostel block</p>
-          <Link href="/dashboard/hostel/blocks/new">
-            <Button leftIcon={<Plus className="w-4 h-4" />}>
-              Add Block
-            </Button>
-          </Link>
+          <p className="text-gray-500 mb-4">{canEdit ? 'Get started by adding your first hostel block' : 'No hostel blocks available yet'}</p>
+          {canEdit && (
+            <Link href="/dashboard/hostel/blocks/new">
+              <Button leftIcon={<Plus className="w-4 h-4" />}>
+                Add Block
+              </Button>
+            </Link>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -364,22 +369,24 @@ export default function HostelPage() {
                       View
                     </Button>
                   </Link>
-                  <div className="flex gap-2">
-                    <Link href={`/dashboard/hostel/blocks/${block.id}/edit`}>
-                      <button className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors">
-                        <Pencil className="w-4 h-4" />
+                  {canEdit && (
+                    <div className="flex gap-2">
+                      <Link href={`/dashboard/hostel/blocks/${block.id}/edit`}>
+                        <button className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors">
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                      </Link>
+                      <button
+                        onClick={() => {
+                          setBlockToDelete(block)
+                          setDeleteModalOpen(true)
+                        }}
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
                       </button>
-                    </Link>
-                    <button
-                      onClick={() => {
-                        setBlockToDelete(block)
-                        setDeleteModalOpen(true)
-                      }}
-                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )

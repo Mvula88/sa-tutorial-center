@@ -42,7 +42,8 @@ interface Block {
 const ITEMS_PER_PAGE = 12
 
 export default function RoomsPage() {
-  const { user } = useAuthStore()
+  const { user, isCenterAdmin } = useAuthStore()
+  const canEdit = isCenterAdmin() // Only center admin can manage rooms
   const [rooms, setRooms] = useState<Room[]>([])
   const [blocks, setBlocks] = useState<Block[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -200,13 +201,15 @@ export default function RoomsPage() {
             Back to Hostel
           </Link>
           <h1 className="text-2xl font-bold text-gray-900">All Rooms</h1>
-          <p className="text-gray-500 mt-1">Manage hostel rooms across all blocks</p>
+          <p className="text-gray-500 mt-1">{canEdit ? 'Manage hostel rooms across all blocks' : 'View hostel rooms across all blocks'}</p>
         </div>
-        <Link href="/dashboard/hostel/rooms/new">
-          <Button leftIcon={<Plus className="w-4 h-4" />}>
-            Add Room
-          </Button>
-        </Link>
+        {canEdit && (
+          <Link href="/dashboard/hostel/rooms/new">
+            <Button leftIcon={<Plus className="w-4 h-4" />}>
+              Add Room
+            </Button>
+          </Link>
+        )}
       </div>
 
       {/* Filters */}
@@ -268,9 +271,9 @@ export default function RoomsPage() {
           <p className="text-gray-500 mb-4">
             {searchQuery || blockFilter || statusFilter
               ? 'Try adjusting your filters'
-              : 'Get started by adding your first room'}
+              : canEdit ? 'Get started by adding your first room' : 'No rooms available yet'}
           </p>
-          {!searchQuery && !blockFilter && !statusFilter && (
+          {!searchQuery && !blockFilter && !statusFilter && canEdit && (
             <Link href="/dashboard/hostel/rooms/new">
               <Button leftIcon={<Plus className="w-4 h-4" />}>
                 Add Room
@@ -324,22 +327,24 @@ export default function RoomsPage() {
                     )}
                   </div>
 
-                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
-                    <Link href={`/dashboard/hostel/rooms/${room.id}/edit`}>
-                      <button className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors">
-                        <Pencil className="w-4 h-4" />
+                  {canEdit && (
+                    <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
+                      <Link href={`/dashboard/hostel/rooms/${room.id}/edit`}>
+                        <button className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors">
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                      </Link>
+                      <button
+                        onClick={() => {
+                          setRoomToDelete(room)
+                          setDeleteModalOpen(true)
+                        }}
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
                       </button>
-                    </Link>
-                    <button
-                      onClick={() => {
-                        setRoomToDelete(room)
-                        setDeleteModalOpen(true)
-                      }}
-                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                    </div>
+                  )}
                 </div>
               )
             })}

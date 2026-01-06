@@ -127,6 +127,11 @@ export default function StudentDetailPage() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [selectedMonths, setSelectedMonths] = useState<number[]>([])
 
+  // Fee deletion state
+  const [deleteFeeModalOpen, setDeleteFeeModalOpen] = useState(false)
+  const [feeToDelete, setFeeToDelete] = useState<StudentFee | null>(null)
+  const [isDeletingFee, setIsDeletingFee] = useState(false)
+
   // Month names for display
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -362,6 +367,38 @@ export default function StudentDetailPage() {
       toast.error('Failed to generate fees')
     } finally {
       setIsGeneratingFees(false)
+    }
+  }
+
+  async function handleDeleteFee() {
+    if (!feeToDelete) return
+
+    setIsDeletingFee(true)
+    const supabase = createClient()
+
+    try {
+      // Check if the fee has any payments
+      if (feeToDelete.amount_paid > 0) {
+        toast.error('Cannot delete a fee that has payments. Please reverse payments first.')
+        return
+      }
+
+      const { error } = await supabase
+        .from('student_fees')
+        .delete()
+        .eq('id', feeToDelete.id)
+
+      if (error) throw error
+
+      toast.success('Fee record deleted successfully')
+      setDeleteFeeModalOpen(false)
+      setFeeToDelete(null)
+      fetchStudentFees() // Refresh the fees list
+    } catch (error) {
+      console.error('Error deleting fee:', error)
+      toast.error('Failed to delete fee record')
+    } finally {
+      setIsDeletingFee(false)
     }
   }
 
@@ -1153,6 +1190,7 @@ export default function StudentDetailPage() {
                     <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Paid</th>
                     <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
                     <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="text-center px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -1173,6 +1211,23 @@ export default function StudentDetailPage() {
                         }`}>
                           {fee.status}
                         </span>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <button
+                          onClick={() => {
+                            setFeeToDelete(fee)
+                            setDeleteFeeModalOpen(true)
+                          }}
+                          disabled={fee.amount_paid > 0}
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            fee.amount_paid > 0
+                              ? 'text-gray-300 cursor-not-allowed'
+                              : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
+                          }`}
+                          title={fee.amount_paid > 0 ? 'Cannot delete fee with payments' : 'Delete fee'}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -1386,6 +1441,20 @@ export default function StudentDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Delete Fee Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteFeeModalOpen}
+        onClose={() => {
+          setDeleteFeeModalOpen(false)
+          setFeeToDelete(null)
+        }}
+        onConfirm={handleDeleteFee}
+        title="Delete Fee Record"
+        message={`Are you sure you want to delete the ${feeToDelete?.fee_type || ''} fee for ${feeToDelete ? new Date(feeToDelete.fee_month).toLocaleDateString('en-ZA', { year: 'numeric', month: 'long' }) : ''}? This action cannot be undone.`}
+        confirmText="Delete"
+        isLoading={isDeletingFee}
+      />
     </div>
   )
 }
