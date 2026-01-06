@@ -51,7 +51,7 @@ export default function AdminLayout({
           {children}
         </div>
         <footer className="py-4 px-6 text-center text-xs text-gray-500 border-t border-gray-200 bg-white">
-          2026 &copy; designed by Digital Wave Technologies | 081 321 4813 | 081 440 1522
+          &copy; {new Date().getFullYear()} Digital Wave Technologies School Management System. All rights reserved.
         </footer>
       </main>
     </div>

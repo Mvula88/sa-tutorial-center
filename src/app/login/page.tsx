@@ -83,19 +83,29 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center p-4 relative">
+      {/* Namibian Background Image with Overlay */}
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: `url('https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?q=80&w=2071&auto=format&fit=crop')`,
+        }}
+      />
+      {/* Dark overlay for readability */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/70 via-blue-800/60 to-amber-900/50" />
+
+      <div className="w-full max-w-md relative z-10">
         {/* Logo/Brand */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-600 text-white mb-4">
-            <GraduationCap className="w-8 h-8" />
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white mb-4">
+            <GraduationCap className="w-10 h-10" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Tutorial Center SaaS</h1>
-          <p className="text-gray-600 mt-1">Sign in to your account</p>
+          <h1 className="text-3xl font-bold text-white">School Management</h1>
+          <p className="text-blue-100 mt-2 text-lg">Sign in to your account</p>
         </div>
 
         {/* Login Form */}
-        <div className="bg-white rounded-2xl shadow-xl p-8">
+        <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-8">
           <form onSubmit={handleLogin} className="space-y-6">
             {/* Email */}
             <div>
@@ -177,8 +187,8 @@ export default function LoginPage() {
         </div>
 
         {/* Bottom text */}
-        <p className="text-center text-xs text-gray-500 mt-6">
-          &copy; {new Date().getFullYear()} Tutorial Center SaaS. All rights reserved.
+        <p className="text-center text-xs text-white/70 mt-6">
+          &copy; {new Date().getFullYear()} Digital Wave Technologies School Management System. All rights reserved.
         </p>
       </div>
     </div>
