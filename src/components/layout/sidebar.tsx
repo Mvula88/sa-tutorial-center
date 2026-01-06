@@ -13,13 +13,13 @@ import {
   FileText,
   Settings,
   LogOut,
-  ChevronLeft,
-  ChevronRight,
+  Menu,
+  X,
   Home,
   Bus,
   Library,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 
 interface NavItem {
@@ -27,7 +27,7 @@ interface NavItem {
   href: string
   icon: React.ReactNode
   module?: 'hostel' | 'transport' | 'library' | 'sms'
-  adminOnly?: boolean // Only visible to center_admin, not center_staff
+  adminOnly?: boolean
 }
 
 const centerNavItems: NavItem[] = [
@@ -43,115 +43,124 @@ const centerNavItems: NavItem[] = [
   { label: 'Settings', href: '/dashboard/settings', icon: <Settings className="w-5 h-5" />, adminOnly: true },
 ]
 
+// Mobile Header Component
+export function MobileHeader({ onMenuClick, title }: { onMenuClick: () => void; title?: string }) {
+  const { user } = useAuthStore()
+  const primaryColor = user?.center?.primary_color || '#1E40AF'
+  const centerName = user?.center?.name || title || 'School Management'
+  const logoUrl = user?.center?.logo_url
+
+  return (
+    <header
+      className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-white border-b border-gray-200 flex items-center px-4 z-40"
+    >
+      <button
+        onClick={onMenuClick}
+        className="p-2 -ml-2 rounded-lg hover:bg-gray-100 text-gray-600"
+      >
+        <Menu className="w-6 h-6" />
+      </button>
+      <div className="flex items-center gap-3 ml-3">
+        {logoUrl ? (
+          <img
+            src={logoUrl}
+            alt={centerName}
+            className="w-8 h-8 rounded-lg bg-gray-100 p-0.5 object-contain"
+          />
+        ) : (
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
+            style={{ backgroundColor: primaryColor }}
+          >
+            {centerName.charAt(0)}
+          </div>
+        )}
+        <span className="font-semibold text-gray-900 truncate">{centerName}</span>
+      </div>
+    </header>
+  )
+}
+
 export function Sidebar() {
   const pathname = usePathname()
   const { user, signOut, canAccessModule, isCenterAdmin } = useAuthStore()
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isMobileOpen, setIsMobileOpen] = useState(false)
 
-  // Filter nav items based on role and module access
+  // Close mobile menu on route change
+  useEffect(() => {
+    setIsMobileOpen(false)
+  }, [pathname])
+
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMobileOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [isMobileOpen])
+
   const navItems = centerNavItems.filter(item => {
-    // Hide admin-only items from staff
     if (item.adminOnly && !isCenterAdmin()) return false
-    // Check module access
     if (item.module && !canAccessModule(item.module)) return false
     return true
   })
 
-  // Get center branding
   const primaryColor = user?.center?.primary_color || '#1E40AF'
   const centerName = user?.center?.name || 'Tutorial Center'
   const logoUrl = user?.center?.logo_url
 
-  return (
-    <aside
-      className={`h-screen bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ${
-        isCollapsed ? 'w-20' : 'w-64'
-      }`}
-    >
+  const NavContent = ({ mobile = false }: { mobile?: boolean }) => (
+    <>
       {/* Logo Area */}
       <div className="p-4 border-b border-gray-200">
-        {!isCollapsed ? (
-          <div className="flex items-center gap-3">
-            {logoUrl ? (
-              logoUrl.includes('127.0.0.1') || logoUrl.includes('localhost') ? (
-                <img
-                  src={logoUrl}
-                  alt={centerName}
-                  width={40}
-                  height={40}
-                  className="rounded-lg bg-gray-100 p-1 object-contain w-10 h-10 flex-shrink-0"
-                />
-              ) : (
-                <Image
-                  src={logoUrl}
-                  alt={centerName}
-                  width={40}
-                  height={40}
-                  className="rounded-lg bg-gray-100 p-1 object-contain flex-shrink-0"
-                />
-              )
+        <div className="flex items-center gap-3">
+          {logoUrl ? (
+            logoUrl.includes('127.0.0.1') || logoUrl.includes('localhost') ? (
+              <img
+                src={logoUrl}
+                alt={centerName}
+                className="rounded-lg bg-gray-100 p-1 object-contain w-10 h-10 flex-shrink-0"
+              />
             ) : (
-              <div
-                className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold flex-shrink-0"
-                style={{ backgroundColor: primaryColor }}
-              >
-                {centerName.charAt(0)}
-              </div>
-            )}
-            <div className="min-w-0 flex-1">
-              <h2 className="font-semibold text-gray-900 text-sm leading-tight line-clamp-2">
-                {centerName}
-              </h2>
+              <Image
+                src={logoUrl}
+                alt={centerName}
+                width={40}
+                height={40}
+                className="rounded-lg bg-gray-100 p-1 object-contain flex-shrink-0"
+              />
+            )
+          ) : (
+            <div
+              className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold flex-shrink-0"
+              style={{ backgroundColor: primaryColor }}
+            >
+              {centerName.charAt(0)}
             </div>
-            <button
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 transition-colors flex-shrink-0"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
+          )}
+          <div className="min-w-0 flex-1">
+            <h2 className="font-semibold text-gray-900 text-sm leading-tight line-clamp-2">
+              {centerName}
+            </h2>
           </div>
-        ) : (
-          <div className="flex flex-col items-center gap-2">
-            {logoUrl ? (
-              logoUrl.includes('127.0.0.1') || logoUrl.includes('localhost') ? (
-                <img
-                  src={logoUrl}
-                  alt={centerName}
-                  width={36}
-                  height={36}
-                  className="rounded-lg bg-gray-100 p-1 object-contain w-9 h-9"
-                />
-              ) : (
-                <Image
-                  src={logoUrl}
-                  alt={centerName}
-                  width={36}
-                  height={36}
-                  className="rounded-lg bg-gray-100 p-1 object-contain"
-                />
-              )
-            ) : (
-              <div
-                className="w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-                style={{ backgroundColor: primaryColor }}
-              >
-                {centerName.charAt(0)}
-              </div>
-            )}
+          {mobile && (
             <button
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              className="p-1 rounded-lg hover:bg-gray-100 text-gray-400 transition-colors"
+              onClick={() => setIsMobileOpen(false)}
+              className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 lg:hidden"
             >
-              <ChevronRight className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
         {navItems.map((item) => {
-          // For /dashboard, only match exactly. For other routes, match prefix.
           const isActive = item.href === '/dashboard'
             ? pathname === '/dashboard'
             : pathname === item.href || pathname.startsWith(item.href + '/')
@@ -165,10 +174,9 @@ export function Sidebar() {
                   : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
               }`}
               style={isActive ? { backgroundColor: primaryColor } : undefined}
-              title={isCollapsed ? item.label : undefined}
             >
               {item.icon}
-              {!isCollapsed && <span className="font-medium">{item.label}</span>}
+              <span className="font-medium">{item.label}</span>
             </Link>
           )
         })}
@@ -176,23 +184,50 @@ export function Sidebar() {
 
       {/* User section */}
       <div className="p-4 border-t border-gray-200">
-        {!isCollapsed && (
-          <div className="mb-3 px-3">
-            <p className="font-medium text-gray-900 truncate">{user?.full_name}</p>
-            <p className="text-sm text-gray-500 truncate">{user?.email}</p>
-          </div>
-        )}
+        <div className="mb-3 px-3">
+          <p className="font-medium text-gray-900 truncate">{user?.full_name}</p>
+          <p className="text-sm text-gray-500 truncate">{user?.email}</p>
+        </div>
         <button
           onClick={signOut}
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors w-full"
-          title={isCollapsed ? 'Sign out' : undefined}
         >
           <LogOut className="w-5 h-5" />
-          {!isCollapsed && <span className="font-medium">Sign Out</span>}
+          <span className="font-medium">Sign Out</span>
         </button>
       </div>
+    </>
+  )
 
-    </aside>
+  return (
+    <>
+      {/* Mobile Header */}
+      <MobileHeader onMenuClick={() => setIsMobileOpen(true)} />
+
+      {/* Mobile Overlay */}
+      {isMobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
+
+      {/* Mobile Drawer */}
+      <aside
+        className={`fixed top-0 left-0 h-full w-72 bg-white z-50 transform transition-transform duration-300 ease-in-out lg:hidden ${
+          isMobileOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <div className="flex flex-col h-full">
+          <NavContent mobile />
+        </div>
+      </aside>
+
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:flex h-screen w-64 bg-white border-r border-gray-200 flex-col flex-shrink-0">
+        <NavContent />
+      </aside>
+    </>
   )
 }
 
@@ -205,37 +240,66 @@ const adminNavItems: NavItem[] = [
   { label: 'Settings', href: '/admin/settings', icon: <Settings className="w-5 h-5" /> },
 ]
 
+// Mobile Header for Admin
+export function AdminMobileHeader({ onMenuClick }: { onMenuClick: () => void }) {
+  return (
+    <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-gray-900 border-b border-gray-800 flex items-center px-4 z-40">
+      <button
+        onClick={onMenuClick}
+        className="p-2 -ml-2 rounded-lg hover:bg-gray-800 text-gray-400"
+      >
+        <Menu className="w-6 h-6" />
+      </button>
+      <div className="flex items-center gap-3 ml-3">
+        <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-sm">
+          SA
+        </div>
+        <span className="font-semibold text-white">Super Admin</span>
+      </div>
+    </header>
+  )
+}
+
 export function AdminSidebar() {
   const pathname = usePathname()
   const { user, signOut } = useAuthStore()
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isMobileOpen, setIsMobileOpen] = useState(false)
 
-  return (
-    <aside
-      className={`h-screen bg-gray-900 flex flex-col transition-all duration-300 ${
-        isCollapsed ? 'w-20' : 'w-64'
-      }`}
-    >
+  // Close mobile menu on route change
+  useEffect(() => {
+    setIsMobileOpen(false)
+  }, [pathname])
+
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMobileOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [isMobileOpen])
+
+  const NavContent = ({ mobile = false }: { mobile?: boolean }) => (
+    <>
       {/* Header */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-gray-800">
-        {!isCollapsed && (
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold">
-              TC
-            </div>
-            <span className="font-semibold text-white">Super Admin</span>
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold">
+            SA
           </div>
+          <span className="font-semibold text-white">Super Admin</span>
+        </div>
+        {mobile && (
+          <button
+            onClick={() => setIsMobileOpen(false)}
+            className="p-1.5 rounded-lg hover:bg-gray-800 text-gray-400 lg:hidden"
+          >
+            <X className="w-5 h-5" />
+          </button>
         )}
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="p-1.5 rounded-lg hover:bg-gray-800 text-gray-400 transition-colors"
-        >
-          {isCollapsed ? (
-            <ChevronRight className="w-5 h-5" />
-          ) : (
-            <ChevronLeft className="w-5 h-5" />
-          )}
-        </button>
       </div>
 
       {/* Navigation */}
@@ -251,10 +315,9 @@ export function AdminSidebar() {
                   ? 'bg-blue-600 text-white'
                   : 'text-gray-400 hover:bg-gray-800 hover:text-white'
               }`}
-              title={isCollapsed ? item.label : undefined}
             >
               {item.icon}
-              {!isCollapsed && <span className="font-medium">{item.label}</span>}
+              <span className="font-medium">{item.label}</span>
             </Link>
           )
         })}
@@ -262,22 +325,49 @@ export function AdminSidebar() {
 
       {/* User section */}
       <div className="p-4 border-t border-gray-800">
-        {!isCollapsed && (
-          <div className="mb-3 px-3">
-            <p className="font-medium text-white truncate">{user?.full_name}</p>
-            <p className="text-sm text-gray-400 truncate">{user?.email}</p>
-          </div>
-        )}
+        <div className="mb-3 px-3">
+          <p className="font-medium text-white truncate">{user?.full_name}</p>
+          <p className="text-sm text-gray-400 truncate">{user?.email}</p>
+        </div>
         <button
           onClick={signOut}
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 hover:bg-red-600/10 hover:text-red-400 transition-colors w-full"
-          title={isCollapsed ? 'Sign out' : undefined}
         >
           <LogOut className="w-5 h-5" />
-          {!isCollapsed && <span className="font-medium">Sign Out</span>}
+          <span className="font-medium">Sign Out</span>
         </button>
       </div>
+    </>
+  )
 
-    </aside>
+  return (
+    <>
+      {/* Mobile Header */}
+      <AdminMobileHeader onMenuClick={() => setIsMobileOpen(true)} />
+
+      {/* Mobile Overlay */}
+      {isMobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
+
+      {/* Mobile Drawer */}
+      <aside
+        className={`fixed top-0 left-0 h-full w-72 bg-gray-900 z-50 transform transition-transform duration-300 ease-in-out lg:hidden ${
+          isMobileOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <div className="flex flex-col h-full">
+          <NavContent mobile />
+        </div>
+      </aside>
+
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:flex h-screen w-64 bg-gray-900 flex-col flex-shrink-0">
+        <NavContent />
+      </aside>
+    </>
   )
 }

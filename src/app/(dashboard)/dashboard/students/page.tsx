@@ -264,15 +264,15 @@ export default function StudentsPage() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Students</h1>
-          <p className="text-gray-500 mt-1">Manage your registered students</p>
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900">Students</h1>
+          <p className="text-gray-500 mt-1 text-sm md:text-base">Manage your registered students</p>
         </div>
         <Link href="/dashboard/students/new">
-          <Button leftIcon={<Plus className="w-4 h-4" />}>
+          <Button leftIcon={<Plus className="w-4 h-4" />} className="w-full sm:w-auto">
             Add Student
           </Button>
         </Link>
@@ -475,7 +475,67 @@ export default function StudentsPage() {
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
+            {/* Mobile Card View */}
+            <div className="md:hidden divide-y divide-gray-100">
+              {students.map((student) => (
+                <div key={student.id} className="p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <p className="font-medium text-gray-900">{student.full_name}</p>
+                      <p className="text-sm text-gray-500">{student.student_number || 'No ID'}</p>
+                    </div>
+                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusBadge(student.status)}`}>
+                      {student.status}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+                    <div>
+                      <p className="text-gray-500">Grade</p>
+                      <p className="text-gray-900">{student.grade || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Phone</p>
+                      <p className="text-gray-900">{student.phone || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Parent</p>
+                      <p className="text-gray-900">{student.parent_name || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Parent Phone</p>
+                      <p className="text-gray-900">{student.parent_phone || '-'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+                    <Link href={`/dashboard/students/${student.id}`} className="flex-1">
+                      <button className="w-full py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center justify-center gap-1">
+                        <Eye className="w-4 h-4" />
+                        View
+                      </button>
+                    </Link>
+                    <Link href={`/dashboard/students/${student.id}/edit`} className="flex-1">
+                      <button className="w-full py-2 text-sm text-amber-600 hover:bg-amber-50 rounded-lg transition-colors flex items-center justify-center gap-1">
+                        <Pencil className="w-4 h-4" />
+                        Edit
+                      </button>
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setStudentToDelete(student)
+                        setDeleteModalOpen(true)
+                      }}
+                      className="flex-1 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center justify-center gap-1"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-100">
                   <tr>
@@ -559,8 +619,8 @@ export default function StudentsPage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
-                <p className="text-sm text-gray-500">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 md:px-6 py-4 border-t border-gray-100">
+                <p className="text-sm text-gray-500 text-center sm:text-left">
                   Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to{' '}
                   {Math.min(currentPage * ITEMS_PER_PAGE, totalCount)} of {totalCount} students
                 </p>

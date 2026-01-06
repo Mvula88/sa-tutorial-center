@@ -240,16 +240,38 @@ export default function CenterSettingsPage() {
   ]
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-        <p className="text-gray-500 mt-1">Manage your profile and center settings</p>
+      <div className="mb-6 md:mb-8">
+        <h1 className="text-xl md:text-2xl font-bold text-gray-900">Settings</h1>
+        <p className="text-gray-500 mt-1 text-sm md:text-base">Manage your profile and center settings</p>
       </div>
 
-      <div className="flex gap-8">
-        {/* Sidebar Tabs */}
-        <div className="w-56 flex-shrink-0">
+      <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+        {/* Mobile Tab Bar */}
+        <div className="lg:hidden">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-2 overflow-x-auto">
+            <div className="flex gap-1 min-w-max">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg whitespace-nowrap transition-colors ${
+                    activeTab === tab.id
+                      ? 'bg-blue-50 text-blue-700'
+                      : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  {tab.icon}
+                  <span className="font-medium text-sm">{tab.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop Sidebar Tabs */}
+        <div className="hidden lg:block w-56 flex-shrink-0">
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-2">
             {tabs.map((tab) => (
               <button
@@ -427,7 +449,7 @@ export default function CenterSettingsPage() {
                   <p className="text-xs text-gray-500 mt-1">Contact super admin to change center name</p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input
                     label="Email"
                     type="email"
@@ -483,7 +505,7 @@ export default function CenterSettingsPage() {
               </div>
 
               <form onSubmit={(e) => handleCenterUpdate(e, true)} className="space-y-6">
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Primary Color
@@ -530,15 +552,15 @@ export default function CenterSettingsPage() {
                 {/* Preview */}
                 <div className="p-4 bg-gray-50 rounded-lg">
                   <p className="text-sm text-gray-500 mb-3">Preview</p>
-                  <div className="flex items-center gap-4">
+                  <div className="flex flex-wrap items-center gap-4">
                     <div
-                      className="h-12 px-6 rounded-lg flex items-center text-white font-medium"
+                      className="h-12 px-6 rounded-lg flex items-center text-white font-medium text-sm"
                       style={{ backgroundColor: centerData.primary_color }}
                     >
                       Primary Button
                     </div>
                     <div
-                      className="h-12 px-6 rounded-lg flex items-center text-white font-medium"
+                      className="h-12 px-6 rounded-lg flex items-center text-white font-medium text-sm"
                       style={{ backgroundColor: centerData.secondary_color }}
                     >
                       Secondary
