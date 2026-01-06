@@ -27,8 +27,11 @@ import {
   Loader2,
   FileText,
   CreditCard,
+  Download,
+  Printer,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { downloadContractPDF, printContractPDF } from '@/lib/generate-contract-pdf'
 
 interface Client {
   id: string
@@ -577,6 +580,27 @@ export default function ClientDetailPage() {
                   </Button>
                 </a>
               )}
+              <div className="border-t border-gray-100 my-3 pt-3">
+                <p className="text-xs text-gray-500 mb-2">Contract</p>
+                <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    leftIcon={<Download className="w-4 h-4" />}
+                    onClick={() => downloadContractPDF(client)}
+                  >
+                    Download Contract
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    leftIcon={<Printer className="w-4 h-4" />}
+                    onClick={() => printContractPDF(client)}
+                  >
+                    Print Contract
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
