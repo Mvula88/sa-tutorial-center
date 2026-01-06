@@ -10,8 +10,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "School Management",
-  description: "Multi-tenant school management system",
+  title: "School Management System",
+  description: "School Management System",
 };
 
 export default function RootLayout({
