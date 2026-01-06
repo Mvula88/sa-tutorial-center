@@ -122,7 +122,7 @@ export function generateContractPDF(client: ClientData) {
 
   doc.setFontSize(10)
   doc.setFont('helvetica', 'bold')
-  doc.text('Digital Wave Technologies', margin, y)
+  doc.text('Digital Wave Technologies CC', margin, y)
   doc.setFont('helvetica', 'normal')
   doc.text('(hereinafter referred to as "the Service Provider")', margin + 55, y)
   y += 6
@@ -417,7 +417,7 @@ export function generateContractPDF(client: ClientData) {
   // === SECTION 9: INTELLECTUAL PROPERTY ===
   addSectionHeader('9. INTELLECTUAL PROPERTY')
 
-  addBullet('9.1 The School Management System software remains the intellectual property of Digital Wave Technologies.')
+  addBullet('9.1 The School Management System software remains the intellectual property of Digital Wave Technologies CC.')
   addBullet('9.2 The Client is granted a non-exclusive, non-transferable license to use the system for the duration of this agreement.')
   addBullet("9.3 Custom branding elements (logos, colors) provided by the Client remain the Client's property.")
   addBullet("9.4 Website content provided by the Client remains the Client's property.")
@@ -457,7 +457,7 @@ export function generateContractPDF(client: ClientData) {
   y += 8
 
   doc.setFont('helvetica', 'normal')
-  doc.text('Digital Wave Technologies', margin, y)
+  doc.text('Digital Wave Technologies CC', margin, y)
   doc.text(client.business_name, pageWidth / 2 + 10, y)
   y += 15
 
@@ -513,7 +513,7 @@ export function generateContractPDF(client: ClientData) {
 
   doc.setFontSize(11)
   doc.setFont('helvetica', 'bold')
-  doc.text('Digital Wave Technologies', margin, y)
+  doc.text('Digital Wave Technologies CC', margin, y)
   y += 10
 
   const bankData = [
@@ -541,7 +541,7 @@ export function generateContractPDF(client: ClientData) {
   doc.setFont('helvetica', 'italic')
   doc.text('Document Version 1.0 - January 2026', pageWidth / 2, y, { align: 'center' })
   y += 5
-  doc.text('Digital Wave Technologies - Empowering Education Through Technology', pageWidth / 2, y, { align: 'center' })
+  doc.text('Digital Wave Technologies CC - Empowering Education Through Technology', pageWidth / 2, y, { align: 'center' })
 
   return doc
 }

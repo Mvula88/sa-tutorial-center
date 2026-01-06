@@ -6,7 +6,7 @@
 
 **BETWEEN:**
 
-**Digital Wave Technologies** (hereinafter referred to as "the Service Provider")
+**Digital Wave Technologies CC** (hereinafter referred to as "the Service Provider")
 - Contact: 081 321 4813 / 081 440 1522
 - Email: ismaelmvula@gmail.com
 
@@ -226,7 +226,7 @@ The Client agrees to:
 
 ## 9. INTELLECTUAL PROPERTY
 
-9.1 The School Management System software remains the intellectual property of Digital Wave Technologies.
+9.1 The School Management System software remains the intellectual property of Digital Wave Technologies CC.
 
 9.2 The Client is granted a non-exclusive, non-transferable license to use the system for the duration of this agreement.
 
@@ -268,7 +268,7 @@ By signing below, both parties agree to the terms and conditions outlined in thi
 
 ### Service Provider
 
-**Digital Wave Technologies**
+**Digital Wave Technologies CC**
 
 Signature: _________________________
 
@@ -309,7 +309,7 @@ Date: _________________________
 
 ## ANNEXURE B: BANKING DETAILS
 
-**Digital Wave Technologies**
+**Digital Wave Technologies CC**
 
 | | |
 |---|---|
@@ -323,4 +323,4 @@ Date: _________________________
 
 *Document Version 1.0 - January 2026*
 
-*Digital Wave Technologies - Empowering Education Through Technology*
+*Digital Wave Technologies CC - Empowering Education Through Technology*
