@@ -83,6 +83,7 @@ interface Center {
   registration_fee: number
   late_payment_penalty: number
   payment_due_day: number
+  payment_months: number[] | null
 }
 
 interface StudentFee {
@@ -203,7 +204,7 @@ export default function StudentDetailPage() {
     const supabase = createClient()
     const { data } = await supabase
       .from('tutorial_centers')
-      .select('name, email, phone, address, logo_url, primary_color, secondary_color, bank_name, account_number, branch_code, registration_fee, late_payment_penalty, payment_due_day')
+      .select('name, email, phone, address, logo_url, primary_color, secondary_color, bank_name, account_number, branch_code, registration_fee, late_payment_penalty, payment_due_day, payment_months')
       .eq('id', user.center_id)
       .single()
 
@@ -373,7 +374,8 @@ export default function StudentDetailPage() {
 
     const monthlyTotal = subjects.reduce((sum, s) => sum + s.monthly_fee, 0)
     const registrationFee = center?.registration_fee || 300
-    const yearlyTotal = (monthlyTotal * 9) + registrationFee
+    const paymentMonthsCount = center?.payment_months?.length || 9
+    const yearlyTotal = (monthlyTotal * paymentMonthsCount) + registrationFee
 
     const brandColor = center?.primary_color || '#1E40AF'
 
@@ -480,7 +482,7 @@ export default function StudentDetailPage() {
           <div class="section-title">FINANCIAL INFORMATION</div>
           <div class="financial-box">
             <p><strong>TOTAL DUE TO US:</strong> N$${yearlyTotal.toFixed(2)}</p>
-            <p><strong>INSTALMENT PAYMENT:</strong> N$${monthlyTotal.toFixed(2)} per month (9 months)</p>
+            <p><strong>INSTALMENT PAYMENT:</strong> N$${monthlyTotal.toFixed(2)} per month (${paymentMonthsCount} months)</p>
           </div>
         </div>
 
@@ -508,7 +510,7 @@ export default function StudentDetailPage() {
         <div class="section">
           <div class="section-title">STUDENT ACKNOWLEDGEMENT OF FINANCIAL OBLIGATION</div>
           <ul class="terms">
-            <li>By my Enrollment at ${center?.name || 'this Tutorial Center'}, I acknowledge that I am receiving an educational benefit and that the costs associated with that benefit are payable for 9 months.</li>
+            <li>By my Enrollment at ${center?.name || 'this Tutorial Center'}, I acknowledge that I am receiving an educational benefit and that the costs associated with that benefit are payable for ${paymentMonthsCount} months.</li>
             <li>By registering and checking in for classes, I acknowledge financial responsibility for the confirmed yearly tuition fee resulting from this registration; tuition and all fees assessed to my student account.</li>
             <li>I understand that tuition fees must be paid on time before/on the ${center?.payment_due_day || 5}th of every month, and no excuses will be tolerated regarding failure of payment.</li>
             <li>I understand that registration fees under any circumstances, are non-refundable.</li>
@@ -811,6 +813,7 @@ export default function StudentDetailPage() {
 
   const monthlyTotal = subjects.reduce((sum, s) => sum + s.monthly_fee, 0)
   const registrationFee = center?.registration_fee || 300
+  const paymentMonthsCount = center?.payment_months?.length || 9
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, { bg: string; icon: React.ReactNode }> = {
@@ -1051,8 +1054,8 @@ export default function StudentDetailPage() {
                 <span>N${monthlyTotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Yearly Total (9 months)</span>
-                <span>N${(monthlyTotal * 9 + registrationFee).toFixed(2)}</span>
+                <span className="text-gray-600">Yearly Total ({paymentMonthsCount} months)</span>
+                <span>N${(monthlyTotal * paymentMonthsCount + registrationFee).toFixed(2)}</span>
               </div>
             </div>
 

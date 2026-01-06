@@ -22,6 +22,7 @@ interface CenterSettings {
   late_payment_penalty: number
   payment_due_day: number
   terms_and_conditions: string | null
+  payment_months: number[]
 }
 
 export default function NewStudentPage() {
@@ -35,6 +36,7 @@ export default function NewStudentPage() {
     late_payment_penalty: 70,
     payment_due_day: 5,
     terms_and_conditions: null,
+    payment_months: [1, 2, 3, 4, 5, 6, 7, 8, 9], // Default Feb-Oct
   })
   const [currentStep, setCurrentStep] = useState(1)
   const totalSteps = 4
@@ -99,12 +101,25 @@ export default function NewStudentPage() {
     const supabase = createClient()
     const { data } = await supabase
       .from('tutorial_centers')
-      .select('registration_fee, late_payment_penalty, payment_due_day, terms_and_conditions')
+      .select('registration_fee, late_payment_penalty, payment_due_day, terms_and_conditions, payment_months')
       .eq('id', user.center_id)
       .single()
 
     if (data) {
-      setCenterSettings(data as CenterSettings)
+      const centerData = data as {
+        registration_fee: number
+        late_payment_penalty: number
+        payment_due_day: number
+        terms_and_conditions: string | null
+        payment_months: number[] | null
+      }
+      setCenterSettings({
+        registration_fee: centerData.registration_fee || 300,
+        late_payment_penalty: centerData.late_payment_penalty || 70,
+        payment_due_day: centerData.payment_due_day || 5,
+        terms_and_conditions: centerData.terms_and_conditions,
+        payment_months: centerData.payment_months || [1, 2, 3, 4, 5, 6, 7, 8, 9],
+      })
     }
   }
 
@@ -194,7 +209,8 @@ export default function NewStudentPage() {
   const selectedSubjectsData = subjects.filter((s) => selectedSubjects.includes(s.id))
   const monthlyTotal = selectedSubjectsData.reduce((sum, s) => sum + s.monthly_fee, 0)
   const registrationFee = centerSettings.registration_fee || 300
-  const yearlyTotal = (monthlyTotal * 9) + registrationFee // 9 months + registration
+  const paymentMonthsCount = centerSettings.payment_months.length
+  const yearlyTotal = (monthlyTotal * paymentMonthsCount) + registrationFee
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -546,8 +562,8 @@ export default function NewStudentPage() {
                         <span className="font-medium">N${monthlyTotal.toFixed(2)}/month</span>
                       </div>
                       <div className="flex justify-between text-gray-500">
-                        <span>Instalment: N${monthlyTotal.toFixed(2)} x 9 months</span>
-                        <span>N${(monthlyTotal * 9).toFixed(2)}</span>
+                        <span>Instalment: N${monthlyTotal.toFixed(2)} x {paymentMonthsCount} months</span>
+                        <span>N${(monthlyTotal * paymentMonthsCount).toFixed(2)}</span>
                       </div>
                       <div className="border-t border-gray-300 pt-2 mt-2">
                         <div className="flex justify-between text-lg font-bold text-gray-900">

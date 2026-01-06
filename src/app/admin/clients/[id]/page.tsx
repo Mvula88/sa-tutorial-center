@@ -32,6 +32,7 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { downloadContractPDF, printContractPDF } from '@/lib/generate-contract-pdf'
+import { downloadInvoicePDF, printInvoicePDF } from '@/lib/generate-invoice-pdf'
 
 interface Client {
   id: string
@@ -463,6 +464,7 @@ export default function ClientDetailPage() {
                       <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 uppercase">Type</th>
                       <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 uppercase">Period</th>
                       <th className="text-right px-4 py-2 text-xs font-medium text-gray-500 uppercase">Amount</th>
+                      <th className="text-center px-4 py-2 text-xs font-medium text-gray-500 uppercase">Receipt</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -481,6 +483,24 @@ export default function ClientDetailPage() {
                         </td>
                         <td className="px-4 py-3 text-sm font-medium text-gray-900 text-right">
                           {formatCurrency(payment.amount)}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              onClick={() => downloadInvoicePDF(client, payment)}
+                              className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                              title="Download Receipt"
+                            >
+                              <Download className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => printInvoicePDF(client, payment)}
+                              className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                              title="Print Receipt"
+                            >
+                              <Printer className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}

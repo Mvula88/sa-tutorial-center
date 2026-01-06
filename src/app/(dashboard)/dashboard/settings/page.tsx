@@ -19,6 +19,8 @@ import {
   Bus,
   BookOpen,
   MessageSquare,
+  Calendar,
+  CheckCircle,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -37,7 +39,24 @@ interface CenterData {
   transport_module_enabled: boolean
   library_module_enabled: boolean
   sms_module_enabled: boolean
+  payment_months: number[]
+  default_registration_fee: number
 }
+
+const MONTHS = [
+  { value: 0, label: 'January', short: 'Jan' },
+  { value: 1, label: 'February', short: 'Feb' },
+  { value: 2, label: 'March', short: 'Mar' },
+  { value: 3, label: 'April', short: 'Apr' },
+  { value: 4, label: 'May', short: 'May' },
+  { value: 5, label: 'June', short: 'Jun' },
+  { value: 6, label: 'July', short: 'Jul' },
+  { value: 7, label: 'August', short: 'Aug' },
+  { value: 8, label: 'September', short: 'Sep' },
+  { value: 9, label: 'October', short: 'Oct' },
+  { value: 10, label: 'November', short: 'Nov' },
+  { value: 11, label: 'December', short: 'Dec' },
+]
 
 export default function CenterSettingsPage() {
   const { user, fetchUser, isCenterAdmin } = useAuthStore()
@@ -72,6 +91,8 @@ export default function CenterSettingsPage() {
     transport_module_enabled: false,
     library_module_enabled: false,
     sms_module_enabled: false,
+    payment_months: [1, 2, 3, 4, 5, 6, 7, 8, 9], // Feb-Oct default
+    default_registration_fee: 0,
   })
 
   useEffect(() => {
@@ -107,6 +128,8 @@ export default function CenterSettingsPage() {
         transport_module_enabled: center.transport_module_enabled || false,
         library_module_enabled: center.library_module_enabled || false,
         sms_module_enabled: center.sms_module_enabled || false,
+        payment_months: center.payment_months || [1, 2, 3, 4, 5, 6, 7, 8, 9],
+        default_registration_fee: center.default_registration_fee || 0,
       })
     }
   }
@@ -227,10 +250,52 @@ export default function CenterSettingsPage() {
     { id: 'security', label: 'Security', icon: <Shield className="w-4 h-4" /> },
     ...(isCenterAdmin() ? [
       { id: 'center', label: 'Center Details', icon: <Building2 className="w-4 h-4" /> },
+      { id: 'academic', label: 'Academic Year', icon: <Calendar className="w-4 h-4" /> },
       { id: 'branding', label: 'Branding', icon: <Palette className="w-4 h-4" /> },
       { id: 'banking', label: 'Banking', icon: <CreditCard className="w-4 h-4" /> },
     ] : []),
   ]
+
+  const togglePaymentMonth = (month: number) => {
+    const newMonths = centerData.payment_months.includes(month)
+      ? centerData.payment_months.filter(m => m !== month)
+      : [...centerData.payment_months, month].sort((a, b) => a - b)
+    setCenterData({ ...centerData, payment_months: newMonths })
+  }
+
+  async function handleAcademicUpdate(e: React.FormEvent) {
+    e.preventDefault()
+    if (!user?.center_id) return
+
+    if (centerData.payment_months.length === 0) {
+      toast.error('Please select at least one payment month')
+      return
+    }
+
+    setIsLoading(true)
+    const supabase = createClient()
+
+    try {
+      const { error } = await supabase
+        .from('tutorial_centers')
+        .update({
+          payment_months: centerData.payment_months,
+          default_registration_fee: centerData.default_registration_fee,
+          updated_at: new Date().toISOString(),
+        } as never)
+        .eq('id', user.center_id)
+
+      if (error) throw error
+
+      toast.success('Academic year settings saved!')
+      await fetchUser()
+    } catch (error) {
+      console.error('Error updating academic settings:', error)
+      toast.error('Failed to update settings')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const modules = [
     { key: 'hostel_module_enabled', label: 'Hostel Management', icon: <Home className="w-5 h-5" />, description: 'Manage student accommodations' },
@@ -486,6 +551,92 @@ export default function CenterSettingsPage() {
                   leftIcon={isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 >
                   {isLoading ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </form>
+            </div>
+          )}
+
+          {/* Academic Year Tab */}
+          {activeTab === 'academic' && isCenterAdmin() && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <div className="flex items-center gap-3 mb-6 pb-6 border-b border-gray-100">
+                <div className="p-3 bg-indigo-100 rounded-lg">
+                  <Calendar className="w-6 h-6 text-indigo-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">Academic Year Settings</h2>
+                  <p className="text-sm text-gray-500">Configure payment months and fees</p>
+                </div>
+              </div>
+
+              <form onSubmit={handleAcademicUpdate} className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Payment Months
+                  </label>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Select the months when student fee payments are required. This affects yearly fee calculations.
+                  </p>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                    {MONTHS.map((month) => {
+                      const isSelected = centerData.payment_months.includes(month.value)
+                      return (
+                        <button
+                          key={month.value}
+                          type="button"
+                          onClick={() => togglePaymentMonth(month.value)}
+                          className={`relative p-3 rounded-lg border-2 transition-all ${
+                            isSelected
+                              ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                              : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                          }`}
+                        >
+                          {isSelected && (
+                            <CheckCircle className="absolute top-1 right-1 w-4 h-4 text-indigo-600" />
+                          )}
+                          <span className="text-sm font-medium">{month.short}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <p className="text-sm text-gray-500 mt-3">
+                    Selected: <span className="font-medium text-gray-900">{centerData.payment_months.length} months</span>
+                    {centerData.payment_months.length > 0 && (
+                      <span className="ml-2">
+                        ({centerData.payment_months.map(m => MONTHS[m].short).join(', ')})
+                      </span>
+                    )}
+                  </p>
+                </div>
+
+                <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                  <h4 className="font-medium text-indigo-900 mb-2">Fee Calculation Example</h4>
+                  <p className="text-sm text-indigo-700">
+                    If a subject costs N$ 300/month, the yearly total will be:
+                    <br />
+                    <span className="font-bold">N$ 300 x {centerData.payment_months.length} months = N$ {(300 * centerData.payment_months.length).toLocaleString()}</span>
+                  </p>
+                </div>
+
+                <div>
+                  <Input
+                    label="Default Registration Fee (N$)"
+                    type="number"
+                    value={centerData.default_registration_fee}
+                    onChange={(e) => setCenterData({ ...centerData, default_registration_fee: parseFloat(e.target.value) || 0 })}
+                    placeholder="e.g., 500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    This will be added to the yearly total for new students
+                  </p>
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  leftIcon={isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                >
+                  {isLoading ? 'Saving...' : 'Save Settings'}
                 </Button>
               </form>
             </div>
