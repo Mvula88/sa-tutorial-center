@@ -261,14 +261,17 @@ export default function TransportPage() {
       .or(`full_name.ilike.%${query}%,student_number.ilike.%${query}%`)
       .limit(15) // Fetch a few extra to account for filtering
 
-    if (!students || students.length === 0) {
+    interface StudentData { id: string; full_name: string; student_number: string | null; grade: string | null }
+    const typedStudents = (students || []) as StudentData[]
+
+    if (typedStudents.length === 0) {
       setSearchResults([])
       setIsSearching(false)
       return
     }
 
     // Only check assignment status for the found students (much more efficient)
-    const studentIds = students.map(s => s.id)
+    const studentIds = typedStudents.map(s => s.id)
     const { data: existingAssignments } = await supabase
       .from('student_transport')
       .select('student_id')
@@ -281,8 +284,6 @@ export default function TransportPage() {
     )
 
     // Filter out already assigned students
-    interface StudentData { id: string; full_name: string; student_number: string | null; grade: string | null }
-    const typedStudents = students as StudentData[]
     const availableStudents = typedStudents
       .filter(s => !assignedStudentIds.has(s.id))
       .slice(0, 10) // Limit final results
