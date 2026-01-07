@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { getStripe } from '@/lib/stripe'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 
+// Sync subscription status from Stripe
+
 // Service role client for updating database
 const serviceClient = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
