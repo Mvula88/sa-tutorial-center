@@ -179,7 +179,8 @@ export default function NewAllocationPage() {
 
     try {
       // Use atomic RPC function to prevent race conditions
-      const { data, error } = await supabase.rpc('allocate_student_to_room', {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.rpc as any)('allocate_student_to_room', {
         p_center_id: user.center_id,
         p_student_id: formData.student_id,
         p_room_id: formData.room_id,
