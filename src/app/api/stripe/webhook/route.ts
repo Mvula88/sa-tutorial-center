@@ -221,25 +221,36 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
     return
   }
 
+  // Type assertion for invoice properties
+  const inv = invoice as unknown as {
+    id: string
+    payment_intent: string | null
+    amount_paid: number
+    currency: string
+    status_transitions?: { paid_at?: number }
+    period_start?: number
+    period_end?: number
+  }
+
   // Record the payment in subscription_payments table
   const { error: paymentError } = await supabase
     .from('subscription_payments')
     .insert({
       center_id: center.id,
-      stripe_payment_intent_id: invoice.payment_intent as string,
-      stripe_invoice_id: invoice.id,
-      amount: invoice.amount_paid / 100, // Convert from cents to rands
-      currency: invoice.currency || 'zar',
+      stripe_payment_intent_id: inv.payment_intent as string,
+      stripe_invoice_id: inv.id,
+      amount: inv.amount_paid / 100, // Convert from cents to rands
+      currency: inv.currency || 'zar',
       status: 'succeeded',
-      payment_date: new Date(invoice.status_transitions?.paid_at ? invoice.status_transitions.paid_at * 1000 : Date.now()).toISOString(),
-      period_start: invoice.period_start ? new Date(invoice.period_start * 1000).toISOString() : null,
-      period_end: invoice.period_end ? new Date(invoice.period_end * 1000).toISOString() : null,
+      payment_date: new Date(inv.status_transitions?.paid_at ? inv.status_transitions.paid_at * 1000 : Date.now()).toISOString(),
+      period_start: inv.period_start ? new Date(inv.period_start * 1000).toISOString() : null,
+      period_end: inv.period_end ? new Date(inv.period_end * 1000).toISOString() : null,
     })
 
   if (paymentError) {
     console.error('Failed to record subscription payment:', paymentError)
   } else {
-    console.log(`Payment recorded for center ${center.id}, amount: R${invoice.amount_paid / 100}`)
+    console.log(`Payment recorded for center ${center.id}, amount: R${inv.amount_paid / 100}`)
   }
 }
 
