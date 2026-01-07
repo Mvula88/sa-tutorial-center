@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/input'
+import { formatCurrency, CURRENCY_CONFIG } from '@/lib/currency'
 
 interface ReportStats {
   totalStudents: number
@@ -218,13 +219,7 @@ export default function ReportsPage() {
     }
   }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-NA', {
-      style: 'currency',
-      currency: 'NAD',
-      minimumFractionDigits: 0,
-    }).format(amount)
-  }
+  // Using centralized formatCurrency from @/lib/currency
 
   // Export functions
   function downloadCSV(data: string[][], filename: string) {
@@ -314,7 +309,7 @@ export default function ReportsPage() {
             new Date(p.payment_date).toLocaleDateString(),
             p.student?.full_name || '',
             p.student?.student_number || '',
-            `N$ ${p.amount.toFixed(2)}`,
+            formatCurrency(p.amount),
             p.payment_method || '',
             p.reference_number || '',
           ])
@@ -395,9 +390,9 @@ export default function ReportsPage() {
             f.student?.phone || '',
             f.fee_type || '',
             f.fee_month ? new Date(f.fee_month).toLocaleDateString('en-ZA', { year: 'numeric', month: 'long' }) : '',
-            `N$ ${f.amount_due.toFixed(2)}`,
-            `N$ ${f.amount_paid.toFixed(2)}`,
-            `N$ ${f.balance.toFixed(2)}`,
+            formatCurrency(f.amount_due),
+            formatCurrency(f.amount_paid),
+            formatCurrency(f.balance),
           ])
         ]
         downloadCSV(csvData, 'outstanding_fees_report')
@@ -486,13 +481,13 @@ export default function ReportsPage() {
           ['Metric', 'Value'],
           ['Active Students', (allStudents || []).length.toString()],
           ['New Students This Month', (newStudents || []).length.toString()],
-          ['Total Revenue Collected', `N$ ${totalRevenue.toFixed(2)}`],
+          ['Total Revenue Collected', formatCurrency(totalRevenue)],
           ['Number of Payments', typedPayments.length.toString()],
           [''],
           ['Revenue by Payment Method', ''],
-          ['Cash', `N$ ${cashPayments.toFixed(2)}`],
-          ['Bank Transfer', `N$ ${bankPayments.toFixed(2)}`],
-          ['Other Methods', `N$ ${otherPayments.toFixed(2)}`],
+          ['Cash', formatCurrency(cashPayments)],
+          ['Bank Transfer', formatCurrency(bankPayments)],
+          ['Other Methods', formatCurrency(otherPayments)],
         ]
         downloadCSV(csvData, 'monthly_summary_report')
         break
@@ -531,7 +526,7 @@ export default function ReportsPage() {
             new Date(p.payment_date).toLocaleString(),
             p.student?.full_name || '',
             p.student?.student_number || '',
-            `N$ ${p.amount.toFixed(2)}`,
+            formatCurrency(p.amount),
             p.payment_method || '',
             p.reference_number || '',
             p.recorded_by_user?.full_name || '',

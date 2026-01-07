@@ -1,4 +1,5 @@
 import { jsPDF } from 'jspdf'
+import { formatCurrency, formatDate as formatCurrencyDate, CURRENCY_CONFIG } from './currency'
 
 interface ClientData {
   business_name: string
@@ -43,14 +44,9 @@ export function generateInvoicePDF(client: ClientData, payment: PaymentData, inv
   const margin = 20
   let y = 20
 
-  const formatCurrency = (amount: number) => `N$ ${amount.toFixed(2)}`
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('en-NA', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    })
-  }
+  // Use the centralized currency formatting
+  const formatAmount = (amount: number) => formatCurrency(amount)
+  const formatPaymentDate = (date: string) => formatCurrencyDate(date)
 
   const getMonthName = (month: number) => {
     return new Date(2024, month - 1).toLocaleString('en', { month: 'long' })
@@ -70,10 +66,10 @@ export function generateInvoicePDF(client: ClientData, payment: PaymentData, inv
 
   doc.setFontSize(10)
   doc.setFont('helvetica', 'normal')
-  doc.text('Digital Wave Technologies CC', pageWidth - margin, 20, { align: 'right' })
-  doc.text('081 321 4813 / 081 440 1522', pageWidth - margin, 27, { align: 'right' })
-  doc.text('ismaelmvula@gmail.com', pageWidth - margin, 34, { align: 'right' })
-  doc.text('Windhoek, Namibia', pageWidth - margin, 41, { align: 'right' })
+  doc.text('SA Tutorial Centres', pageWidth - margin, 20, { align: 'right' })
+  doc.text('support@satutorialcentres.co.za', pageWidth - margin, 27, { align: 'right' })
+  doc.text('VAT: 123456789', pageWidth - margin, 34, { align: 'right' })
+  doc.text('South Africa', pageWidth - margin, 41, { align: 'right' })
 
   // Reset text color
   doc.setTextColor(0, 0, 0)
@@ -89,7 +85,7 @@ export function generateInvoicePDF(client: ClientData, payment: PaymentData, inv
   doc.setFont('helvetica', 'bold')
   doc.text('Date:', pageWidth / 2 + 20, y)
   doc.setFont('helvetica', 'normal')
-  doc.text(formatDate(payment.payment_date), pageWidth / 2 + 40, y)
+  doc.text(formatPaymentDate(payment.payment_date), pageWidth / 2 + 40, y)
 
   y += 15
 
@@ -158,7 +154,7 @@ export function generateInvoicePDF(client: ClientData, payment: PaymentData, inv
 
   doc.setTextColor(0, 0, 0)
   doc.setFont('helvetica', 'bold')
-  doc.text(formatCurrency(payment.amount), pageWidth - margin - 5, y, { align: 'right' })
+  doc.text(formatAmount(payment.amount), pageWidth - margin - 5, y, { align: 'right' })
 
   y += 10
 
@@ -176,7 +172,7 @@ export function generateInvoicePDF(client: ClientData, payment: PaymentData, inv
   doc.setFont('helvetica', 'bold')
   doc.text('TOTAL PAID:', pageWidth / 2 + 10, y + 7)
   doc.setTextColor(30, 64, 175)
-  doc.text(formatCurrency(payment.amount), pageWidth - margin - 5, y + 7, { align: 'right' })
+  doc.text(formatAmount(payment.amount), pageWidth - margin - 5, y + 7, { align: 'right' })
 
   doc.setTextColor(0, 0, 0)
   y += 30
@@ -227,9 +223,9 @@ export function generateInvoicePDF(client: ClientData, payment: PaymentData, inv
 
   doc.setFontSize(8)
   doc.setTextColor(100, 100, 100)
-  doc.text('Digital Wave Technologies CC', pageWidth / 2, footerY, { align: 'center' })
+  doc.text('SA Tutorial Centres', pageWidth / 2, footerY, { align: 'center' })
   doc.text('Empowering Education Through Technology', pageWidth / 2, footerY + 6, { align: 'center' })
-  doc.text(`Generated on ${formatDate(new Date().toISOString())}`, pageWidth / 2, footerY + 12, { align: 'center' })
+  doc.text(`Generated on ${formatPaymentDate(new Date().toISOString())}`, pageWidth / 2, footerY + 12, { align: 'center' })
 
   return doc
 }

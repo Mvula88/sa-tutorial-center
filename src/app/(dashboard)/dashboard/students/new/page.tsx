@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button'
 import { Input, Select, Textarea } from '@/components/ui/input'
 import { ArrowLeft, Save, Upload, User } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { formatCurrency } from '@/lib/currency'
+import { isValidSAPhoneNumber, getPhoneValidationError } from '@/lib/phone-validation'
 
 interface Subject {
   id: string
@@ -166,12 +168,20 @@ export default function NewStudentPage() {
       if (!formData.first_name.trim()) newErrors.first_name = 'First name is required'
       if (!formData.gender) newErrors.gender = 'Gender is required'
       if (!formData.date_of_birth) newErrors.date_of_birth = 'Date of birth is required'
-      if (!formData.phone.trim()) newErrors.phone = 'Mobile number is required'
+      if (!formData.phone.trim()) {
+        newErrors.phone = 'Mobile number is required'
+      } else if (!isValidSAPhoneNumber(formData.phone)) {
+        newErrors.phone = getPhoneValidationError(formData.phone, 'Mobile number') || 'Invalid phone number'
+      }
     }
 
     if (step === 2) {
       if (!formData.parent_name.trim()) newErrors.parent_name = 'Parent/Guardian name is required'
-      if (!formData.parent_phone.trim()) newErrors.parent_phone = 'Parent phone is required'
+      if (!formData.parent_phone.trim()) {
+        newErrors.parent_phone = 'Parent phone is required'
+      } else if (!isValidSAPhoneNumber(formData.parent_phone)) {
+        newErrors.parent_phone = getPhoneValidationError(formData.parent_phone, 'Parent phone') || 'Invalid phone number'
+      }
     }
 
     if (step === 3) {
@@ -184,7 +194,11 @@ export default function NewStudentPage() {
     if (step === 4) {
       if (!formData.payer_name.trim()) newErrors.payer_name = 'Name is required'
       if (!formData.payer_id_number.trim()) newErrors.payer_id_number = 'ID number is required'
-      if (!formData.payer_phone.trim()) newErrors.payer_phone = 'Phone number is required'
+      if (!formData.payer_phone.trim()) {
+        newErrors.payer_phone = 'Phone number is required'
+      } else if (!isValidSAPhoneNumber(formData.payer_phone)) {
+        newErrors.payer_phone = getPhoneValidationError(formData.payer_phone, 'Phone number') || 'Invalid phone number'
+      }
       if (!formData.terms_accepted) {
         toast.error('You must accept the terms and conditions')
         return false
@@ -317,7 +331,7 @@ export default function NewStudentPage() {
 • I am receiving an educational benefit and the costs are payable monthly
 • I acknowledge financial responsibility for all tuition fees and charges
 • Tuition fees must be paid on or before the ${centerSettings.payment_due_day}th of every month
-• A late payment penalty of N$${centerSettings.late_payment_penalty?.toFixed(2) || '70.00'} will be applied for overdue payments
+• A late payment penalty of ${formatCurrency(centerSettings.late_payment_penalty || 70)} will be applied for overdue payments
 • Registration fees are non-refundable under any circumstances
 • The College may prevent class attendance until fees are paid
 • I authorize the College to contact me regarding my account`
@@ -526,7 +540,7 @@ export default function NewStudentPage() {
             {/* Registration Fee Notice */}
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
               <p className="text-sm text-amber-800">
-                <span className="font-semibold">Registration Fee:</span> N${registrationFee.toFixed(2)} (non-refundable)
+                <span className="font-semibold">Registration Fee:</span> {formatCurrency(registrationFee)} (non-refundable)
               </p>
             </div>
 
@@ -555,7 +569,7 @@ export default function NewStudentPage() {
                         )}
                       </div>
                       <p className="font-semibold text-gray-900">
-                        N${subject.monthly_fee.toFixed(2)}
+                        {formatCurrency(subject.monthly_fee)}
                       </p>
                     </label>
                   ))}
@@ -568,22 +582,22 @@ export default function NewStudentPage() {
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-gray-600">Registration Fee (once-off)</span>
-                        <span className="font-medium">N${registrationFee.toFixed(2)}</span>
+                        <span className="font-medium">{formatCurrency(registrationFee)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">
                           Monthly Tuition ({selectedSubjects.length} subject{selectedSubjects.length > 1 ? 's' : ''})
                         </span>
-                        <span className="font-medium">N${monthlyTotal.toFixed(2)}/month</span>
+                        <span className="font-medium">{formatCurrency(monthlyTotal)}/month</span>
                       </div>
                       <div className="flex justify-between text-gray-500">
-                        <span>Instalment: N${monthlyTotal.toFixed(2)} x {paymentMonthsCount} months</span>
-                        <span>N${(monthlyTotal * paymentMonthsCount).toFixed(2)}</span>
+                        <span>Instalment: {formatCurrency(monthlyTotal)} x {paymentMonthsCount} months</span>
+                        <span>{formatCurrency(monthlyTotal * paymentMonthsCount)}</span>
                       </div>
                       <div className="border-t border-gray-300 pt-2 mt-2">
                         <div className="flex justify-between text-lg font-bold text-gray-900">
                           <span>Total Due (Yearly)</span>
-                          <span>N${yearlyTotal.toFixed(2)}</span>
+                          <span>{formatCurrency(yearlyTotal)}</span>
                         </div>
                       </div>
                     </div>
@@ -703,11 +717,11 @@ export default function NewStudentPage() {
                 </div>
                 <div>
                   <p className="text-blue-700">Monthly Fee</p>
-                  <p className="font-medium text-blue-900">N${monthlyTotal.toFixed(2)}</p>
+                  <p className="font-medium text-blue-900">{formatCurrency(monthlyTotal)}</p>
                 </div>
                 <div>
                   <p className="text-blue-700">Total Due (Year)</p>
-                  <p className="font-medium text-blue-900">N${yearlyTotal.toFixed(2)}</p>
+                  <p className="font-medium text-blue-900">{formatCurrency(yearlyTotal)}</p>
                 </div>
               </div>
             </div>

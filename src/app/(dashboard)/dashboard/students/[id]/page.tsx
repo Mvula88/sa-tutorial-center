@@ -29,6 +29,7 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { generateMonthlyFees } from '@/lib/fee-utils'
+import { formatCurrency, CURRENCY_CONFIG } from '@/lib/currency'
 
 interface Student {
   id: string
@@ -494,7 +495,7 @@ export default function StudentDetailPage() {
 
         <div class="section">
           <div class="section-title">SUBJECTS ENROLLED</div>
-          <p style="margin-bottom: 10px;"><strong>NB:</strong> Registration fee N$${registrationFee.toFixed(2)} which is non-refundable</p>
+          <p style="margin-bottom: 10px;"><strong>NB:</strong> Registration fee R ${registrationFee.toFixed(2)} which is non-refundable</p>
           <table>
             <thead>
               <tr>
@@ -508,7 +509,7 @@ export default function StudentDetailPage() {
                 <tr>
                   <td>${s.name}</td>
                   <td style="text-align: center;"><span class="checkbox checked"></span></td>
-                  <td>N$${s.monthly_fee.toFixed(2)}</td>
+                  <td>R ${s.monthly_fee.toFixed(2)}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -518,8 +519,8 @@ export default function StudentDetailPage() {
         <div class="section">
           <div class="section-title">FINANCIAL INFORMATION</div>
           <div class="financial-box">
-            <p><strong>TOTAL DUE TO US:</strong> N$${yearlyTotal.toFixed(2)}</p>
-            <p><strong>INSTALMENT PAYMENT:</strong> N$${monthlyTotal.toFixed(2)} per month (${paymentMonthsCount} months)</p>
+            <p><strong>TOTAL DUE TO US:</strong> R ${yearlyTotal.toFixed(2)}</p>
+            <p><strong>INSTALMENT PAYMENT:</strong> R ${monthlyTotal.toFixed(2)} per month (${paymentMonthsCount} months)</p>
           </div>
         </div>
 
@@ -551,7 +552,7 @@ export default function StudentDetailPage() {
             <li>By registering and checking in for classes, I acknowledge financial responsibility for the confirmed yearly tuition fee resulting from this registration; tuition and all fees assessed to my student account.</li>
             <li>I understand that tuition fees must be paid on time before/on the ${center?.payment_due_day || 5}th of every month, and no excuses will be tolerated regarding failure of payment.</li>
             <li>I understand that registration fees under any circumstances, are non-refundable.</li>
-            <li>I understand that ${center?.name || 'the College'} will place a penalty fee of N$${(center?.late_payment_penalty || 70).toFixed(2)} on my account if I have not made payment on a timely basis.</li>
+            <li>I understand that ${center?.name || 'the College'} will place a penalty fee of R ${(center?.late_payment_penalty || 70).toFixed(2)} on my account if I have not made payment on a timely basis.</li>
             <li>I understand that the College will prevent class attendance and other essential services until the tuition fee is paid.</li>
             <li>Should it be necessary for ${center?.name || 'the College'} to place my account with a debt collection agency, I acknowledge that I will be liable for all reasonable collection agency fees.</li>
             <li>I authorize ${center?.name || 'the College'} or its agents to contact me at the number listed during this registration.</li>
@@ -730,9 +731,9 @@ export default function StudentDetailPage() {
               <tr>
                 <td>${new Date(fee.fee_month).toLocaleDateString('en-ZA', { year: 'numeric', month: 'long' })}</td>
                 <td style="text-transform: capitalize">${fee.fee_type}</td>
-                <td style="text-align: right">N$ ${fee.amount_due.toFixed(2)}</td>
-                <td style="text-align: right">N$ ${fee.amount_paid.toFixed(2)}</td>
-                <td style="text-align: right">N$ ${fee.balance.toFixed(2)}</td>
+                <td style="text-align: right">R ${fee.amount_due.toFixed(2)}</td>
+                <td style="text-align: right">R ${fee.amount_paid.toFixed(2)}</td>
+                <td style="text-align: right">R ${fee.balance.toFixed(2)}</td>
                 <td class="status-${fee.status}">${fee.status.toUpperCase()}</td>
               </tr>
             `).join('') : '<tr><td colspan="6" style="text-align: center; color: #666;">No fee records found</td></tr>'}
@@ -742,15 +743,15 @@ export default function StudentDetailPage() {
         <div class="summary">
           <div class="summary-row">
             <span>Total Amount Due</span>
-            <span>N$ ${totalDue.toFixed(2)}</span>
+            <span>R ${totalDue.toFixed(2)}</span>
           </div>
           <div class="summary-row">
             <span>Total Amount Paid</span>
-            <span>N$ ${totalPaid.toFixed(2)}</span>
+            <span>R ${totalPaid.toFixed(2)}</span>
           </div>
           <div class="summary-row total">
             <span>Outstanding Balance</span>
-            <span class="${totalBalance > 0 ? 'balance-due' : ''}">N$ ${totalBalance.toFixed(2)}</span>
+            <span class="${totalBalance > 0 ? 'balance-due' : ''}">R ${totalBalance.toFixed(2)}</span>
           </div>
         </div>
 
@@ -771,7 +772,7 @@ export default function StudentDetailPage() {
                   <td>${new Date(p.payment_date).toLocaleDateString('en-ZA')}</td>
                   <td>${p.reference_number || '-'}</td>
                   <td style="text-transform: capitalize">${p.payment_method?.replace('_', ' ') || '-'}</td>
-                  <td style="text-align: right">N$ ${p.amount.toFixed(2)}</td>
+                  <td style="text-align: right">R ${p.amount.toFixed(2)}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -1057,13 +1058,13 @@ export default function StudentDetailPage() {
                 {subjects.map((subject) => (
                   <div key={subject.id} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
                     <span className="font-medium">{subject.name}</span>
-                    <span className="text-gray-600">N${subject.monthly_fee.toFixed(2)}</span>
+                    <span className="text-gray-600">R {subject.monthly_fee.toFixed(2)}</span>
                   </div>
                 ))}
                 <div className="pt-3 border-t border-gray-200">
                   <div className="flex justify-between font-semibold">
                     <span>Monthly Total</span>
-                    <span>N${monthlyTotal.toFixed(2)}</span>
+                    <span>R {monthlyTotal.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -1082,17 +1083,17 @@ export default function StudentDetailPage() {
               <div className="flex justify-between">
                 <span className="text-gray-600">Registration Fee</span>
                 <span className={student.registration_fee_paid ? 'text-green-600' : 'text-amber-600'}>
-                  N${registrationFee.toFixed(2)}
+                  R {registrationFee.toFixed(2)}
                   {student.registration_fee_paid && ' (Paid)'}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Monthly Fee</span>
-                <span>N${monthlyTotal.toFixed(2)}</span>
+                <span>R {monthlyTotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Yearly Total ({paymentMonthsCount} months)</span>
-                <span>N${(monthlyTotal * paymentMonthsCount + registrationFee).toFixed(2)}</span>
+                <span>R {(monthlyTotal * paymentMonthsCount + registrationFee).toFixed(2)}</span>
               </div>
             </div>
 
@@ -1157,19 +1158,19 @@ export default function StudentDetailPage() {
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <p className="text-sm text-gray-500 mb-1">Total Due</p>
             <p className="text-2xl font-bold text-gray-900">
-              N$ {studentFees.reduce((sum, f) => sum + f.amount_due, 0).toFixed(2)}
+              R {studentFees.reduce((sum, f) => sum + f.amount_due, 0).toFixed(2)}
             </p>
           </div>
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <p className="text-sm text-gray-500 mb-1">Total Paid</p>
             <p className="text-2xl font-bold text-green-600">
-              N$ {studentFees.reduce((sum, f) => sum + f.amount_paid, 0).toFixed(2)}
+              R {studentFees.reduce((sum, f) => sum + f.amount_paid, 0).toFixed(2)}
             </p>
           </div>
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <p className="text-sm text-gray-500 mb-1">Outstanding Balance</p>
             <p className={`text-2xl font-bold ${studentFees.reduce((sum, f) => sum + f.balance, 0) > 0 ? 'text-red-600' : 'text-gray-900'}`}>
-              N$ {studentFees.reduce((sum, f) => sum + f.balance, 0).toFixed(2)}
+              R {studentFees.reduce((sum, f) => sum + f.balance, 0).toFixed(2)}
             </p>
           </div>
         </div>
@@ -1208,10 +1209,10 @@ export default function StudentDetailPage() {
                           {fee.fee_type === 'registration' ? 'Registration' : 'Tuition'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right text-gray-900">N$ {fee.amount_due.toFixed(2)}</td>
-                      <td className="px-6 py-4 text-right text-green-600">N$ {fee.amount_paid.toFixed(2)}</td>
+                      <td className="px-6 py-4 text-right text-gray-900">R {fee.amount_due.toFixed(2)}</td>
+                      <td className="px-6 py-4 text-right text-green-600">R {fee.amount_paid.toFixed(2)}</td>
                       <td className={`px-6 py-4 text-right font-medium ${fee.balance > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                        N$ {fee.balance.toFixed(2)}
+                        R {fee.balance.toFixed(2)}
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
@@ -1279,7 +1280,7 @@ export default function StudentDetailPage() {
                       </td>
                       <td className="px-6 py-4 text-gray-500">{payment.reference_number || '-'}</td>
                       <td className="px-6 py-4 text-gray-900 capitalize">{payment.payment_method?.replace('_', ' ') || '-'}</td>
-                      <td className="px-6 py-4 text-right font-semibold text-green-600">N$ {payment.amount.toFixed(2)}</td>
+                      <td className="px-6 py-4 text-right font-semibold text-green-600">R {payment.amount.toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1337,7 +1338,7 @@ export default function StudentDetailPage() {
                       <strong>Enrolled Subjects:</strong> {subjects.length}
                     </p>
                     <p className="text-sm text-gray-700">
-                      <strong>Monthly Fee:</strong> N$ {subjects.reduce((sum, s) => sum + s.monthly_fee, 0).toFixed(2)}
+                      <strong>Monthly Fee:</strong> R {subjects.reduce((sum, s) => sum + s.monthly_fee, 0).toFixed(2)}
                     </p>
                   </div>
 
@@ -1462,7 +1463,7 @@ export default function StudentDetailPage() {
                         <strong>{selectedMonths.length} month{selectedMonths.length > 1 ? 's' : ''}</strong> selected
                       </p>
                       <p className="text-sm text-green-700">
-                        Total to generate: <strong>N$ {(subjects.reduce((sum, s) => sum + s.monthly_fee, 0) * selectedMonths.length).toFixed(2)}</strong>
+                        Total to generate: <strong>R {(subjects.reduce((sum, s) => sum + s.monthly_fee, 0) * selectedMonths.length).toFixed(2)}</strong>
                       </p>
                     </div>
                   )}

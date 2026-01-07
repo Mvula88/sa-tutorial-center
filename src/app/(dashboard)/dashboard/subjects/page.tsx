@@ -446,7 +446,7 @@ export default function SubjectsPage() {
                           {subject.name}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {subject.code} • N${subject.monthly_fee.toFixed(2)}/mo
+                          {subject.code} • R {subject.monthly_fee.toFixed(2)}/mo
                         </p>
                       </div>
                     </div>
@@ -538,7 +538,7 @@ export default function SubjectsPage() {
                             {subject.name}
                           </p>
                           <p className="text-xs text-gray-500">
-                            {subject.code || 'No code'} • N${subject.monthly_fee.toFixed(2)}/mo
+                            {subject.code || 'No code'} • R {subject.monthly_fee.toFixed(2)}/mo
                           </p>
                         </div>
                       </div>
@@ -621,7 +621,7 @@ export default function SubjectsPage() {
               </div>
 
               <Input
-                label="Monthly Fee (N$)"
+                label="Monthly Fee (R)"
                 type="number"
                 step="0.01"
                 min="0"

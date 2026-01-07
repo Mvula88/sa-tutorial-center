@@ -1,0 +1,368 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useAuthStore } from '@/stores/auth-store'
+import { createClient } from '@/lib/supabase/client'
+import { Button } from '@/components/ui/button'
+import {
+  Sparkles,
+  Check,
+  Crown,
+  Zap,
+  ExternalLink,
+  Loader2,
+  AlertCircle,
+  Calendar,
+  RefreshCw,
+} from 'lucide-react'
+import toast from 'react-hot-toast'
+
+interface SubscriptionData {
+  subscription_status: string
+  subscription_tier: string
+  current_period_end: string | null
+  cancel_at_period_end: boolean
+  trial_ends_at: string | null
+  stripe_customer_id: string | null
+}
+
+const plans = [
+  {
+    id: 'starter',
+    name: 'Starter',
+    price: 499,
+    description: 'Perfect for small tutors with up to 50 students',
+    features: [
+      'Up to 50 students',
+      'Student management',
+      'Fee tracking',
+      'Payment recording',
+      'Basic reports',
+      'Email support',
+    ],
+    icon: Zap,
+  },
+  {
+    id: 'standard',
+    name: 'Standard',
+    price: 899,
+    description: 'For growing tutorial centres with 50-150 students',
+    features: [
+      'Up to 150 students',
+      'Everything in Starter',
+      'Multiple staff accounts',
+      'Advanced reports',
+      'SMS notifications',
+      'Priority support',
+    ],
+    icon: Sparkles,
+    popular: true,
+  },
+  {
+    id: 'premium',
+    name: 'Premium',
+    price: 1499,
+    description: 'For large centres with 150+ students',
+    features: [
+      'Unlimited students',
+      'Everything in Standard',
+      'Hostel management',
+      'Transport tracking',
+      'Custom branding',
+      'Dedicated support',
+      'API access',
+    ],
+    icon: Crown,
+  },
+]
+
+export default function SubscriptionPage() {
+  const { user } = useAuthStore()
+  const [subscription, setSubscription] = useState<SubscriptionData | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [upgradeLoading, setUpgradeLoading] = useState<string | null>(null)
+  const [portalLoading, setPortalLoading] = useState(false)
+  const [syncLoading, setSyncLoading] = useState(false)
+
+  useEffect(() => {
+    if (user?.center_id) {
+      fetchSubscription()
+    }
+  }, [user?.center_id])
+
+  async function fetchSubscription() {
+    if (!user?.center_id) return
+
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from('tutorial_centers')
+      .select('subscription_status, subscription_tier, current_period_end, cancel_at_period_end, trial_ends_at, stripe_customer_id')
+      .eq('id', user.center_id)
+      .single()
+
+    if (!error && data) {
+      setSubscription(data as SubscriptionData)
+    }
+    setIsLoading(false)
+  }
+
+  async function handleUpgrade(plan: string) {
+    setUpgradeLoading(plan)
+    try {
+      const response = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to start checkout')
+      }
+
+      // Redirect to Stripe Checkout
+      window.location.href = data.url
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to start checkout')
+    } finally {
+      setUpgradeLoading(null)
+    }
+  }
+
+  async function handleManageBilling() {
+    setPortalLoading(true)
+    try {
+      const response = await fetch('/api/stripe/portal', {
+        method: 'POST',
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to open billing portal')
+      }
+
+      window.location.href = data.url
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to open billing portal')
+    } finally {
+      setPortalLoading(false)
+    }
+  }
+
+  async function handleSyncSubscription() {
+    setSyncLoading(true)
+    try {
+      const response = await fetch('/api/stripe/sync', {
+        method: 'POST',
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to sync subscription')
+      }
+
+      if (data.synced) {
+        toast.success('Subscription synced successfully!')
+        fetchSubscription() // Refresh the data
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to sync subscription')
+    } finally {
+      setSyncLoading(false)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="p-8">
+        <div className="animate-pulse space-y-6">
+          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+          <div className="h-64 bg-gray-200 rounded-xl"></div>
+        </div>
+      </div>
+    )
+  }
+
+  const isTrialing = subscription?.subscription_status === 'trialing'
+  const isActive = subscription?.subscription_status === 'active'
+  const currentPlan = subscription?.subscription_tier || 'starter'
+  const trialEndsAt = subscription?.trial_ends_at ? new Date(subscription.trial_ends_at) : null
+  const daysLeftInTrial = trialEndsAt ? Math.max(0, Math.ceil((trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : 0
+
+  return (
+    <div className="p-4 md:p-8 max-w-6xl mx-auto">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900">Subscription</h1>
+        <p className="text-gray-500 mt-1">Manage your subscription plan and billing</p>
+      </div>
+
+      {/* Current Status */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <h2 className="text-lg font-semibold text-gray-900">Current Plan</h2>
+              {isTrialing && (
+                <span className="px-2 py-1 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
+                  Trial
+                </span>
+              )}
+              {isActive && (
+                <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                  Active
+                </span>
+              )}
+              {subscription?.cancel_at_period_end && (
+                <span className="px-2 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full">
+                  Cancelling
+                </span>
+              )}
+            </div>
+            <p className="text-2xl font-bold text-gray-900 capitalize">{currentPlan} Plan</p>
+            {isTrialing && trialEndsAt && (
+              <div className="flex items-center gap-2 mt-2 text-amber-600">
+                <Calendar className="w-4 h-4" />
+                <span className="text-sm">
+                  {daysLeftInTrial} days left in trial (ends {trialEndsAt.toLocaleDateString()})
+                </span>
+              </div>
+            )}
+            {isActive && subscription?.current_period_end && (
+              <p className="text-sm text-gray-500 mt-1">
+                {subscription.cancel_at_period_end
+                  ? `Access until ${new Date(subscription.current_period_end).toLocaleDateString()}`
+                  : `Renews on ${new Date(subscription.current_period_end).toLocaleDateString()}`}
+              </p>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={handleSyncSubscription}
+              isLoading={syncLoading}
+              leftIcon={<RefreshCw className="w-4 h-4" />}
+            >
+              Sync from Stripe
+            </Button>
+            {subscription?.stripe_customer_id && (
+              <Button
+                variant="outline"
+                onClick={handleManageBilling}
+                isLoading={portalLoading}
+                rightIcon={<ExternalLink className="w-4 h-4" />}
+              >
+                Manage Billing
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Trial Warning */}
+      {isTrialing && daysLeftInTrial <= 3 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-8 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="font-medium text-amber-800">Your trial is ending soon!</p>
+            <p className="text-sm text-amber-700 mt-1">
+              Choose a plan below to continue using all features after your trial ends.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Plans */}
+      <div className="mb-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Available Plans</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {plans.map((plan) => {
+            const isCurrent = currentPlan === plan.id
+            const PlanIcon = plan.icon
+
+            return (
+              <div
+                key={plan.id}
+                className={`relative bg-white rounded-xl border-2 p-6 transition-all ${
+                  plan.popular
+                    ? 'border-blue-500 shadow-lg'
+                    : isCurrent
+                    ? 'border-green-500'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                {plan.popular && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <span className="px-3 py-1 bg-blue-500 text-white text-xs font-medium rounded-full">
+                      Most Popular
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-3 mb-4">
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                    plan.popular ? 'bg-blue-100' : 'bg-gray-100'
+                  }`}>
+                    <PlanIcon className={`w-5 h-5 ${plan.popular ? 'text-blue-600' : 'text-gray-600'}`} />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">{plan.name}</h3>
+                    {isCurrent && (
+                      <span className="text-xs text-green-600 font-medium">Current Plan</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <span className="text-3xl font-bold text-gray-900">R{plan.price}</span>
+                  <span className="text-gray-500">/month</span>
+                </div>
+
+                <p className="text-sm text-gray-600 mb-4">{plan.description}</p>
+
+                <ul className="space-y-2 mb-6">
+                  {plan.features.map((feature, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm">
+                      <Check className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-700">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                {isCurrent && isActive ? (
+                  <Button variant="outline" className="w-full" disabled>
+                    Current Plan
+                  </Button>
+                ) : (
+                  <Button
+                    className="w-full"
+                    variant={plan.popular ? 'primary' : 'outline'}
+                    onClick={() => handleUpgrade(plan.id)}
+                    isLoading={upgradeLoading === plan.id}
+                  >
+                    {isTrialing ? 'Start Plan' : isCurrent ? 'Current Plan' : 'Upgrade'}
+                  </Button>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* FAQ or Help */}
+      <div className="bg-gray-50 rounded-xl p-6">
+        <h3 className="font-semibold text-gray-900 mb-2">Need help choosing?</h3>
+        <p className="text-sm text-gray-600">
+          Contact us at{' '}
+          <a href="mailto:support@satutorialcentres.co.za" className="text-blue-600 hover:underline">
+            support@satutorialcentres.co.za
+          </a>{' '}
+          and we&apos;ll help you find the right plan for your tutorial centre.
+        </p>
+      </div>
+    </div>
+  )
+}

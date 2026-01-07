@@ -188,7 +188,7 @@ export default function NewRoomPage() {
             />
 
             <Input
-              label="Monthly Fee (N$)"
+              label="Monthly Fee (R)"
               name="monthly_fee"
               type="number"
               step="0.01"

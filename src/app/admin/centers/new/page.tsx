@@ -534,7 +534,7 @@ export default function NewCenterPage() {
             <h3 className="text-md font-semibold text-gray-900 mt-6 mb-4">Fee Settings</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Input
-                label="Registration Fee (N$)"
+                label="Registration Fee (R)"
                 name="registration_fee"
                 type="number"
                 value={formData.registration_fee}
@@ -542,7 +542,7 @@ export default function NewCenterPage() {
                 placeholder="300"
               />
               <Input
-                label="Late Payment Penalty (N$)"
+                label="Late Payment Penalty (R)"
                 name="late_payment_penalty"
                 type="number"
                 value={formData.late_payment_penalty}

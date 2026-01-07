@@ -18,6 +18,7 @@ import {
   Home,
   Bus,
   Library,
+  Sparkles,
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
@@ -40,6 +41,7 @@ const centerNavItems: NavItem[] = [
   { label: 'Transport', href: '/dashboard/transport', icon: <Bus className="w-5 h-5" />, module: 'transport' },
   { label: 'Library', href: '/dashboard/library', icon: <Library className="w-5 h-5" />, module: 'library' },
   { label: 'Reports', href: '/dashboard/reports', icon: <FileText className="w-5 h-5" />, adminOnly: true },
+  { label: 'Subscription', href: '/dashboard/subscription', icon: <Sparkles className="w-5 h-5" />, adminOnly: true },
   { label: 'Settings', href: '/dashboard/settings', icon: <Settings className="w-5 h-5" />, adminOnly: true },
 ]
 

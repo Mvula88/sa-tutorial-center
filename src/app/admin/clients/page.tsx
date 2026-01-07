@@ -16,6 +16,7 @@ import {
   CheckCircle,
   Clock,
   Eye,
+  Pencil,
   MoreVertical,
   Calendar,
   DollarSign,
@@ -159,7 +160,7 @@ export default function ClientsPage() {
   }
 
   const formatCurrency = (amount: number) => {
-    return `N$ ${amount.toLocaleString('en-NA', { minimumFractionDigits: 2 })}`
+    return `R ${amount.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}`
   }
 
   return (
@@ -326,12 +327,20 @@ export default function ClientsPage() {
                       </span>
                     )}
                   </div>
-                  <Link href={`/admin/clients/${client.id}`}>
-                    <Button variant="outline" size="sm" className="w-full">
-                      <Eye className="w-4 h-4 mr-2" />
-                      View Details
-                    </Button>
-                  </Link>
+                  <div className="flex gap-2">
+                    <Link href={`/admin/clients/${client.id}`} className="flex-1">
+                      <Button variant="outline" size="sm" className="w-full">
+                        <Eye className="w-4 h-4 mr-2" />
+                        View
+                      </Button>
+                    </Link>
+                    <Link href={`/admin/clients/${client.id}/edit`} className="flex-1">
+                      <Button variant="outline" size="sm" className="w-full">
+                        <Pencil className="w-4 h-4 mr-2" />
+                        Edit
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
               ))}
             </div>
@@ -403,8 +412,13 @@ export default function ClientsPage() {
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-2">
                           <Link href={`/admin/clients/${client.id}`}>
-                            <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                            <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="View details">
                               <Eye className="w-4 h-4" />
+                            </button>
+                          </Link>
+                          <Link href={`/admin/clients/${client.id}/edit`}>
+                            <button className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Edit client">
+                              <Pencil className="w-4 h-4" />
                             </button>
                           </Link>
                         </div>

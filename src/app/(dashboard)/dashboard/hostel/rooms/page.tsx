@@ -314,7 +314,7 @@ export default function RoomsPage() {
                       </span>
                     </div>
                     <span className="text-sm font-medium text-gray-900">
-                      N$ {room.monthly_fee.toFixed(2)}/mo
+                      R {room.monthly_fee.toFixed(2)}/mo
                     </span>
                   </div>
 

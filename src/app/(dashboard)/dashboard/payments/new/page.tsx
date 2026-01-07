@@ -10,6 +10,7 @@ import { Input, Select, Textarea } from '@/components/ui/input'
 import { ArrowLeft, Save, Search, User, Zap } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { allocatePayment } from '@/lib/fee-utils'
+import { formatCurrency, CURRENCY_CONFIG } from '@/lib/currency'
 
 interface Student {
   id: string
@@ -188,7 +189,7 @@ export default function RecordPaymentPage() {
           }
           if (allocationResult.remainingCredit > 0) {
             toast.success(
-              `N$ ${allocationResult.remainingCredit.toFixed(2)} credit remaining`,
+              `${formatCurrency(allocationResult.remainingCredit)} credit remaining`,
               { duration: 4000 }
             )
           }
@@ -239,8 +240,6 @@ export default function RecordPaymentPage() {
       s.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       s.student_number?.toLowerCase().includes(searchQuery.toLowerCase())
   )
-
-  const formatCurrency = (amount: number) => `N$ ${amount.toFixed(2)}`
 
   const formatMonth = (dateString: string) => {
     const date = new Date(dateString)
@@ -478,7 +477,7 @@ export default function RecordPaymentPage() {
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Payment Details</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
-              label="Amount (N$)"
+              label={`Amount (${CURRENCY_CONFIG.symbol})`}
               name="amount"
               type="number"
               step="0.01"

@@ -213,11 +213,11 @@ export default function ClientDetailPage() {
   }
 
   const formatCurrency = (amount: number) => {
-    return `N$ ${amount.toLocaleString('en-NA', { minimumFractionDigits: 2 })}`
+    return `R ${amount.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}`
   }
 
   const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('en-NA', {
+    return new Date(date).toLocaleDateString('en-ZA', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -677,7 +677,7 @@ export default function ClientDetailPage() {
           )}
 
           <Input
-            label="Amount (N$)"
+            label="Amount (R)"
             type="number"
             step="0.01"
             value={paymentForm.amount}

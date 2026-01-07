@@ -343,7 +343,7 @@ export default function BlockDetailPage() {
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-gray-900">N$ {room.monthly_fee.toFixed(2)}</td>
+                      <td className="px-6 py-4 text-gray-900">R {room.monthly_fee.toFixed(2)}</td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${status.bg}`}>
                           {status.label}

@@ -1,0 +1,136 @@
+import { NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+import { getStripe } from '@/lib/stripe'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
+
+// Service role client for updating database
+const serviceClient = createServiceClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
+
+export async function POST() {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Get user's center
+    const { data: profile } = await supabase
+      .from('users')
+      .select('center_id')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile?.center_id) {
+      return NextResponse.json({ error: 'No center found' }, { status: 400 })
+    }
+
+    // Get center with Stripe customer ID
+    const { data: center } = await supabase
+      .from('tutorial_centers')
+      .select('id, stripe_customer_id, email')
+      .eq('id', profile.center_id)
+      .single()
+
+    if (!center) {
+      return NextResponse.json({ error: 'Center not found' }, { status: 404 })
+    }
+
+    const stripe = getStripe()
+    let customerId = center.stripe_customer_id
+
+    // If no customer ID, try to find by email
+    if (!customerId && center.email) {
+      const customers = await stripe.customers.list({
+        email: center.email,
+        limit: 1,
+      })
+      if (customers.data.length > 0) {
+        customerId = customers.data[0].id
+      }
+    }
+
+    if (!customerId) {
+      return NextResponse.json({
+        error: 'No Stripe customer found. Please complete a checkout first.',
+        synced: false
+      }, { status: 400 })
+    }
+
+    // Get active subscriptions for this customer
+    const subscriptions = await stripe.subscriptions.list({
+      customer: customerId,
+      status: 'all',
+      limit: 1,
+    })
+
+    if (subscriptions.data.length === 0) {
+      return NextResponse.json({
+        message: 'No subscriptions found',
+        synced: true
+      })
+    }
+
+    const subscription = subscriptions.data[0]
+
+    // Determine the plan from the price ID
+    let plan = 'starter'
+    const priceId = subscription.items.data[0]?.price?.id
+
+    if (priceId === process.env.STRIPE_STANDARD_PRICE_ID) {
+      plan = 'standard'
+    } else if (priceId === process.env.STRIPE_PREMIUM_PRICE_ID) {
+      plan = 'premium'
+    } else if (priceId === process.env.STRIPE_STARTER_PRICE_ID) {
+      plan = 'starter'
+    }
+
+    // Map Stripe status to our status
+    const statusMap: Record<string, string> = {
+      active: 'active',
+      past_due: 'past_due',
+      unpaid: 'unpaid',
+      canceled: 'cancelled',
+      incomplete: 'incomplete',
+      incomplete_expired: 'expired',
+      trialing: 'trialing',
+      paused: 'paused',
+    }
+    const status = statusMap[subscription.status] || 'inactive'
+
+    // Update the center with subscription info
+    const { error: updateError } = await serviceClient
+      .from('tutorial_centers')
+      .update({
+        stripe_customer_id: customerId,
+        stripe_subscription_id: subscription.id,
+        subscription_status: status,
+        subscription_tier: plan,
+        current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+        cancel_at_period_end: subscription.cancel_at_period_end,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', center.id)
+
+    if (updateError) {
+      console.error('Failed to update subscription:', updateError)
+      return NextResponse.json({ error: 'Failed to update subscription' }, { status: 500 })
+    }
+
+    return NextResponse.json({
+      synced: true,
+      subscription: {
+        status,
+        plan,
+        currentPeriodEnd: new Date(subscription.current_period_end * 1000).toISOString(),
+      },
+    })
+  } catch (error) {
+    console.error('Sync error:', error)
+    return NextResponse.json({ error: 'Failed to sync subscription' }, { status: 500 })
+  }
+}

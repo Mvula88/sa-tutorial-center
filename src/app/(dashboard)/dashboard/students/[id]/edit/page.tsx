@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input, Select, Textarea } from '@/components/ui/input'
 import { ArrowLeft, Save } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { isValidSAPhoneNumber, getPhoneValidationError } from '@/lib/phone-validation'
 
 interface Subject {
   id: string
@@ -175,6 +176,17 @@ export default function EditStudentPage() {
 
     if (!formData.surname.trim()) newErrors.surname = 'Surname is required'
     if (!formData.first_name.trim()) newErrors.first_name = 'First name is required'
+
+    // Validate phone numbers if provided
+    if (formData.phone && !isValidSAPhoneNumber(formData.phone)) {
+      newErrors.phone = getPhoneValidationError(formData.phone, 'Mobile number') || 'Invalid phone number'
+    }
+    if (formData.parent_phone && !isValidSAPhoneNumber(formData.parent_phone)) {
+      newErrors.parent_phone = getPhoneValidationError(formData.parent_phone, 'Parent phone') || 'Invalid phone number'
+    }
+    if (formData.payer_phone && !isValidSAPhoneNumber(formData.payer_phone)) {
+      newErrors.payer_phone = getPhoneValidationError(formData.payer_phone, 'Payer phone') || 'Invalid phone number'
+    }
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -481,7 +493,7 @@ export default function EditStudentPage() {
                   <div className="ml-3">
                     <p className="font-medium text-gray-900">{subject.name}</p>
                     <p className="text-sm text-gray-500">
-                      N$ {subject.monthly_fee.toFixed(2)}/month
+                      R {subject.monthly_fee.toFixed(2)}/month
                     </p>
                   </div>
                 </label>

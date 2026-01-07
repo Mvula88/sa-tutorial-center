@@ -13,6 +13,7 @@ import {
   AlertCircle,
 } from 'lucide-react'
 import type { DashboardStats } from '@/types'
+import { formatCurrency } from '@/lib/currency'
 
 interface StatCardProps {
   title: string
@@ -180,9 +181,6 @@ export default function DashboardPage() {
     )
   }
 
-  const formatCurrency = (amount: number) => {
-    return `N$ ${amount.toLocaleString('en-NA', { minimumFractionDigits: 2 })}`
-  }
 
   return (
     <div className="p-4 md:p-8">

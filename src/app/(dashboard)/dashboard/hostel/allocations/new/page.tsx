@@ -178,34 +178,56 @@ export default function NewAllocationPage() {
     const supabase = createClient()
 
     try {
-      // Create allocation
-      const insertData = {
-        center_id: user.center_id,
-        student_id: formData.student_id,
-        room_id: formData.room_id,
-        check_in_date: formData.check_in_date,
-        status: 'checked_in',
-      }
+      // Use atomic RPC function to prevent race conditions
+      const { data, error } = await supabase.rpc('allocate_student_to_room', {
+        p_center_id: user.center_id,
+        p_student_id: formData.student_id,
+        p_room_id: formData.room_id,
+        p_check_in_date: formData.check_in_date,
+      })
 
-      const { error: allocationError } = await supabase
-        .from('hostel_allocations')
-        .insert(insertData as never)
+      if (error) throw error
 
-      if (allocationError) throw allocationError
+      const result = data as { success: boolean; error?: string; allocation_id?: string }
 
-      // Update room occupancy
-      if (selectedRoom) {
-        await supabase
-          .from('hostel_rooms')
-          .update({ current_occupancy: selectedRoom.current_occupancy + 1 } as never)
-          .eq('id', selectedRoom.id)
+      if (!result.success) {
+        toast.error(result.error || 'Failed to allocate student')
+        return
       }
 
       toast.success('Student allocated successfully!')
       router.push('/dashboard/hostel/allocations')
     } catch (error) {
       console.error('Error creating allocation:', error)
-      toast.error('Failed to allocate student')
+      // Fallback to non-atomic approach if RPC doesn't exist yet
+      try {
+        const insertData = {
+          center_id: user.center_id,
+          student_id: formData.student_id,
+          room_id: formData.room_id,
+          check_in_date: formData.check_in_date,
+          status: 'checked_in',
+        }
+
+        const { error: allocationError } = await supabase
+          .from('hostel_allocations')
+          .insert(insertData as never)
+
+        if (allocationError) throw allocationError
+
+        if (selectedRoom) {
+          await supabase
+            .from('hostel_rooms')
+            .update({ current_occupancy: selectedRoom.current_occupancy + 1 } as never)
+            .eq('id', selectedRoom.id)
+        }
+
+        toast.success('Student allocated successfully!')
+        router.push('/dashboard/hostel/allocations')
+      } catch (fallbackError) {
+        console.error('Fallback error:', fallbackError)
+        toast.error('Failed to allocate student')
+      }
     } finally {
       setIsLoading(false)
     }
@@ -377,7 +399,7 @@ export default function NewAllocationPage() {
                         {room.current_occupancy}/{room.capacity}
                       </div>
                       <p className="text-sm text-green-600">{availableSpaces} left</p>
-                      <p className="text-xs text-gray-500">N$ {room.monthly_fee}/mo</p>
+                      <p className="text-xs text-gray-500">R {room.monthly_fee}/mo</p>
                     </div>
                   </label>
                 )
@@ -420,7 +442,7 @@ export default function NewAllocationPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Monthly Fee</span>
-                <span className="font-medium">N$ {selectedRoom.monthly_fee.toFixed(2)}</span>
+                <span className="font-medium">R {selectedRoom.monthly_fee.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Check-in Date</span>

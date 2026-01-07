@@ -271,7 +271,7 @@ export default function PaymentDetailPage() {
 
         <div class="amount-box">
           <p class="label">Amount Paid</p>
-          <p class="amount">N$ ${payment.amount.toFixed(2)}</p>
+          <p class="amount">R ${payment.amount.toFixed(2)}</p>
         </div>
 
         ${payment.student_fee ? `
@@ -287,7 +287,7 @@ export default function PaymentDetailPage() {
               <tr>
                 <td>${payment.student_fee.fee_type}</td>
                 <td>${new Date(payment.student_fee.fee_month).toLocaleDateString('en-ZA', { year: 'numeric', month: 'long' })}</td>
-                <td style="text-align: right">N$ ${payment.student_fee.amount_due.toFixed(2)}</td>
+                <td style="text-align: right">R ${payment.student_fee.amount_due.toFixed(2)}</td>
               </tr>
             </tbody>
           </table>
@@ -359,7 +359,7 @@ export default function PaymentDetailPage() {
     }
   }
 
-  const formatCurrency = (amount: number) => `N$ ${amount.toFixed(2)}`
+  const formatCurrency = (amount: number) => `R ${amount.toFixed(2)}`
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-ZA', {

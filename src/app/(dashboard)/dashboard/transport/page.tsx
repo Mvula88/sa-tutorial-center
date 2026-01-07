@@ -251,29 +251,41 @@ export default function TransportPage() {
     setIsSearching(true)
     const supabase = createClient()
 
-    // Get students that are not already assigned to transport
-    const { data: existingAssignments } = await supabase
-      .from('student_transport')
-      .select('student_id')
-      .eq('center_id', user.center_id)
-      .eq('status', 'active')
-
-    const assignedStudentIds = ((existingAssignments || []) as { student_id: string }[]).map(a => a.student_id)
-
-    let studentsQuery = supabase
+    // Use a more efficient query - search students first, then check assignments
+    // This avoids fetching ALL assignments upfront
+    const { data: students } = await supabase
       .from('students')
       .select('id, full_name, student_number, grade')
       .eq('center_id', user.center_id)
       .eq('status', 'active')
       .or(`full_name.ilike.%${query}%,student_number.ilike.%${query}%`)
-      .limit(10)
+      .limit(15) // Fetch a few extra to account for filtering
 
-    const { data } = await studentsQuery
+    if (!students || students.length === 0) {
+      setSearchResults([])
+      setIsSearching(false)
+      return
+    }
+
+    // Only check assignment status for the found students (much more efficient)
+    const studentIds = students.map(s => s.id)
+    const { data: existingAssignments } = await supabase
+      .from('student_transport')
+      .select('student_id')
+      .eq('center_id', user.center_id)
+      .eq('status', 'active')
+      .in('student_id', studentIds)
+
+    const assignedStudentIds = new Set(
+      ((existingAssignments || []) as { student_id: string }[]).map(a => a.student_id)
+    )
 
     // Filter out already assigned students
     interface StudentData { id: string; full_name: string; student_number: string | null; grade: string | null }
-    const typedStudents = (data || []) as StudentData[]
-    const availableStudents = typedStudents.filter(s => !assignedStudentIds.includes(s.id))
+    const typedStudents = students as StudentData[]
+    const availableStudents = typedStudents
+      .filter(s => !assignedStudentIds.has(s.id))
+      .slice(0, 10) // Limit final results
     setSearchResults(availableStudents)
     setIsSearching(false)
   }
@@ -704,7 +716,7 @@ export default function TransportPage() {
                   </div>
                   <div className="flex items-center gap-6">
                     <div className="text-sm text-right">
-                      <p className="text-gray-900 font-medium">N${route.monthly_fee.toFixed(2)}/mo</p>
+                      <p className="text-gray-900 font-medium">R {route.monthly_fee.toFixed(2)}/mo</p>
                       <p className="text-gray-500">{route._count?.students || 0} students</p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -1092,7 +1104,7 @@ export default function TransportPage() {
                 <p className="text-xs text-gray-500 mt-1">Enter each pickup location on a new line</p>
               </div>
               <Input
-                label="Monthly Fee (N$)"
+                label="Monthly Fee (R)"
                 type="number"
                 step="0.01"
                 value={routeForm.monthly_fee}
@@ -1197,7 +1209,7 @@ export default function TransportPage() {
                   { value: '', label: 'Select a route' },
                   ...routes.filter(r => r.is_active).map((route) => ({
                     value: route.id,
-                    label: `${route.name} - N$${route.monthly_fee.toFixed(2)}/mo`,
+                    label: `${route.name} - R ${route.monthly_fee.toFixed(2)}/mo`,
                   })),
                 ]}
               />

@@ -321,7 +321,7 @@ export default function CenterDetailPage() {
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900">
-                N$ {(stats?.totalRevenue || 0).toLocaleString()}
+                R {(stats?.totalRevenue || 0).toLocaleString()}
               </p>
               <p className="text-sm text-gray-500">Revenue</p>
             </div>

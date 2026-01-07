@@ -19,6 +19,7 @@ import {
   TrendingUp,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { formatCurrency, CURRENCY_CONFIG } from '@/lib/currency'
 
 interface Payment {
   id: string
@@ -154,10 +155,6 @@ export default function PaymentsPage() {
 
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE)
 
-  const formatCurrency = (amount: number) => {
-    return `N$ ${amount.toFixed(2)}`
-  }
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-ZA', {
       year: 'numeric',
@@ -192,7 +189,7 @@ export default function PaymentsPage() {
             </div>
             <div>
               <p className="text-sm text-gray-500">Total (This View)</p>
-              <p className="text-xl font-bold text-green-600">N$ {totalAmount.toFixed(2)}</p>
+              <p className="text-xl font-bold text-green-600">{formatCurrency(totalAmount)}</p>
             </div>
           </div>
         </div>

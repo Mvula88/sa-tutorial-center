@@ -21,6 +21,10 @@ import {
   MessageSquare,
   Calendar,
   CheckCircle,
+  Zap,
+  ExternalLink,
+  AlertTriangle,
+  Clock,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -41,6 +45,15 @@ interface CenterData {
   sms_module_enabled: boolean
   payment_months: number[]
   default_registration_fee: number
+}
+
+interface SubscriptionData {
+  subscription_status: string
+  subscription_tier: string
+  current_period_end: string | null
+  cancel_at_period_end: boolean
+  trial_ends_at: string | null
+  stripe_customer_id: string | null
 }
 
 const MONTHS = [
@@ -95,6 +108,17 @@ export default function CenterSettingsPage() {
     default_registration_fee: 0,
   })
 
+  const [subscriptionData, setSubscriptionData] = useState<SubscriptionData>({
+    subscription_status: 'inactive',
+    subscription_tier: 'starter',
+    current_period_end: null,
+    cancel_at_period_end: false,
+    trial_ends_at: null,
+    stripe_customer_id: null,
+  })
+
+  const [isPortalLoading, setIsPortalLoading] = useState(false)
+
   useEffect(() => {
     if (user?.center) {
       fetchCenterData()
@@ -112,7 +136,7 @@ export default function CenterSettingsPage() {
       .single()
 
     if (!error && data) {
-      const center = data as CenterData & { name: string }
+      const center = data as CenterData & SubscriptionData & { name: string }
       setCenterData({
         name: center.name || '',
         email: center.email || '',
@@ -131,7 +155,90 @@ export default function CenterSettingsPage() {
         payment_months: center.payment_months || [1, 2, 3, 4, 5, 6, 7, 8, 9],
         default_registration_fee: center.default_registration_fee || 0,
       })
+      setSubscriptionData({
+        subscription_status: center.subscription_status || 'inactive',
+        subscription_tier: center.subscription_tier || 'starter',
+        current_period_end: center.current_period_end || null,
+        cancel_at_period_end: center.cancel_at_period_end || false,
+        trial_ends_at: center.trial_ends_at || null,
+        stripe_customer_id: center.stripe_customer_id || null,
+      })
     }
+  }
+
+  async function handleManageSubscription() {
+    setIsPortalLoading(true)
+    try {
+      const response = await fetch('/api/stripe/portal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to open billing portal')
+      }
+
+      window.location.href = data.url
+    } catch (error) {
+      console.error('Portal error:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to open billing portal')
+    } finally {
+      setIsPortalLoading(false)
+    }
+  }
+
+  async function handleUpgrade(plan: string) {
+    setIsPortalLoading(true)
+    try {
+      const response = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to start checkout')
+      }
+
+      window.location.href = data.url
+    } catch (error) {
+      console.error('Checkout error:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to start checkout')
+    } finally {
+      setIsPortalLoading(false)
+    }
+  }
+
+  function getSubscriptionStatusBadge(status: string) {
+    const statusMap: Record<string, { color: string; label: string }> = {
+      active: { color: 'bg-green-100 text-green-700', label: 'Active' },
+      trialing: { color: 'bg-blue-100 text-blue-700', label: 'Trial' },
+      past_due: { color: 'bg-red-100 text-red-700', label: 'Past Due' },
+      cancelled: { color: 'bg-gray-100 text-gray-700', label: 'Cancelled' },
+      inactive: { color: 'bg-yellow-100 text-yellow-700', label: 'Inactive' },
+    }
+    return statusMap[status] || statusMap.inactive
+  }
+
+  function formatDate(dateString: string | null) {
+    if (!dateString) return 'N/A'
+    return new Date(dateString).toLocaleDateString('en-ZA', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
+  }
+
+  function getDaysRemaining(dateString: string | null) {
+    if (!dateString) return 0
+    const endDate = new Date(dateString)
+    const today = new Date()
+    const diffTime = endDate.getTime() - today.getTime()
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
   }
 
   async function handleProfileUpdate(e: React.FormEvent) {
@@ -249,6 +356,7 @@ export default function CenterSettingsPage() {
     { id: 'profile', label: 'My Profile', icon: <User className="w-4 h-4" /> },
     { id: 'security', label: 'Security', icon: <Shield className="w-4 h-4" /> },
     ...(isCenterAdmin() ? [
+      { id: 'subscription', label: 'Subscription', icon: <Zap className="w-4 h-4" /> },
       { id: 'center', label: 'Center Details', icon: <Building2 className="w-4 h-4" /> },
       { id: 'academic', label: 'Academic Year', icon: <Calendar className="w-4 h-4" /> },
       { id: 'branding', label: 'Branding', icon: <Palette className="w-4 h-4" /> },
@@ -492,6 +600,179 @@ export default function CenterSettingsPage() {
             </div>
           )}
 
+          {/* Subscription Tab */}
+          {activeTab === 'subscription' && isCenterAdmin() && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <div className="flex items-center gap-3 mb-6 pb-6 border-b border-gray-100">
+                <div className="p-3 bg-indigo-100 rounded-lg">
+                  <Zap className="w-6 h-6 text-indigo-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">Subscription</h2>
+                  <p className="text-sm text-gray-500">Manage your subscription and billing</p>
+                </div>
+              </div>
+
+              {/* Current Plan */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-medium text-gray-900">Current Plan</h3>
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${getSubscriptionStatusBadge(subscriptionData.subscription_status).color}`}>
+                    {getSubscriptionStatusBadge(subscriptionData.subscription_status).label}
+                  </span>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Plan</span>
+                    <span className="font-medium text-gray-900 capitalize">{subscriptionData.subscription_tier}</span>
+                  </div>
+
+                  {subscriptionData.subscription_status === 'trialing' && subscriptionData.trial_ends_at && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Trial Ends</span>
+                      <span className="font-medium text-gray-900">{formatDate(subscriptionData.trial_ends_at)}</span>
+                    </div>
+                  )}
+
+                  {subscriptionData.subscription_status === 'active' && subscriptionData.current_period_end && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Next Billing Date</span>
+                      <span className="font-medium text-gray-900">{formatDate(subscriptionData.current_period_end)}</span>
+                    </div>
+                  )}
+
+                  {subscriptionData.cancel_at_period_end && (
+                    <div className="flex items-center gap-2 text-amber-600 mt-2">
+                      <AlertTriangle className="w-4 h-4" />
+                      <span className="text-sm">Subscription will cancel at period end</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Trial Warning */}
+              {subscriptionData.subscription_status === 'trialing' && subscriptionData.trial_ends_at && (
+                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <Clock className="w-5 h-5 text-blue-600 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium text-blue-900">Trial Period</h4>
+                      <p className="text-sm text-blue-700 mt-1">
+                        You have {getDaysRemaining(subscriptionData.trial_ends_at)} days remaining in your trial.
+                        Upgrade now to continue using all features after your trial ends.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Past Due Warning */}
+              {subscriptionData.subscription_status === 'past_due' && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium text-red-900">Payment Failed</h4>
+                      <p className="text-sm text-red-700 mt-1">
+                        Your last payment failed. Please update your payment method to avoid service interruption.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="space-y-3">
+                {subscriptionData.stripe_customer_id ? (
+                  <Button
+                    onClick={handleManageSubscription}
+                    disabled={isPortalLoading}
+                    leftIcon={isPortalLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
+                    className="w-full"
+                  >
+                    {isPortalLoading ? 'Opening...' : 'Manage Subscription'}
+                  </Button>
+                ) : (
+                  <>
+                    {subscriptionData.subscription_status === 'trialing' || subscriptionData.subscription_status === 'inactive' ? (
+                      <div className="space-y-3">
+                        <p className="text-sm text-gray-600">Choose a plan to continue after your trial:</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <button
+                            onClick={() => handleUpgrade('starter')}
+                            disabled={isPortalLoading}
+                            className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 transition-colors text-left"
+                          >
+                            <h4 className="font-medium text-gray-900">Starter</h4>
+                            <p className="text-2xl font-bold text-gray-900 mt-1">R499<span className="text-sm font-normal text-gray-500">/mo</span></p>
+                            <p className="text-xs text-gray-500 mt-1">Up to 50 students</p>
+                          </button>
+                          <button
+                            onClick={() => handleUpgrade('standard')}
+                            disabled={isPortalLoading}
+                            className="p-4 border-2 border-blue-500 rounded-lg bg-blue-50 text-left relative"
+                          >
+                            <span className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">Popular</span>
+                            <h4 className="font-medium text-gray-900">Standard</h4>
+                            <p className="text-2xl font-bold text-gray-900 mt-1">R899<span className="text-sm font-normal text-gray-500">/mo</span></p>
+                            <p className="text-xs text-gray-500 mt-1">Up to 150 students</p>
+                          </button>
+                          <button
+                            onClick={() => handleUpgrade('premium')}
+                            disabled={isPortalLoading}
+                            className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 transition-colors text-left"
+                          >
+                            <h4 className="font-medium text-gray-900">Premium</h4>
+                            <p className="text-2xl font-bold text-gray-900 mt-1">R1,499<span className="text-sm font-normal text-gray-500">/mo</span></p>
+                            <p className="text-xs text-gray-500 mt-1">Unlimited students</p>
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+                  </>
+                )}
+              </div>
+
+              {/* Features by Plan */}
+              <div className="mt-8 pt-6 border-t border-gray-200">
+                <h3 className="font-medium text-gray-900 mb-4">Plan Features</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <h4 className="font-medium text-gray-900 mb-2">Starter</h4>
+                    <ul className="space-y-1 text-gray-600">
+                      <li>Up to 50 students</li>
+                      <li>Student management</li>
+                      <li>Fee tracking</li>
+                      <li>Basic reports</li>
+                      <li>Email support</li>
+                    </ul>
+                  </div>
+                  <div className="p-4 bg-blue-50 rounded-lg">
+                    <h4 className="font-medium text-gray-900 mb-2">Standard</h4>
+                    <ul className="space-y-1 text-gray-600">
+                      <li>Up to 150 students</li>
+                      <li>Everything in Starter</li>
+                      <li>Multiple staff accounts</li>
+                      <li>Advanced reports</li>
+                      <li>Priority support</li>
+                    </ul>
+                  </div>
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <h4 className="font-medium text-gray-900 mb-2">Premium</h4>
+                    <ul className="space-y-1 text-gray-600">
+                      <li>Unlimited students</li>
+                      <li>Everything in Standard</li>
+                      <li>Hostel management</li>
+                      <li>Transport tracking</li>
+                      <li>Custom branding</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Center Details Tab */}
           {activeTab === 'center' && isCenterAdmin() && (
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
@@ -612,15 +893,15 @@ export default function CenterSettingsPage() {
                 <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
                   <h4 className="font-medium text-indigo-900 mb-2">Fee Calculation Example</h4>
                   <p className="text-sm text-indigo-700">
-                    If a subject costs N$ 300/month, the yearly total will be:
+                    If a subject costs R 300/month, the yearly total will be:
                     <br />
-                    <span className="font-bold">N$ 300 x {centerData.payment_months.length} months = N$ {(300 * centerData.payment_months.length).toLocaleString()}</span>
+                    <span className="font-bold">R 300 x {centerData.payment_months.length} months = R {(300 * centerData.payment_months.length).toLocaleString()}</span>
                   </p>
                 </div>
 
                 <div>
                   <Input
-                    label="Default Registration Fee (N$)"
+                    label="Default Registration Fee (R)"
                     type="number"
                     value={centerData.default_registration_fee}
                     onChange={(e) => setCenterData({ ...centerData, default_registration_fee: parseFloat(e.target.value) || 0 })}

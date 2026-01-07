@@ -24,9 +24,9 @@ export function generateContractPDF(client: ClientData) {
   const contentWidth = pageWidth - 2 * margin
   let y = 20
 
-  const formatCurrency = (amount: number) => `N$ ${amount.toFixed(2)}`
+  const formatCurrency = (amount: number) => `R ${amount.toFixed(2)}`
   const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('en-NA', {
+    return new Date(date).toLocaleDateString('en-ZA', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -122,13 +122,13 @@ export function generateContractPDF(client: ClientData) {
 
   doc.setFontSize(10)
   doc.setFont('helvetica', 'bold')
-  doc.text('Digital Wave Technologies CC', margin, y)
+  doc.text('SA Tutorial Centres (Pty) Ltd', margin, y)
   doc.setFont('helvetica', 'normal')
   doc.text('(hereinafter referred to as "the Service Provider")', margin + 55, y)
   y += 6
-  doc.text('Contact: 081 321 4813 / 081 440 1522', margin, y)
+  doc.text('Contact: support@satutorialcentres.co.za', margin, y)
   y += 5
-  doc.text('Email: ismaelmvula@gmail.com', margin, y)
+  doc.text('South Africa', margin, y)
   y += 10
 
   doc.setFontSize(11)
@@ -417,7 +417,7 @@ export function generateContractPDF(client: ClientData) {
   // === SECTION 9: INTELLECTUAL PROPERTY ===
   addSectionHeader('9. INTELLECTUAL PROPERTY')
 
-  addBullet('9.1 The School Management System software remains the intellectual property of Digital Wave Technologies CC.')
+  addBullet('9.1 The School Management System software remains the intellectual property of SA Tutorial Centres (Pty) Ltd.')
   addBullet('9.2 The Client is granted a non-exclusive, non-transferable license to use the system for the duration of this agreement.')
   addBullet("9.3 Custom branding elements (logos, colors) provided by the Client remain the Client's property.")
   addBullet("9.4 Website content provided by the Client remains the Client's property.")
@@ -433,8 +433,8 @@ export function generateContractPDF(client: ClientData) {
   addSectionHeader('11. DISPUTE RESOLUTION')
 
   addBullet('11.1 Any disputes arising from this agreement shall first be addressed through good-faith negotiation.')
-  addBullet('11.2 If negotiation fails, disputes shall be resolved through mediation in Windhoek, Namibia.')
-  addBullet('11.3 This agreement is governed by the laws of the Republic of Namibia.')
+  addBullet('11.2 If negotiation fails, disputes shall be resolved through mediation in Johannesburg, South Africa.')
+  addBullet('11.3 This agreement is governed by the laws of the Republic of South Africa.')
 
   // === SECTION 12: ENTIRE AGREEMENT ===
   addSectionHeader('12. ENTIRE AGREEMENT')
@@ -457,7 +457,7 @@ export function generateContractPDF(client: ClientData) {
   y += 8
 
   doc.setFont('helvetica', 'normal')
-  doc.text('Digital Wave Technologies CC', margin, y)
+  doc.text('SA Tutorial Centres (Pty) Ltd', margin, y)
   doc.text(client.business_name, pageWidth / 2 + 10, y)
   y += 15
 
@@ -513,7 +513,7 @@ export function generateContractPDF(client: ClientData) {
 
   doc.setFontSize(11)
   doc.setFont('helvetica', 'bold')
-  doc.text('Digital Wave Technologies CC', margin, y)
+  doc.text('SA Tutorial Centres (Pty) Ltd', margin, y)
   y += 10
 
   const bankData = [
@@ -541,7 +541,7 @@ export function generateContractPDF(client: ClientData) {
   doc.setFont('helvetica', 'italic')
   doc.text('Document Version 1.0 - January 2026', pageWidth / 2, y, { align: 'center' })
   y += 5
-  doc.text('Digital Wave Technologies CC - Empowering Education Through Technology', pageWidth / 2, y, { align: 'center' })
+  doc.text('SA Tutorial Centres (Pty) Ltd - Empowering Education Through Technology', pageWidth / 2, y, { align: 'center' })
 
   return doc
 }

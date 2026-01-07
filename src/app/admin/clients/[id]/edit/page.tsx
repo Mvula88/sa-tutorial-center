@@ -333,7 +333,7 @@ export default function EditClientPage() {
                   <span className="font-medium text-gray-900">School Management System</span>
                 </div>
                 <p className="text-sm text-gray-500 mt-1">
-                  Monthly fee: N$ {formData.monthly_sms_fee.toFixed(2)}
+                  Monthly fee: R {formData.monthly_sms_fee.toFixed(2)}
                 </p>
               </div>
             </label>
@@ -341,7 +341,7 @@ export default function EditClientPage() {
             {formData.has_school_management && (
               <div className="pl-9 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
-                  label="Monthly SMS Fee (N$)"
+                  label="Monthly SMS Fee (R)"
                   type="number"
                   value={formData.monthly_sms_fee}
                   onChange={(e) => setFormData({ ...formData, monthly_sms_fee: parseFloat(e.target.value) || 0 })}
@@ -365,7 +365,7 @@ export default function EditClientPage() {
                   <span className="font-medium text-gray-900">Website</span>
                 </div>
                 <p className="text-sm text-gray-500 mt-1">
-                  Annual renewal: N$ {formData.annual_website_fee.toFixed(2)}
+                  Annual renewal: R {formData.annual_website_fee.toFixed(2)}
                 </p>
               </div>
             </label>
@@ -401,7 +401,7 @@ export default function EditClientPage() {
                   />
                 </div>
                 <Input
-                  label="Annual Website Fee (N$)"
+                  label="Annual Website Fee (R)"
                   type="number"
                   value={formData.annual_website_fee}
                   onChange={(e) => setFormData({ ...formData, annual_website_fee: parseFloat(e.target.value) || 0 })}
@@ -428,7 +428,7 @@ export default function EditClientPage() {
               onChange={(e) => setFormData({ ...formData, contract_start_date: e.target.value })}
             />
             <Input
-              label="Setup Fee (N$)"
+              label="Setup Fee (R)"
               type="number"
               value={formData.setup_fee}
               onChange={(e) => setFormData({ ...formData, setup_fee: parseFloat(e.target.value) || 0 })}
@@ -463,25 +463,25 @@ export default function EditClientPage() {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-600">Setup Fee (once-off)</span>
-                <span className="font-medium">N$ {formData.setup_fee.toFixed(2)}</span>
+                <span className="font-medium">R {formData.setup_fee.toFixed(2)}</span>
               </div>
               {formData.has_school_management && (
                 <div className="flex justify-between">
                   <span className="text-gray-600">Monthly SMS Fee</span>
-                  <span className="font-medium">N$ {formData.monthly_sms_fee.toFixed(2)}/month</span>
+                  <span className="font-medium">R {formData.monthly_sms_fee.toFixed(2)}/month</span>
                 </div>
               )}
               {formData.has_website && (
                 <div className="flex justify-between">
                   <span className="text-gray-600">Annual Website Renewal</span>
-                  <span className="font-medium">N$ {formData.annual_website_fee.toFixed(2)}/year</span>
+                  <span className="font-medium">R {formData.annual_website_fee.toFixed(2)}/year</span>
                 </div>
               )}
               <div className="border-t border-gray-200 pt-2 mt-2">
                 <div className="flex justify-between font-medium">
                   <span className="text-gray-900">Annual Total</span>
                   <span className="text-gray-900">
-                    N$ {(
+                    R {(
                       (formData.has_school_management ? formData.monthly_sms_fee * 12 : 0) +
                       (formData.has_website ? formData.annual_website_fee : 0)
                     ).toFixed(2)}
