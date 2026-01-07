@@ -25,7 +25,9 @@ export async function POST() {
       .eq('id', user.id)
       .single()
 
-    if (!profile?.center_id) {
+    const typedProfile = profile as { center_id: string | null } | null
+
+    if (!typedProfile?.center_id) {
       return NextResponse.json({ error: 'No center found' }, { status: 400 })
     }
 
@@ -33,20 +35,22 @@ export async function POST() {
     const { data: center } = await supabase
       .from('tutorial_centers')
       .select('id, stripe_customer_id, email')
-      .eq('id', profile.center_id)
+      .eq('id', typedProfile.center_id)
       .single()
 
-    if (!center) {
+    const typedCenter = center as { id: string; stripe_customer_id: string | null; email: string | null } | null
+
+    if (!typedCenter) {
       return NextResponse.json({ error: 'Center not found' }, { status: 404 })
     }
 
     const stripe = getStripe()
-    let customerId = center.stripe_customer_id
+    let customerId = typedCenter.stripe_customer_id
 
     // If no customer ID, try to find by email
-    if (!customerId && center.email) {
+    if (!customerId && typedCenter.email) {
       const customers = await stripe.customers.list({
-        email: center.email,
+        email: typedCenter.email,
         limit: 1,
       })
       if (customers.data.length > 0) {
@@ -114,7 +118,7 @@ export async function POST() {
         cancel_at_period_end: subscription.cancel_at_period_end,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', center.id)
+      .eq('id', typedCenter.id)
 
     if (updateError) {
       console.error('Failed to update subscription:', updateError)
