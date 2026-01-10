@@ -22,6 +22,8 @@ export interface UserWithCenter {
     primary_color: string
     secondary_color: string
     status: 'active' | 'inactive' | 'suspended'
+    subscription_tier: 'micro' | 'starter' | 'standard' | 'premium' | null
+    subscription_status: 'active' | 'trialing' | 'past_due' | 'cancelled' | 'inactive' | null
     hostel_module_enabled: boolean
     transport_module_enabled: boolean
     library_module_enabled: boolean
