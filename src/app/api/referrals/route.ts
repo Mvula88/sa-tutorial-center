@@ -189,14 +189,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the referral
-    const { data: referral, error: referralError } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: referral, error: referralError } = await (supabase as any)
       .from('referrals')
       .insert({
         referral_code_id: codeData.id,
         referrer_center_id: codeData.center_id,
         referred_email: referredEmail.toLowerCase(),
         status: 'pending',
-      } as Record<string, unknown>)
+      })
       .select()
       .single()
 
@@ -209,12 +210,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Update total referrals count
-    await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any)
       .from('referral_codes')
       .update({
         total_referrals: (codeData.total_referrals || 0) + 1,
         updated_at: new Date().toISOString()
-      } as Record<string, unknown>)
+      })
       .eq('id', codeData.id)
 
     return NextResponse.json({
