@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+interface ReferralCodeResult {
+  id: string
+  code: string
+  is_active: boolean
+  center: { name: string } | null
+}
+
 // POST - Validate a referral code
 export async function POST(request: NextRequest) {
   try {
@@ -17,7 +24,7 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient()
 
     // Look up the referral code
-    const { data: referralCode, error } = await supabase
+    const { data: referralCodeData, error } = await supabase
       .from('referral_codes')
       .select(`
         id,
@@ -27,6 +34,8 @@ export async function POST(request: NextRequest) {
       `)
       .eq('code', code.toUpperCase())
       .single()
+
+    const referralCode = referralCodeData as ReferralCodeResult | null
 
     if (error || !referralCode) {
       return NextResponse.json({
@@ -42,7 +51,7 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const centerName = (referralCode.center as { name: string } | null)?.name || 'A tutorial center'
+    const centerName = referralCode.center?.name || 'A tutorial center'
 
     return NextResponse.json({
       valid: true,
