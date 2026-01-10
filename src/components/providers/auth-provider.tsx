@@ -64,6 +64,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
               primary_color,
               secondary_color,
               status,
+              subscription_tier,
+              subscription_status,
               hostel_module_enabled,
               transport_module_enabled,
               library_module_enabled,
