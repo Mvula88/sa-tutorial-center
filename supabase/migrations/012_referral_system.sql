@@ -47,9 +47,9 @@ CREATE TABLE referrals (
     -- Status tracking
     status referral_status DEFAULT 'pending',
 
-    -- Reward tracking
-    referrer_reward_amount DECIMAL(10, 2) DEFAULT 100, -- R100 credit
-    referred_reward_amount DECIMAL(10, 2) DEFAULT 50,  -- R50 credit (50% off first month at R99)
+    -- Reward tracking (in MONTHS, not Rand)
+    referrer_reward_months INTEGER DEFAULT 1, -- 1 month free for referrer
+    referred_extra_trial_days INTEGER DEFAULT 14, -- Extra 14 days trial (total 28 days)
     referrer_reward_applied BOOLEAN DEFAULT FALSE,
     referred_reward_applied BOOLEAN DEFAULT FALSE,
 
@@ -70,16 +70,16 @@ CREATE INDEX idx_referrals_status ON referrals(status);
 -- ============================================
 -- REFERRAL REWARDS TABLE
 -- ============================================
--- Tracks reward credits for each center
+-- Tracks free months earned through referrals
 
 CREATE TABLE referral_rewards (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     center_id UUID NOT NULL REFERENCES tutorial_centers(id) ON DELETE CASCADE,
     referral_id UUID REFERENCES referrals(id) ON DELETE SET NULL,
 
-    -- Reward details
-    amount DECIMAL(10, 2) NOT NULL,
-    reward_type VARCHAR(50) NOT NULL, -- 'referrer_bonus', 'referred_discount'
+    -- Reward details (in months, not currency)
+    free_months INTEGER NOT NULL DEFAULT 1,
+    reward_type VARCHAR(50) NOT NULL, -- 'referrer_bonus', 'extended_trial'
     description TEXT,
 
     -- Status
@@ -100,7 +100,7 @@ CREATE INDEX idx_referral_rewards_applied ON referral_rewards(is_applied);
 
 ALTER TABLE tutorial_centers
 ADD COLUMN IF NOT EXISTS referred_by_code VARCHAR(20),
-ADD COLUMN IF NOT EXISTS referral_credit_balance DECIMAL(10, 2) DEFAULT 0;
+ADD COLUMN IF NOT EXISTS referral_free_months INTEGER DEFAULT 0;
 
 -- ============================================
 -- ROW LEVEL SECURITY
@@ -251,38 +251,24 @@ BEGIN
             -- Update referral code stats
             UPDATE referral_codes
             SET successful_referrals = successful_referrals + 1,
+                total_rewards_earned = total_rewards_earned + 1, -- Track months earned
                 updated_at = NOW()
             WHERE id = ref_record.referral_code_id;
 
-            -- Create reward for referrer (R100 credit)
-            INSERT INTO referral_rewards (center_id, referral_id, amount, reward_type, description)
+            -- Create reward for referrer (1 month free)
+            INSERT INTO referral_rewards (center_id, referral_id, free_months, reward_type, description)
             VALUES (
                 ref_record.referrer_id,
                 ref_record.id,
-                100,
+                1,
                 'referrer_bonus',
-                'Referral bonus for referring ' || NEW.name
+                '1 month free for referring ' || NEW.name
             );
 
-            -- Add credit to referrer's balance
+            -- Add free month to referrer's balance
             UPDATE tutorial_centers
-            SET referral_credit_balance = COALESCE(referral_credit_balance, 0) + 100
+            SET referral_free_months = COALESCE(referral_free_months, 0) + 1
             WHERE id = ref_record.referrer_id;
-
-            -- Create reward for referred center (R50 credit)
-            INSERT INTO referral_rewards (center_id, referral_id, amount, reward_type, description)
-            VALUES (
-                NEW.id,
-                ref_record.id,
-                50,
-                'referred_discount',
-                'Welcome bonus for joining via referral'
-            );
-
-            -- Add credit to referred center's balance
-            UPDATE tutorial_centers
-            SET referral_credit_balance = COALESCE(referral_credit_balance, 0) + 50
-            WHERE id = NEW.id;
         END IF;
     END IF;
 

@@ -24,8 +24,8 @@ interface Referral {
   id: string
   referred_email: string
   status: 'pending' | 'completed' | 'rewarded' | 'expired'
-  referrer_reward_amount: number
-  referred_reward_amount: number
+  referrer_reward_months: number
+  referred_extra_trial_days: number
   created_at: string
   completed_at: string | null
   referred_center?: {
@@ -37,7 +37,7 @@ interface Referral {
 
 interface Reward {
   id: string
-  amount: number
+  free_months: number
   reward_type: string
   description: string
   is_applied: boolean
@@ -48,12 +48,12 @@ interface ReferralData {
   referralCode: string | null
   referrals: Referral[]
   rewards: Reward[]
-  creditBalance: number
+  freeMonthsBalance: number
   stats: {
     totalReferrals: number
     successfulReferrals: number
     pendingReferrals: number
-    totalEarned: number
+    totalFreeMonthsEarned: number
   }
 }
 
@@ -101,13 +101,13 @@ export default function ReferralsPage() {
   }
 
   const shareViaWhatsApp = () => {
-    const message = `Join SA Tutorial Centres and get R50 credit on your first month! Use my referral code: ${data?.referralCode}\n\nSign up here: ${referralLink}`
+    const message = `Join SA Tutorial Centres and get an extended 30-day free trial! Use my referral code: ${data?.referralCode}\n\nSign up here: ${referralLink}`
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank')
   }
 
   const shareViaEmail = () => {
-    const subject = 'Join SA Tutorial Centres - Get R50 Credit!'
-    const body = `Hi!\n\nI've been using SA Tutorial Centres to manage my tutorial center and it's been great!\n\nIf you sign up using my referral code, you'll get R50 credit on your first month.\n\nReferral Code: ${data?.referralCode}\n\nSign up here: ${referralLink}\n\nBest regards`
+    const subject = 'Join SA Tutorial Centres - Extended Free Trial!'
+    const body = `Hi!\n\nI've been using SA Tutorial Centres to manage my tutorial center and it's been great!\n\nIf you sign up using my referral code, you'll get an extended 30-day free trial (instead of 14 days).\n\nReferral Code: ${data?.referralCode}\n\nSign up here: ${referralLink}\n\nBest regards`
     window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank')
   }
 
@@ -154,7 +154,7 @@ export default function ReferralsPage() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">Referral Program</h1>
         <p className="text-gray-500 mt-1">
-          Invite other tutorial centres and earn R100 for each successful referral!
+          Invite other tutorial centres and earn 1 month free for each successful referral!
         </p>
       </div>
 
@@ -202,22 +202,22 @@ export default function ReferralsPage() {
               <Wallet className="w-5 h-5 text-purple-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">R{data?.stats.totalEarned || 0}</p>
-              <p className="text-xs text-gray-500">Total Earned</p>
+              <p className="text-2xl font-bold text-gray-900">{data?.stats.totalFreeMonthsEarned || 0}</p>
+              <p className="text-xs text-gray-500">Months Earned</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Credit Balance Banner */}
-      {(data?.creditBalance || 0) > 0 && (
+      {/* Free Months Balance Banner */}
+      {(data?.freeMonthsBalance || 0) > 0 && (
         <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl p-6 mb-8 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-green-100 text-sm">Your Credit Balance</p>
-              <p className="text-3xl font-bold">R{data?.creditBalance}</p>
+              <p className="text-green-100 text-sm">Your Free Months Balance</p>
+              <p className="text-3xl font-bold">{data?.freeMonthsBalance} month{(data?.freeMonthsBalance || 0) !== 1 ? 's' : ''}</p>
               <p className="text-green-100 text-sm mt-1">
-                This will be applied to your next subscription payment
+                Free subscription time from successful referrals
               </p>
             </div>
             <Gift className="w-12 h-12 text-green-200" />
@@ -336,7 +336,7 @@ export default function ReferralsPage() {
             <div>
               <p className="font-medium text-gray-900">They Sign Up</p>
               <p className="text-sm text-gray-600">
-                They use your code when creating their account
+                They get 30-day trial (instead of 14) using your code
               </p>
             </div>
           </div>
@@ -345,9 +345,9 @@ export default function ReferralsPage() {
               3
             </div>
             <div>
-              <p className="font-medium text-gray-900">You Both Earn</p>
+              <p className="font-medium text-gray-900">You Get 1 Month Free</p>
               <p className="text-sm text-gray-600">
-                You get R100, they get R50 when they subscribe!
+                When they subscribe, you earn 1 free month!
               </p>
             </div>
           </div>
@@ -384,10 +384,10 @@ export default function ReferralsPage() {
                     <td className="py-3">
                       {referral.status === 'completed' || referral.status === 'rewarded' ? (
                         <span className="text-green-600 font-medium">
-                          +R{referral.referrer_reward_amount}
+                          +{referral.referrer_reward_months || 1} month
                         </span>
                       ) : (
-                        <span className="text-gray-400">-</span>
+                        <span className="text-gray-400">Pending</span>
                       )}
                     </td>
                     <td className="py-3 text-sm text-gray-500">
@@ -425,7 +425,7 @@ export default function ReferralsPage() {
                     {new Date(reward.created_at).toLocaleDateString()}
                   </p>
                 </div>
-                <span className="text-green-600 font-bold">+R{reward.amount}</span>
+                <span className="text-green-600 font-bold">+{reward.free_months} month{reward.free_months !== 1 ? 's' : ''}</span>
               </div>
             ))}
           </div>

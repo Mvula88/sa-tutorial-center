@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       valid: true,
       code: referralCode.code,
       referrerName: centerName,
-      discount: 'R50 credit on your first month!',
+      discount: '30-day free trial (instead of 14 days)!',
     })
   } catch (error) {
     console.error('Error validating referral code:', error)

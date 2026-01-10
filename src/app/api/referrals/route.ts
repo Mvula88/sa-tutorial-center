@@ -48,10 +48,10 @@ export async function GET() {
       .eq('center_id', profile.center_id)
       .order('created_at', { ascending: false })
 
-    // Get center's credit balance
+    // Get center's free months balance
     const { data: center } = await supabase
       .from('tutorial_centers')
-      .select('referral_credit_balance')
+      .select('referral_free_months')
       .eq('id', profile.center_id)
       .single()
 
@@ -59,19 +59,19 @@ export async function GET() {
     const totalReferrals = referralsMade?.length || 0
     const successfulReferrals = referralsMade?.filter(r => r.status === 'completed' || r.status === 'rewarded').length || 0
     const pendingReferrals = referralsMade?.filter(r => r.status === 'pending').length || 0
-    const totalEarned = rewards?.reduce((sum, r) => sum + parseFloat(r.amount || '0'), 0) || 0
+    const totalFreeMonthsEarned = rewards?.reduce((sum, r) => sum + (parseInt(r.free_months) || 0), 0) || 0
 
     return NextResponse.json({
       referralCode: referralCode?.code || null,
       referralCodeId: referralCode?.id || null,
       referrals: referralsMade || [],
       rewards: rewards || [],
-      creditBalance: center?.referral_credit_balance || 0,
+      freeMonthsBalance: (center as { referral_free_months?: number } | null)?.referral_free_months || 0,
       stats: {
         totalReferrals,
         successfulReferrals,
         pendingReferrals,
-        totalEarned,
+        totalFreeMonthsEarned,
       },
     })
   } catch (error) {

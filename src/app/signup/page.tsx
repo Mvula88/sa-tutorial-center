@@ -289,7 +289,7 @@ export default function SignupPage() {
                       <p className="text-red-500 text-sm mt-1">Invalid referral code</p>
                     )}
                     <p className="text-xs text-gray-500 mt-1">
-                      Have a referral code? Enter it to get R50 credit!
+                      Have a referral code? Enter it to get 30 days free trial!
                     </p>
                   </div>
                 )}

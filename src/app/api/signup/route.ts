@@ -105,11 +105,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Calculate trial end date (14 days from now)
-    const trialEndsAt = new Date()
-    trialEndsAt.setDate(trialEndsAt.getDate() + 14)
-
-    // Validate referral code if provided
+    // Validate referral code if provided (do this first to determine trial length)
     let validReferralCode: { id: string; center_id: string } | null = null
     if (referralCode) {
       const { data: refCode } = await supabase
@@ -122,6 +118,11 @@ export async function POST(request: NextRequest) {
         validReferralCode = refCode as { id: string; center_id: string }
       }
     }
+
+    // Calculate trial end date (28 days if referred, 14 days otherwise)
+    const trialDays = validReferralCode ? 28 : 14
+    const trialEndsAt = new Date()
+    trialEndsAt.setDate(trialEndsAt.getDate() + trialDays)
 
     // Step 1: Create tutorial center with trial status
     const { data: center, error: centerError } = await supabase
@@ -228,8 +229,8 @@ export async function POST(request: NextRequest) {
           referred_center_id: center.id,
           referred_email: email.toLowerCase(),
           status: 'pending',
-          referrer_reward_amount: 100,
-          referred_reward_amount: 50,
+          referrer_reward_months: 1,
+          referred_extra_trial_days: 14,
         })
 
       // Update total referrals count on the referral code
@@ -255,11 +256,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: validReferralCode
-        ? 'Account created successfully! Your R50 referral credit will be applied when you subscribe.'
+        ? `Account created successfully! You have a ${trialDays}-day free trial. Sign in to get started!`
         : 'Account created successfully! You can now sign in.',
       centerId: center.id,
       userId: authData.user.id,
       referralApplied: !!validReferralCode,
+      trialDays,
     })
   } catch (error) {
     console.error('Signup error:', error)
