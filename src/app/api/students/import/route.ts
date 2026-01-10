@@ -22,11 +22,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user profile
-    const { data: userProfile } = await supabase
+    const { data: userProfileData } = await supabase
       .from('users')
       .select('id, center_id, role')
       .eq('id', authUser.id)
       .single()
+
+    const userProfile = userProfileData as { id: string; center_id: string | null; role: string } | null
 
     if (!userProfile?.center_id) {
       return NextResponse.json({ error: 'User not associated with a center' }, { status: 400 })
