@@ -272,7 +272,7 @@ export function parseCSV(content: string): Promise<ParsedCSV> {
           headers,
         })
       },
-      error: (error) => {
+      error: (error: Error) => {
         resolve({
           data: [],
           errors: [{ row: 0, message: `Failed to parse CSV: ${error.message}` }],
