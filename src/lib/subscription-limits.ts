@@ -81,12 +81,13 @@ export async function checkStudentLimit(centerId: string): Promise<StudentLimitC
   const supabase = createClient()
 
   // Get center's subscription tier
-  const { data: center } = await supabase
+  const { data: centerData } = await supabase
     .from('tutorial_centers')
     .select('subscription_tier')
     .eq('id', centerId)
     .single()
 
+  const center = centerData as { subscription_tier: string | null } | null
   const tier = (center?.subscription_tier as SubscriptionTier) || 'starter'
   const limit = PLAN_LIMITS[tier]?.maxStudents ?? PLAN_LIMITS.starter.maxStudents
 
