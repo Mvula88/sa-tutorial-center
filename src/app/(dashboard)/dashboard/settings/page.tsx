@@ -698,7 +698,16 @@ export default function CenterSettingsPage() {
                     {subscriptionData.subscription_status === 'trialing' || subscriptionData.subscription_status === 'inactive' ? (
                       <div className="space-y-3">
                         <p className="text-sm text-gray-600">Choose a plan to continue after your trial:</p>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                          <button
+                            onClick={() => handleUpgrade('micro')}
+                            disabled={isPortalLoading}
+                            className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 transition-colors text-left"
+                          >
+                            <h4 className="font-medium text-gray-900">Micro</h4>
+                            <p className="text-2xl font-bold text-gray-900 mt-1">R199<span className="text-sm font-normal text-gray-500">/mo</span></p>
+                            <p className="text-xs text-gray-500 mt-1">Up to 15 students</p>
+                          </button>
                           <button
                             onClick={() => handleUpgrade('starter')}
                             disabled={isPortalLoading}
@@ -737,7 +746,17 @@ export default function CenterSettingsPage() {
               {/* Features by Plan */}
               <div className="mt-8 pt-6 border-t border-gray-200">
                 <h3 className="font-medium text-gray-900 mb-4">Plan Features</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <h4 className="font-medium text-gray-900 mb-2">Micro</h4>
+                    <ul className="space-y-1 text-gray-600">
+                      <li>Up to 15 students</li>
+                      <li>Student management</li>
+                      <li>Fee tracking</li>
+                      <li>Payment recording</li>
+                      <li>Email support</li>
+                    </ul>
+                  </div>
                   <div className="p-4 bg-gray-50 rounded-lg">
                     <h4 className="font-medium text-gray-900 mb-2">Starter</h4>
                     <ul className="space-y-1 text-gray-600">
@@ -753,8 +772,8 @@ export default function CenterSettingsPage() {
                     <ul className="space-y-1 text-gray-600">
                       <li>Up to 150 students</li>
                       <li>Everything in Starter</li>
-                      <li>Multiple staff accounts</li>
-                      <li>Advanced reports</li>
+                      <li>Library module</li>
+                      <li>SMS notifications</li>
                       <li>Priority support</li>
                     </ul>
                   </div>
