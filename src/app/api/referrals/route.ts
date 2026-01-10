@@ -18,7 +18,9 @@ export async function GET() {
       .eq('id', user.id)
       .single()
 
-    if (!profile?.center_id) {
+    const userProfile = profile as { center_id: string; role: string } | null
+
+    if (!userProfile?.center_id) {
       return NextResponse.json({ error: 'No center found' }, { status: 400 })
     }
 
@@ -35,7 +37,7 @@ export async function GET() {
     const { data: referralCode } = await supabase
       .from('referral_codes')
       .select('*')
-      .eq('center_id', profile.center_id)
+      .eq('center_id', userProfile.center_id)
       .single()
 
     // Get referrals made by this center
@@ -47,21 +49,21 @@ export async function GET() {
           id, name, subscription_status
         )
       `)
-      .eq('referrer_center_id', profile.center_id)
+      .eq('referrer_center_id', userProfile.center_id)
       .order('created_at', { ascending: false })
 
     // Get rewards earned
     const { data: rewards } = await supabase
       .from('referral_rewards')
       .select('*')
-      .eq('center_id', profile.center_id)
+      .eq('center_id', userProfile.center_id)
       .order('created_at', { ascending: false })
 
     // Get center's free months balance
     const { data: center } = await supabase
       .from('tutorial_centers')
       .select('referral_free_months')
-      .eq('id', profile.center_id)
+      .eq('id', userProfile.center_id)
       .single()
 
     // Calculate stats
