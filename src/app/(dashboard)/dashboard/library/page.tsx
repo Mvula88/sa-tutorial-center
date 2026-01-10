@@ -60,6 +60,13 @@ interface BookBorrowing {
   student: { id: string; full_name: string; student_number: string | null }
 }
 
+interface Student {
+  id: string
+  full_name: string
+  student_number: string | null
+  grade: string | null
+}
+
 const ITEMS_PER_PAGE = 10
 
 export default function LibraryPage() {
@@ -97,6 +104,17 @@ export default function LibraryPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
   const [statusFilter, setStatusFilter] = useState('')
+
+  // Issue Book state
+  const [showIssueModal, setShowIssueModal] = useState(false)
+  const [students, setStudents] = useState<Student[]>([])
+  const [studentSearch, setStudentSearch] = useState('')
+  const [issueForm, setIssueForm] = useState({
+    student_id: '',
+    book_id: '',
+    due_date: '',
+  })
+  const [isIssuingBook, setIsIssuingBook] = useState(false)
 
   // Delete modal
   const [deleteModal, setDeleteModal] = useState<{ open: boolean; type: string; item: LibraryBook | BookCategory | null }>({
@@ -195,6 +213,83 @@ export default function LibraryPage() {
     setIsLoading(false)
   }
 
+  async function fetchStudents(search?: string) {
+    if (!user?.center_id) return
+    const supabase = createClient()
+
+    let query = supabase
+      .from('students')
+      .select('id, full_name, student_number, grade')
+      .eq('center_id', user.center_id)
+      .eq('status', 'active')
+      .order('full_name')
+      .limit(50)
+
+    if (search) {
+      query = query.or(`full_name.ilike.%${search}%,student_number.ilike.%${search}%`)
+    }
+
+    const { data, error } = await query
+
+    if (!error) {
+      setStudents((data || []) as Student[])
+    }
+  }
+
+  async function handleIssueBook(e: React.FormEvent) {
+    e.preventDefault()
+    if (!user?.center_id || !issueForm.student_id || !issueForm.book_id || !issueForm.due_date) {
+      toast.error('Please fill in all fields')
+      return
+    }
+
+    setIsIssuingBook(true)
+    const supabase = createClient()
+
+    try {
+      // Check if book is available
+      const selectedBook = books.find(b => b.id === issueForm.book_id)
+      if (!selectedBook || selectedBook.available_copies <= 0) {
+        toast.error('This book is not available for borrowing')
+        return
+      }
+
+      // Create borrowing record
+      const { error: borrowError } = await supabase
+        .from('book_borrowings' as never)
+        .insert({
+          center_id: user.center_id,
+          book_id: issueForm.book_id,
+          student_id: issueForm.student_id,
+          borrowed_date: new Date().toISOString().split('T')[0],
+          due_date: issueForm.due_date,
+          status: 'borrowed',
+        } as never)
+
+      if (borrowError) throw borrowError
+
+      // Update available copies
+      const { error: updateError } = await supabase
+        .from('books' as never)
+        .update({ available_copies: selectedBook.available_copies - 1 } as never)
+        .eq('id' as never, issueForm.book_id as never)
+
+      if (updateError) throw updateError
+
+      toast.success('Book issued successfully!')
+      setShowIssueModal(false)
+      setIssueForm({ student_id: '', book_id: '', due_date: '' })
+      setStudentSearch('')
+      fetchBooks()
+      fetchBorrowings()
+    } catch (error) {
+      console.error('Error issuing book:', error)
+      toast.error('Failed to issue book')
+    } finally {
+      setIsIssuingBook(false)
+    }
+  }
+
   async function handleSaveBook(e: React.FormEvent) {
     e.preventDefault()
     if (!user?.center_id) return
@@ -277,10 +372,11 @@ export default function LibraryPage() {
     }
   }
 
-  async function handleReturnBook(borrowingId: string) {
+  async function handleReturnBook(borrowingId: string, bookId: string) {
     const supabase = createClient()
 
     try {
+      // Update borrowing status
       const { error } = await supabase
         .from('book_borrowings' as never)
         .update({
@@ -290,7 +386,18 @@ export default function LibraryPage() {
         .eq('id' as never, borrowingId as never)
 
       if (error) throw error
+
+      // Restore available copies
+      const book = books.find(b => b.id === bookId)
+      if (book) {
+        await supabase
+          .from('books' as never)
+          .update({ available_copies: book.available_copies + 1 } as never)
+          .eq('id' as never, bookId as never)
+      }
+
       toast.success('Book returned successfully')
+      fetchBooks()
       fetchBorrowings()
     } catch (error) {
       console.error('Error returning book:', error)
@@ -604,6 +711,18 @@ export default function LibraryPage() {
                 className="w-40"
               />
             </div>
+            <Button
+              leftIcon={<Plus className="w-4 h-4" />}
+              onClick={() => {
+                setIssueForm({ student_id: '', book_id: '', due_date: '' })
+                setStudentSearch('')
+                fetchStudents()
+                fetchBooks()
+                setShowIssueModal(true)
+              }}
+            >
+              Issue Book
+            </Button>
           </div>
 
           {isLoading ? (
@@ -667,7 +786,7 @@ export default function LibraryPage() {
                           <td className="px-6 py-4">
                             {borrowing.status === 'borrowed' && (
                               <button
-                                onClick={() => handleReturnBook(borrowing.id)}
+                                onClick={() => handleReturnBook(borrowing.id, borrowing.book.id)}
                                 className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
                               >
                                 <Undo2 className="w-4 h-4" />
@@ -858,6 +977,137 @@ export default function LibraryPage() {
         confirmText="Delete"
         isLoading={isDeleting}
       />
+
+      {/* Issue Book Modal */}
+      {showIssueModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">Issue Book to Student</h2>
+              <button onClick={() => setShowIssueModal(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleIssueBook} className="p-6 space-y-4">
+              {/* Student Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Select Student *
+                </label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search student by name or number..."
+                    value={studentSearch}
+                    onChange={(e) => {
+                      setStudentSearch(e.target.value)
+                      fetchStudents(e.target.value)
+                    }}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none"
+                  />
+                </div>
+                {students.length > 0 && (
+                  <div className="mt-2 border border-gray-200 rounded-lg max-h-40 overflow-y-auto">
+                    {students.map((student) => (
+                      <button
+                        key={student.id}
+                        type="button"
+                        onClick={() => {
+                          setIssueForm({ ...issueForm, student_id: student.id })
+                          setStudentSearch(student.full_name)
+                          setStudents([])
+                        }}
+                        className={`w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center justify-between ${
+                          issueForm.student_id === student.id ? 'bg-blue-50' : ''
+                        }`}
+                      >
+                        <div>
+                          <p className="font-medium text-gray-900">{student.full_name}</p>
+                          <p className="text-xs text-gray-500">
+                            {student.student_number || 'No student number'} • Grade {student.grade || 'N/A'}
+                          </p>
+                        </div>
+                        {issueForm.student_id === student.id && (
+                          <CheckCircle className="w-5 h-5 text-blue-600" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {issueForm.student_id && (
+                  <p className="mt-1 text-sm text-green-600 flex items-center gap-1">
+                    <CheckCircle className="w-4 h-4" />
+                    Student selected
+                  </p>
+                )}
+              </div>
+
+              {/* Book Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Select Book *
+                </label>
+                <select
+                  value={issueForm.book_id}
+                  onChange={(e) => setIssueForm({ ...issueForm, book_id: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none"
+                  required
+                >
+                  <option value="">Select a book...</option>
+                  {books
+                    .filter(book => book.available_copies > 0)
+                    .map((book) => (
+                      <option key={book.id} value={book.id}>
+                        {book.title} by {book.author || 'Unknown'} ({book.available_copies} available)
+                      </option>
+                    ))}
+                </select>
+                {books.filter(b => b.available_copies > 0).length === 0 && (
+                  <p className="mt-1 text-sm text-red-600">No books available for borrowing</p>
+                )}
+              </div>
+
+              {/* Due Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Due Date *
+                </label>
+                <input
+                  type="date"
+                  value={issueForm.due_date}
+                  onChange={(e) => setIssueForm({ ...issueForm, due_date: e.target.value })}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none"
+                  required
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Typical loan period: 14-30 days
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setShowIssueModal(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isIssuingBook || !issueForm.student_id || !issueForm.book_id || !issueForm.due_date}
+                  leftIcon={isIssuingBook ? <Loader2 className="w-4 h-4 animate-spin" /> : <BookOpen className="w-4 h-4" />}
+                  className="flex-1"
+                >
+                  {isIssuingBook ? 'Issuing...' : 'Issue Book'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
