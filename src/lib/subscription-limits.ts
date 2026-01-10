@@ -200,12 +200,13 @@ export async function checkModuleAccess(
 export async function getCenterLimits(centerId: string) {
   const supabase = createClient()
 
-  const { data: center } = await supabase
+  const { data: centerData } = await supabase
     .from('tutorial_centers')
     .select('subscription_tier')
     .eq('id', centerId)
     .single()
 
+  const center = centerData as { subscription_tier: string | null } | null
   const tier = (center?.subscription_tier as SubscriptionTier) || 'starter'
 
   return {
