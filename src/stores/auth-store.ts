@@ -142,8 +142,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     // Check if tier allows module - this is the primary check
     if (!tierAccess[module]) {
+      console.log('[Auth] canAccessModule - tier does not allow module:', module, 'tier:', tier)
       return false
     }
+
+    // Log the module enabled values
+    console.log('[Auth] canAccessModule - module:', module, 'hostel_enabled:', user.center.hostel_module_enabled, 'transport_enabled:', user.center.transport_module_enabled, 'library_enabled:', user.center.library_module_enabled)
 
     // If tier allows access, check if admin has explicitly DISABLED the module
     // Default to true if not explicitly set to false
