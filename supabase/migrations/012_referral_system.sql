@@ -8,8 +8,12 @@
 -- ============================================
 -- REFERRAL STATUS ENUM
 -- ============================================
+-- pending: Referred user signed up but hasn't subscribed yet
+-- qualifying: Referred user subscribed, waiting 30-day verification period
+-- completed: 30 days passed, reward granted to referrer
+-- expired: Referral expired (90 days without subscription)
 
-CREATE TYPE referral_status AS ENUM ('pending', 'completed', 'rewarded', 'expired');
+CREATE TYPE referral_status AS ENUM ('pending', 'qualifying', 'completed', 'rewarded', 'expired');
 
 -- ============================================
 -- REFERRAL CODES TABLE
@@ -55,7 +59,8 @@ CREATE TABLE referrals (
 
     -- Timestamps
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    completed_at TIMESTAMPTZ, -- When referred center subscribes
+    qualifying_started_at TIMESTAMPTZ, -- When referred center subscribed (start of 30-day wait)
+    completed_at TIMESTAMPTZ, -- When 30 days passed and reward granted
     rewarded_at TIMESTAMPTZ,  -- When rewards are applied
     expires_at TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '90 days')
 );
@@ -222,8 +227,8 @@ CREATE TRIGGER trigger_create_referral_code
     FOR EACH ROW
     EXECUTE FUNCTION create_referral_code_for_center();
 
--- Function to complete a referral when center subscribes
-CREATE OR REPLACE FUNCTION complete_referral_on_subscription()
+-- Function to start qualifying period when center subscribes (30-day wait before reward)
+CREATE OR REPLACE FUNCTION start_referral_qualifying_period()
 RETURNS TRIGGER AS $$
 DECLARE
     ref_record RECORD;
@@ -242,45 +247,90 @@ BEGIN
         AND r.status = 'pending';
 
         IF FOUND THEN
-            -- Update referral status to completed
+            -- Update referral status to QUALIFYING (not completed yet)
+            -- Reward will be granted after 30 days of active subscription
             UPDATE referrals
-            SET status = 'completed',
-                completed_at = NOW()
+            SET status = 'qualifying',
+                qualifying_started_at = NOW()
             WHERE id = ref_record.id;
-
-            -- Update referral code stats
-            UPDATE referral_codes
-            SET successful_referrals = successful_referrals + 1,
-                total_rewards_earned = total_rewards_earned + 1, -- Track months earned
-                updated_at = NOW()
-            WHERE id = ref_record.referral_code_id;
-
-            -- Create reward for referrer (1 month free)
-            INSERT INTO referral_rewards (center_id, referral_id, free_months, reward_type, description)
-            VALUES (
-                ref_record.referrer_id,
-                ref_record.id,
-                1,
-                'referrer_bonus',
-                '1 month free for referring ' || NEW.name
-            );
-
-            -- Add free month to referrer's balance
-            UPDATE tutorial_centers
-            SET referral_free_months = COALESCE(referral_free_months, 0) + 1
-            WHERE id = ref_record.referrer_id;
         END IF;
+    END IF;
+
+    -- Also check if subscription was cancelled during qualifying period
+    IF OLD.subscription_status = 'active' AND
+       NEW.subscription_status IN ('cancelled', 'inactive', 'past_due') THEN
+
+        -- Reset any qualifying referrals back to pending
+        UPDATE referrals
+        SET status = 'pending',
+            qualifying_started_at = NULL
+        WHERE referred_center_id = NEW.id
+        AND status = 'qualifying';
     END IF;
 
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
--- Trigger for completing referrals
-CREATE TRIGGER trigger_complete_referral
+-- Function to complete qualifying referrals after 30 days
+-- This should be called periodically (e.g., on dashboard load or via cron)
+CREATE OR REPLACE FUNCTION complete_qualifying_referrals()
+RETURNS INTEGER AS $$
+DECLARE
+    completed_count INTEGER := 0;
+    ref_record RECORD;
+BEGIN
+    -- Find all referrals that have been qualifying for 30+ days
+    -- AND the referred center still has an active subscription
+    FOR ref_record IN
+        SELECT r.*, rc.center_id as referrer_id, tc.name as referred_name
+        FROM referrals r
+        JOIN referral_codes rc ON r.referral_code_id = rc.id
+        JOIN tutorial_centers tc ON r.referred_center_id = tc.id
+        WHERE r.status = 'qualifying'
+        AND r.qualifying_started_at <= (NOW() - INTERVAL '30 days')
+        AND tc.subscription_status = 'active'
+    LOOP
+        -- Update referral status to completed
+        UPDATE referrals
+        SET status = 'completed',
+            completed_at = NOW()
+        WHERE id = ref_record.id;
+
+        -- Update referral code stats
+        UPDATE referral_codes
+        SET successful_referrals = successful_referrals + 1,
+            total_rewards_earned = total_rewards_earned + 1,
+            updated_at = NOW()
+        WHERE id = ref_record.referral_code_id;
+
+        -- Create reward for referrer (1 month free)
+        INSERT INTO referral_rewards (center_id, referral_id, free_months, reward_type, description)
+        VALUES (
+            ref_record.referrer_id,
+            ref_record.id,
+            1,
+            'referrer_bonus',
+            '1 month free for referring ' || ref_record.referred_name
+        );
+
+        -- Add free month to referrer's balance
+        UPDATE tutorial_centers
+        SET referral_free_months = COALESCE(referral_free_months, 0) + 1
+        WHERE id = ref_record.referrer_id;
+
+        completed_count := completed_count + 1;
+    END LOOP;
+
+    RETURN completed_count;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to start qualifying period when subscription becomes active
+CREATE TRIGGER trigger_start_referral_qualifying
     AFTER UPDATE ON tutorial_centers
     FOR EACH ROW
-    EXECUTE FUNCTION complete_referral_on_subscription();
+    EXECUTE FUNCTION start_referral_qualifying_period();
 
 -- ============================================
 -- CREATE REFERRAL CODES FOR EXISTING CENTERS

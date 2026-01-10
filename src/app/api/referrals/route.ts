@@ -22,6 +22,15 @@ export async function GET() {
       return NextResponse.json({ error: 'No center found' }, { status: 400 })
     }
 
+    // Check and complete any qualifying referrals that have passed 30 days
+    // This runs every time the dashboard loads to process matured referrals
+    try {
+      await supabase.rpc('complete_qualifying_referrals')
+    } catch (e) {
+      // Function may not exist yet if migration hasn't run - ignore
+      console.log('complete_qualifying_referrals not available yet')
+    }
+
     // Get center's referral code
     const { data: referralCode } = await supabase
       .from('referral_codes')

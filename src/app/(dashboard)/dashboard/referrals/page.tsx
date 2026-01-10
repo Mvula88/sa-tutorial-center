@@ -23,10 +23,11 @@ import toast from 'react-hot-toast'
 interface Referral {
   id: string
   referred_email: string
-  status: 'pending' | 'completed' | 'rewarded' | 'expired'
+  status: 'pending' | 'qualifying' | 'completed' | 'rewarded' | 'expired'
   referrer_reward_months: number
   referred_extra_trial_days: number
   created_at: string
+  qualifying_started_at: string | null
   completed_at: string | null
   referred_center?: {
     id: string
@@ -111,13 +112,24 @@ export default function ReferralsPage() {
     window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank')
   }
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string, qualifyingStartedAt?: string | null) => {
     switch (status) {
       case 'pending':
         return (
           <span className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-full">
             <Clock className="w-3 h-3" />
-            Pending
+            Awaiting subscription
+          </span>
+        )
+      case 'qualifying':
+        // Calculate days remaining in 30-day verification period
+        const startDate = qualifyingStartedAt ? new Date(qualifyingStartedAt) : new Date()
+        const endDate = new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000)
+        const daysRemaining = Math.max(0, Math.ceil((endDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+            <Clock className="w-3 h-3" />
+            {daysRemaining > 0 ? `${daysRemaining} days left` : 'Processing...'}
           </span>
         )
       case 'completed':
@@ -380,7 +392,7 @@ export default function ReferralsPage() {
                         <p className="text-xs text-gray-500">{referral.referred_email}</p>
                       )}
                     </td>
-                    <td className="py-3">{getStatusBadge(referral.status)}</td>
+                    <td className="py-3">{getStatusBadge(referral.status, referral.qualifying_started_at)}</td>
                     <td className="py-3">
                       {referral.status === 'completed' || referral.status === 'rewarded' ? (
                         <span className="text-green-600 font-medium">
