@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { GraduationCap, Eye, EyeOff, Loader2, Check, Building2, User, Mail, Phone, Lock, Gift, X } from 'lucide-react'
@@ -14,7 +14,7 @@ const TRIAL_FEATURES = [
   'No credit card required',
 ]
 
-export default function SignupPage() {
+function SignupContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [step, setStep] = useState(1)
@@ -531,5 +531,32 @@ export default function SignupPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+// Loading fallback for Suspense
+function SignupLoading() {
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4 relative">
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: `url('https://images.unsplash.com/photo-1580060839134-75a5edca2e99?q=80&w=2071&auto=format&fit=crop')`,
+        }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/70 via-blue-800/60 to-amber-900/50" />
+      <div className="relative z-10 flex items-center gap-2 text-white">
+        <Loader2 className="w-6 h-6 animate-spin" />
+        <span>Loading...</span>
+      </div>
+    </div>
+  )
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<SignupLoading />}>
+      <SignupContent />
+    </Suspense>
   )
 }
