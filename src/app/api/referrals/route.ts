@@ -1,6 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+// Type definitions for Supabase queries
+interface ReferralRecord {
+  id: string
+  status: string
+  referrer_reward_months?: number
+  referred_extra_trial_days?: number
+  created_at: string
+  qualifying_started_at?: string | null
+  completed_at?: string | null
+  referred_email?: string
+  referred_center?: {
+    id: string
+    name: string
+    subscription_status: string
+  } | null
+}
+
+interface RewardRecord {
+  id: string
+  free_months: string | number
+  reward_type: string
+  description: string
+  is_applied: boolean
+  created_at: string
+}
+
+interface ReferralCodeRecord {
+  id: string
+  code: string
+  is_active: boolean
+  center_id: string
+  total_referrals?: number
+}
+
 // GET - Fetch referral data for the current user's center
 export async function GET() {
   try {
@@ -34,14 +68,16 @@ export async function GET() {
     }
 
     // Get center's referral code
-    const { data: referralCode } = await supabase
+    const { data: referralCodeData } = await supabase
       .from('referral_codes')
       .select('*')
       .eq('center_id', userProfile.center_id)
       .single()
 
+    const referralCode = referralCodeData as ReferralCodeRecord | null
+
     // Get referrals made by this center
-    const { data: referralsMade } = await supabase
+    const { data: referralsData } = await supabase
       .from('referrals')
       .select(`
         *,
@@ -52,32 +88,38 @@ export async function GET() {
       .eq('referrer_center_id', userProfile.center_id)
       .order('created_at', { ascending: false })
 
+    const referralsMade = (referralsData || []) as ReferralRecord[]
+
     // Get rewards earned
-    const { data: rewards } = await supabase
+    const { data: rewardsData } = await supabase
       .from('referral_rewards')
       .select('*')
       .eq('center_id', userProfile.center_id)
       .order('created_at', { ascending: false })
 
+    const rewards = (rewardsData || []) as RewardRecord[]
+
     // Get center's free months balance
-    const { data: center } = await supabase
+    const { data: centerData } = await supabase
       .from('tutorial_centers')
       .select('referral_free_months')
       .eq('id', userProfile.center_id)
       .single()
 
+    const center = centerData as { referral_free_months?: number } | null
+
     // Calculate stats
-    const totalReferrals = referralsMade?.length || 0
-    const successfulReferrals = referralsMade?.filter(r => r.status === 'completed' || r.status === 'rewarded').length || 0
-    const pendingReferrals = referralsMade?.filter(r => r.status === 'pending').length || 0
-    const totalFreeMonthsEarned = rewards?.reduce((sum, r) => sum + (parseInt(r.free_months) || 0), 0) || 0
+    const totalReferrals = referralsMade.length
+    const successfulReferrals = referralsMade.filter(r => r.status === 'completed' || r.status === 'rewarded').length
+    const pendingReferrals = referralsMade.filter(r => r.status === 'pending').length
+    const totalFreeMonthsEarned = rewards.reduce((sum, r) => sum + (parseInt(String(r.free_months)) || 0), 0)
 
     return NextResponse.json({
       referralCode: referralCode?.code || null,
       referralCodeId: referralCode?.id || null,
-      referrals: referralsMade || [],
-      rewards: rewards || [],
-      freeMonthsBalance: (center as { referral_free_months?: number } | null)?.referral_free_months || 0,
+      referrals: referralsMade,
+      rewards: rewards,
+      freeMonthsBalance: center?.referral_free_months || 0,
       stats: {
         totalReferrals,
         successfulReferrals,
@@ -110,11 +152,13 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient()
 
     // Look up the referral code
-    const { data: codeData, error: codeError } = await supabase
+    const { data: codeResult, error: codeError } = await supabase
       .from('referral_codes')
-      .select('id, center_id, is_active')
+      .select('id, center_id, is_active, total_referrals')
       .eq('code', referralCode.toUpperCase())
       .single()
+
+    const codeData = codeResult as ReferralCodeRecord | null
 
     if (codeError || !codeData) {
       return NextResponse.json(
@@ -168,9 +212,7 @@ export async function POST(request: NextRequest) {
     await supabase
       .from('referral_codes')
       .update({
-        total_referrals: (codeData as { total_referrals?: number }).total_referrals
-          ? ((codeData as { total_referrals: number }).total_referrals + 1)
-          : 1,
+        total_referrals: (codeData.total_referrals || 0) + 1,
         updated_at: new Date().toISOString()
       })
       .eq('id', codeData.id)
