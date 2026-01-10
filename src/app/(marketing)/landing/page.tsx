@@ -52,17 +52,29 @@ const features = [
 
 const plans = [
   {
+    name: 'Micro',
+    description: 'Perfect for individual tutors',
+    monthlyPrice: 199,
+    setupFee: 0,
+    students: 'Up to 15 students',
+    features: [
+      'Student management',
+      'Fee tracking',
+      'Payment recording',
+      'Email support',
+    ],
+    highlighted: false,
+  },
+  {
     name: 'Starter',
     description: 'Perfect for small tutors',
     monthlyPrice: 499,
     setupFee: 0,
     students: 'Up to 50 students',
     features: [
-      'Student management',
-      'Fee tracking',
-      'Payment recording',
+      'Everything in Micro',
       'Basic reports',
-      'Email support',
+      'Priority email support',
     ],
     highlighted: false,
   },
@@ -76,6 +88,7 @@ const plans = [
       'Everything in Starter',
       'Multiple staff accounts',
       'Advanced reports',
+      'Library module',
       'SMS notifications',
       'Priority support',
     ],
@@ -192,7 +205,7 @@ export default function LandingPage() {
               <div className="text-gray-400 mt-1">hours saved per week</div>
             </div>
             <div>
-              <div className="text-3xl md:text-4xl font-bold text-white">R499</div>
+              <div className="text-3xl md:text-4xl font-bold text-white">R199</div>
               <div className="text-gray-400 mt-1">starting price per month</div>
             </div>
             <div>
@@ -242,7 +255,7 @@ export default function LandingPage() {
               Choose the plan that fits your centre. All prices in South African Rand.
             </p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
             {plans.map((plan, index) => (
               <div
                 key={index}
