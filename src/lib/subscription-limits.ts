@@ -125,13 +125,21 @@ export async function checkModuleAccess(
   const supabase = createClient()
 
   // Get center's subscription tier and module flags
-  const { data: center } = await supabase
+  const { data: centerData } = await supabase
     .from('tutorial_centers')
     .select(
       'subscription_tier, hostel_module_enabled, transport_module_enabled, library_module_enabled, sms_module_enabled'
     )
     .eq('id', centerId)
     .single()
+
+  const center = centerData as {
+    subscription_tier: string | null
+    hostel_module_enabled: boolean | null
+    transport_module_enabled: boolean | null
+    library_module_enabled: boolean | null
+    sms_module_enabled: boolean | null
+  } | null
 
   if (!center) {
     return {
