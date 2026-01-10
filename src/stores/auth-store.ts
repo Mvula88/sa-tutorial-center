@@ -139,23 +139,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const tier = get().getSubscriptionTier()
     const tierAccess = MODULE_TIER_ACCESS[tier] || MODULE_TIER_ACCESS.starter
 
-    // Check if tier allows module
+    // Check if tier allows module - this is the primary check
     if (!tierAccess[module]) {
       return false
     }
 
-    // Also check if module is enabled in database (admin can disable even if tier allows)
+    // If tier allows access, check if admin has explicitly DISABLED the module
+    // Default to true if not explicitly set to false
     switch (module) {
       case 'hostel':
-        return user.center.hostel_module_enabled
+        return user.center.hostel_module_enabled !== false
       case 'transport':
-        return user.center.transport_module_enabled
+        return user.center.transport_module_enabled !== false
       case 'library':
-        return user.center.library_module_enabled
+        return user.center.library_module_enabled !== false
       case 'sms':
-        return user.center.sms_module_enabled
+        return user.center.sms_module_enabled !== false
       default:
-        return false
+        return true
     }
   },
 }))

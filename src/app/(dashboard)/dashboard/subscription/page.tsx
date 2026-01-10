@@ -208,6 +208,10 @@ export default function SubscriptionPage() {
   const trialEndsAt = subscription?.trial_ends_at ? new Date(subscription.trial_ends_at) : null
   const daysLeftInTrial = trialEndsAt ? Math.max(0, Math.ceil((trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : 0
 
+  // Tier hierarchy for comparison
+  const tierHierarchy: Record<string, number> = { micro: 1, starter: 2, standard: 3, premium: 4 }
+  const currentTierLevel = tierHierarchy[currentPlan] || 2
+
   return (
     <div className="p-4 md:p-8 max-w-6xl mx-auto">
       {/* Header */}
@@ -298,19 +302,22 @@ export default function SubscriptionPage() {
           {plans.map((plan) => {
             const isCurrent = currentPlan === plan.id
             const PlanIcon = plan.icon
+            const planLevel = tierHierarchy[plan.id] || 1
+            const isLowerTier = planLevel < currentTierLevel
+            const isHigherTier = planLevel > currentTierLevel
 
             return (
               <div
                 key={plan.id}
                 className={`relative bg-white rounded-xl border-2 p-6 transition-all ${
-                  plan.popular
+                  isCurrent
+                    ? 'border-green-500 ring-2 ring-green-100'
+                    : plan.popular
                     ? 'border-blue-500 shadow-lg'
-                    : isCurrent
-                    ? 'border-green-500'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
-                {plan.popular && (
+                {plan.popular && !isCurrent && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                     <span className="px-3 py-1 bg-blue-500 text-white text-xs font-medium rounded-full">
                       Most Popular
@@ -320,9 +327,9 @@ export default function SubscriptionPage() {
 
                 <div className="flex items-center gap-3 mb-4">
                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                    plan.popular ? 'bg-blue-100' : 'bg-gray-100'
+                    isCurrent ? 'bg-green-100' : plan.popular ? 'bg-blue-100' : 'bg-gray-100'
                   }`}>
-                    <PlanIcon className={`w-5 h-5 ${plan.popular ? 'text-blue-600' : 'text-gray-600'}`} />
+                    <PlanIcon className={`w-5 h-5 ${isCurrent ? 'text-green-600' : plan.popular ? 'text-blue-600' : 'text-gray-600'}`} />
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">{plan.name}</h3>
@@ -348,9 +355,13 @@ export default function SubscriptionPage() {
                   ))}
                 </ul>
 
-                {isCurrent && isActive ? (
+                {isCurrent ? (
                   <Button variant="outline" className="w-full" disabled>
                     Current Plan
+                  </Button>
+                ) : isLowerTier ? (
+                  <Button variant="outline" className="w-full text-gray-400" disabled>
+                    Included in your plan
                   </Button>
                 ) : (
                   <Button
@@ -359,7 +370,7 @@ export default function SubscriptionPage() {
                     onClick={() => handleUpgrade(plan.id)}
                     isLoading={upgradeLoading === plan.id}
                   >
-                    {isTrialing ? 'Start Plan' : isCurrent ? 'Current Plan' : 'Upgrade'}
+                    {isTrialing ? 'Start Plan' : 'Upgrade'}
                   </Button>
                 )}
               </div>
