@@ -112,7 +112,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   getSubscriptionTier: () => {
     const user = get().user
-    const tier = (user?.center as { subscription_tier?: string } | undefined)?.subscription_tier
+    const tier = user?.center?.subscription_tier
+    console.log('[Auth] getSubscriptionTier - user:', user?.email, 'center:', user?.center?.name, 'tier:', tier)
     if (tier && tier in MODULE_TIER_ACCESS) {
       return tier as SubscriptionTier
     }

@@ -114,6 +114,9 @@ export function Sidebar() {
   const tierHierarchy = { micro: 1, starter: 2, standard: 3, premium: 4 }
   const currentTierLevel = tierHierarchy[currentTier] || 2
 
+  // Debug logging
+  console.log('[Sidebar] currentTier:', currentTier, 'currentTierLevel:', currentTierLevel, 'user.center:', user?.center)
+
   // Filter items and mark locked ones
   const navItems = centerNavItems.filter(item => {
     if (item.adminOnly && !isCenterAdmin()) return false
