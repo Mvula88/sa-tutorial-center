@@ -14,6 +14,7 @@ import {
   AlertCircle,
   Calendar,
   RefreshCw,
+  User,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -27,6 +28,20 @@ interface SubscriptionData {
 }
 
 const plans = [
+  {
+    id: 'micro',
+    name: 'Micro',
+    price: 199,
+    description: 'Perfect for individual tutors with up to 15 students',
+    features: [
+      'Up to 15 students',
+      'Student management',
+      'Fee tracking',
+      'Payment recording',
+      'Email support',
+    ],
+    icon: User,
+  },
   {
     id: 'starter',
     name: 'Starter',
@@ -52,6 +67,7 @@ const plans = [
       'Everything in Starter',
       'Multiple staff accounts',
       'Advanced reports',
+      'Library module',
       'SMS notifications',
       'Priority support',
     ],
@@ -278,7 +294,7 @@ export default function SubscriptionPage() {
       {/* Plans */}
       <div className="mb-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Available Plans</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {plans.map((plan) => {
             const isCurrent = currentPlan === plan.id
             const PlanIcon = plan.icon

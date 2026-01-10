@@ -2,6 +2,18 @@ import { create } from 'zustand'
 import { createClient } from '@/lib/supabase/client'
 import type { UserWithCenter } from '@/types'
 
+// Module access by subscription tier
+// true = tier can access module (if also enabled by admin)
+const MODULE_TIER_ACCESS = {
+  micro: { hostel: false, transport: false, library: false, sms: false },
+  starter: { hostel: false, transport: false, library: false, sms: false },
+  standard: { hostel: false, transport: false, library: true, sms: true },
+  premium: { hostel: true, transport: true, library: true, sms: true },
+} as const
+
+type ModuleName = 'hostel' | 'transport' | 'library' | 'sms'
+type SubscriptionTier = keyof typeof MODULE_TIER_ACCESS
+
 interface AuthState {
   user: UserWithCenter | null
   isLoading: boolean
@@ -18,7 +30,9 @@ interface AuthState {
   isSuperAdmin: () => boolean
   isCenterAdmin: () => boolean
   isCenterStaff: () => boolean
-  canAccessModule: (module: 'hostel' | 'transport' | 'library' | 'sms') => boolean
+  canAccessModule: (module: ModuleName) => boolean
+  getSubscriptionTier: () => SubscriptionTier
+  getRequiredTierForModule: (module: ModuleName) => SubscriptionTier
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -64,6 +78,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             primary_color,
             secondary_color,
             status,
+            subscription_tier,
+            subscription_status,
             hostel_module_enabled,
             transport_module_enabled,
             library_module_enabled,
@@ -94,12 +110,41 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isCenterAdmin: () => get().user?.role === 'center_admin',
   isCenterStaff: () => get().user?.role === 'center_staff',
 
+  getSubscriptionTier: () => {
+    const user = get().user
+    const tier = (user?.center as { subscription_tier?: string } | undefined)?.subscription_tier
+    if (tier && tier in MODULE_TIER_ACCESS) {
+      return tier as SubscriptionTier
+    }
+    return 'starter'
+  },
+
+  getRequiredTierForModule: (module: ModuleName) => {
+    const tiers: SubscriptionTier[] = ['micro', 'starter', 'standard', 'premium']
+    for (const tier of tiers) {
+      if (MODULE_TIER_ACCESS[tier][module]) {
+        return tier
+      }
+    }
+    return 'premium'
+  },
+
   canAccessModule: (module) => {
     const user = get().user
     if (!user) return false
     if (user.role === 'super_admin') return true
     if (!user.center) return false
 
+    // Get subscription tier
+    const tier = get().getSubscriptionTier()
+    const tierAccess = MODULE_TIER_ACCESS[tier] || MODULE_TIER_ACCESS.starter
+
+    // Check if tier allows module
+    if (!tierAccess[module]) {
+      return false
+    }
+
+    // Also check if module is enabled in database (admin can disable even if tier allows)
     switch (module) {
       case 'hostel':
         return user.center.hostel_module_enabled

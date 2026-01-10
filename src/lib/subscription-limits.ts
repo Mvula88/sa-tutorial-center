@@ -1,0 +1,254 @@
+/**
+ * Subscription Limits Utility
+ * Enforces student limits and module access based on subscription tier
+ */
+
+import { createClient } from '@/lib/supabase/client'
+
+/**
+ * Plan limits configuration
+ * -1 means unlimited
+ */
+export const PLAN_LIMITS = {
+  micro: {
+    maxStudents: 15,
+    maxStaff: 1, // Just the admin
+    modules: {
+      hostel: false,
+      transport: false,
+      library: false,
+      sms: false,
+    },
+  },
+  starter: {
+    maxStudents: 50,
+    maxStaff: 2,
+    modules: {
+      hostel: false,
+      transport: false,
+      library: false,
+      sms: false,
+    },
+  },
+  standard: {
+    maxStudents: 150,
+    maxStaff: 5,
+    modules: {
+      hostel: false,
+      transport: false,
+      library: true,
+      sms: true,
+    },
+  },
+  premium: {
+    maxStudents: -1, // Unlimited
+    maxStaff: -1, // Unlimited
+    modules: {
+      hostel: true,
+      transport: true,
+      library: true,
+      sms: true,
+    },
+  },
+} as const
+
+export type SubscriptionTier = keyof typeof PLAN_LIMITS
+export type ModuleName = 'hostel' | 'transport' | 'library' | 'sms'
+
+export interface StudentLimitCheck {
+  canAdd: boolean
+  current: number
+  limit: number
+  tier: SubscriptionTier
+  remaining: number
+  percentUsed: number
+  isNearLimit: boolean // 80% or more
+  isAtLimit: boolean
+}
+
+export interface ModuleAccessCheck {
+  hasAccess: boolean
+  tier: SubscriptionTier
+  requiredTier: SubscriptionTier | null
+  isEnabled: boolean // Module flag in database
+  reason?: string
+}
+
+/**
+ * Check if a center can add more students based on their subscription tier
+ */
+export async function checkStudentLimit(centerId: string): Promise<StudentLimitCheck> {
+  const supabase = createClient()
+
+  // Get center's subscription tier
+  const { data: center } = await supabase
+    .from('tutorial_centers')
+    .select('subscription_tier')
+    .eq('id', centerId)
+    .single()
+
+  const tier = (center?.subscription_tier as SubscriptionTier) || 'starter'
+  const limit = PLAN_LIMITS[tier]?.maxStudents ?? PLAN_LIMITS.starter.maxStudents
+
+  // Count active students
+  const { count } = await supabase
+    .from('students')
+    .select('id', { count: 'exact', head: true })
+    .eq('center_id', centerId)
+    .eq('status', 'active')
+
+  const current = count || 0
+  const isUnlimited = limit === -1
+  const remaining = isUnlimited ? Infinity : Math.max(0, limit - current)
+  const percentUsed = isUnlimited ? 0 : (current / limit) * 100
+
+  return {
+    canAdd: isUnlimited || current < limit,
+    current,
+    limit: isUnlimited ? -1 : limit,
+    tier,
+    remaining: isUnlimited ? -1 : remaining,
+    percentUsed: Math.round(percentUsed),
+    isNearLimit: !isUnlimited && percentUsed >= 80,
+    isAtLimit: !isUnlimited && current >= limit,
+  }
+}
+
+/**
+ * Check if a center has access to a specific module
+ */
+export async function checkModuleAccess(
+  centerId: string,
+  module: ModuleName
+): Promise<ModuleAccessCheck> {
+  const supabase = createClient()
+
+  // Get center's subscription tier and module flags
+  const { data: center } = await supabase
+    .from('tutorial_centers')
+    .select(
+      'subscription_tier, hostel_module_enabled, transport_module_enabled, library_module_enabled, sms_module_enabled'
+    )
+    .eq('id', centerId)
+    .single()
+
+  if (!center) {
+    return {
+      hasAccess: false,
+      tier: 'starter',
+      requiredTier: null,
+      isEnabled: false,
+      reason: 'Center not found',
+    }
+  }
+
+  const tier = (center.subscription_tier as SubscriptionTier) || 'starter'
+  const planLimits = PLAN_LIMITS[tier] || PLAN_LIMITS.starter
+
+  // Check if tier allows the module
+  const tierAllows = planLimits.modules[module]
+
+  // Check if module is enabled in database
+  const moduleEnabledMap: Record<ModuleName, boolean> = {
+    hostel: center.hostel_module_enabled ?? false,
+    transport: center.transport_module_enabled ?? false,
+    library: center.library_module_enabled ?? false,
+    sms: center.sms_module_enabled ?? false,
+  }
+  const isEnabled = moduleEnabledMap[module]
+
+  // Find the required tier for this module
+  let requiredTier: SubscriptionTier | null = null
+  for (const [planName, limits] of Object.entries(PLAN_LIMITS)) {
+    if (limits.modules[module]) {
+      requiredTier = planName as SubscriptionTier
+      break
+    }
+  }
+
+  // Both tier must allow AND module must be enabled
+  const hasAccess = tierAllows && isEnabled
+
+  let reason: string | undefined
+  if (!tierAllows) {
+    reason = `This feature requires the ${requiredTier ? PLAN_LIMITS[requiredTier] ? requiredTier.charAt(0).toUpperCase() + requiredTier.slice(1) : 'Premium' : 'Premium'} plan or higher`
+  } else if (!isEnabled) {
+    reason = 'This module is not enabled for your center. Contact support to enable it.'
+  }
+
+  return {
+    hasAccess,
+    tier,
+    requiredTier,
+    isEnabled,
+    reason,
+  }
+}
+
+/**
+ * Get all limits for a center
+ */
+export async function getCenterLimits(centerId: string) {
+  const supabase = createClient()
+
+  const { data: center } = await supabase
+    .from('tutorial_centers')
+    .select('subscription_tier')
+    .eq('id', centerId)
+    .single()
+
+  const tier = (center?.subscription_tier as SubscriptionTier) || 'starter'
+
+  return {
+    tier,
+    limits: PLAN_LIMITS[tier] || PLAN_LIMITS.starter,
+  }
+}
+
+/**
+ * Get the minimum tier required for a module
+ */
+export function getRequiredTierForModule(module: ModuleName): SubscriptionTier {
+  const tiers: SubscriptionTier[] = ['micro', 'starter', 'standard', 'premium']
+
+  for (const tier of tiers) {
+    if (PLAN_LIMITS[tier].modules[module]) {
+      return tier
+    }
+  }
+
+  return 'premium'
+}
+
+/**
+ * Check if a tier includes a specific module
+ */
+export function tierIncludesModule(tier: SubscriptionTier, module: ModuleName): boolean {
+  return PLAN_LIMITS[tier]?.modules[module] ?? false
+}
+
+/**
+ * Get a user-friendly message for student limit status
+ */
+export function getStudentLimitMessage(check: StudentLimitCheck): string | null {
+  if (check.limit === -1) {
+    return null // Unlimited
+  }
+
+  if (check.isAtLimit) {
+    return `You've reached your ${check.tier} plan limit of ${check.limit} students. Upgrade to add more students.`
+  }
+
+  if (check.isNearLimit) {
+    return `You're using ${check.percentUsed}% of your ${check.limit} student limit. Consider upgrading soon.`
+  }
+
+  return null
+}
+
+/**
+ * Format limit display (handles unlimited)
+ */
+export function formatLimit(limit: number): string {
+  return limit === -1 ? 'Unlimited' : limit.toString()
+}

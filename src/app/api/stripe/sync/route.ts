@@ -68,32 +68,63 @@ export async function POST() {
     }
 
     // Get active subscriptions for this customer
-    const subscriptions = await stripe.subscriptions.list({
+    let subscriptions = await stripe.subscriptions.list({
       customer: customerId,
-      status: 'all',
-      limit: 1,
+      status: 'active', // Only get active subscriptions
+      limit: 10,
     })
 
+    // If no active subscriptions, check for any subscription
     if (subscriptions.data.length === 0) {
-      return NextResponse.json({
-        message: 'No subscriptions found',
-        synced: true
+      subscriptions = await stripe.subscriptions.list({
+        customer: customerId,
+        status: 'all',
+        limit: 10,
       })
+
+      if (subscriptions.data.length === 0) {
+        return NextResponse.json({
+          message: 'No subscriptions found',
+          synced: true
+        })
+      }
     }
 
+    // Sort by created date descending to get the most recent subscription
+    subscriptions.data.sort((a, b) => b.created - a.created)
     const subscription = subscriptions.data[0]
 
     // Determine the plan from the price ID
     let plan = 'starter'
     const priceId = subscription.items.data[0]?.price?.id
 
-    if (priceId === process.env.STRIPE_STANDARD_PRICE_ID) {
+    // Check all 4 plan price IDs
+    if (priceId === process.env.STRIPE_MICRO_PRICE_ID) {
+      plan = 'micro'
+    } else if (priceId === process.env.STRIPE_STARTER_PRICE_ID) {
+      plan = 'starter'
+    } else if (priceId === process.env.STRIPE_STANDARD_PRICE_ID) {
       plan = 'standard'
     } else if (priceId === process.env.STRIPE_PREMIUM_PRICE_ID) {
       plan = 'premium'
-    } else if (priceId === process.env.STRIPE_STARTER_PRICE_ID) {
-      plan = 'starter'
+    } else {
+      // Try to determine plan from product name if price ID doesn't match
+      const productId = subscription.items.data[0]?.price?.product
+      if (productId) {
+        try {
+          const product = await stripe.products.retrieve(productId as string)
+          const productName = product.name?.toLowerCase() || ''
+          if (productName.includes('micro')) plan = 'micro'
+          else if (productName.includes('starter')) plan = 'starter'
+          else if (productName.includes('standard')) plan = 'standard'
+          else if (productName.includes('premium')) plan = 'premium'
+        } catch (e) {
+          console.log('Could not fetch product details:', e)
+        }
+      }
     }
+
+    console.log(`Syncing subscription: priceId=${priceId}, determined plan=${plan}`)
 
     // Map Stripe status to our status
     const statusMap: Record<string, string> = {

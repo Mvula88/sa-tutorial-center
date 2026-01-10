@@ -18,6 +18,21 @@ export function getStripe(): Stripe {
 
 // Subscription plans configuration
 export const SUBSCRIPTION_PLANS = {
+  micro: {
+    name: 'Micro',
+    description: 'Perfect for individual tutors with up to 15 students',
+    priceId: process.env.STRIPE_MICRO_PRICE_ID!,
+    monthlyPrice: 199, // R199
+    setupFee: 0,
+    maxStudents: 15,
+    features: [
+      'Up to 15 students',
+      'Student management',
+      'Fee tracking',
+      'Payment recording',
+      'Email support',
+    ],
+  },
   starter: {
     name: 'Starter',
     description: 'Perfect for small tutors with up to 50 students',
@@ -26,6 +41,7 @@ export const SUBSCRIPTION_PLANS = {
     setupFee: 0,
     maxStudents: 50,
     features: [
+      'Up to 50 students',
       'Student management',
       'Fee tracking',
       'Payment recording',

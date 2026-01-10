@@ -19,6 +19,8 @@ import {
   Bus,
   Library,
   Sparkles,
+  History,
+  Lock,
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
@@ -29,6 +31,7 @@ interface NavItem {
   icon: React.ReactNode
   module?: 'hostel' | 'transport' | 'library' | 'sms'
   adminOnly?: boolean
+  requiresTier?: 'standard' | 'premium'
 }
 
 const centerNavItems: NavItem[] = [
@@ -37,9 +40,10 @@ const centerNavItems: NavItem[] = [
   { label: 'Teachers', href: '/dashboard/teachers', icon: <Users className="w-5 h-5" />, adminOnly: true },
   { label: 'Subjects', href: '/dashboard/subjects', icon: <BookOpen className="w-5 h-5" /> },
   { label: 'Payments', href: '/dashboard/payments', icon: <CreditCard className="w-5 h-5" /> },
-  { label: 'Hostel', href: '/dashboard/hostel', icon: <Home className="w-5 h-5" />, module: 'hostel' },
-  { label: 'Transport', href: '/dashboard/transport', icon: <Bus className="w-5 h-5" />, module: 'transport' },
-  { label: 'Library', href: '/dashboard/library', icon: <Library className="w-5 h-5" />, module: 'library' },
+  { label: 'Hostel', href: '/dashboard/hostel', icon: <Home className="w-5 h-5" />, module: 'hostel', requiresTier: 'premium' },
+  { label: 'Transport', href: '/dashboard/transport', icon: <Bus className="w-5 h-5" />, module: 'transport', requiresTier: 'premium' },
+  { label: 'Library', href: '/dashboard/library', icon: <Library className="w-5 h-5" />, module: 'library', requiresTier: 'standard' },
+  { label: 'Audit Logs', href: '/dashboard/audit-logs', icon: <History className="w-5 h-5" />, adminOnly: true },
   { label: 'Reports', href: '/dashboard/reports', icon: <FileText className="w-5 h-5" />, adminOnly: true },
   { label: 'Subscription', href: '/dashboard/subscription', icon: <Sparkles className="w-5 h-5" />, adminOnly: true },
   { label: 'Settings', href: '/dashboard/settings', icon: <Settings className="w-5 h-5" />, adminOnly: true },
@@ -85,8 +89,9 @@ export function MobileHeader({ onMenuClick, title }: { onMenuClick: () => void; 
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { user, signOut, canAccessModule, isCenterAdmin } = useAuthStore()
+  const { user, signOut, canAccessModule, isCenterAdmin, getSubscriptionTier } = useAuthStore()
   const [isMobileOpen, setIsMobileOpen] = useState(false)
+  const [lockedModule, setLockedModule] = useState<{ module: string; tier: 'standard' | 'premium' } | null>(null)
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -105,10 +110,22 @@ export function Sidebar() {
     }
   }, [isMobileOpen])
 
+  const currentTier = getSubscriptionTier()
+  const tierHierarchy = { micro: 1, starter: 2, standard: 3, premium: 4 }
+  const currentTierLevel = tierHierarchy[currentTier] || 2
+
+  // Filter items and mark locked ones
   const navItems = centerNavItems.filter(item => {
     if (item.adminOnly && !isCenterAdmin()) return false
-    if (item.module && !canAccessModule(item.module)) return false
     return true
+  }).map(item => {
+    if (item.module && item.requiresTier) {
+      const requiredLevel = tierHierarchy[item.requiresTier] || 4
+      const isLocked = currentTierLevel < requiredLevel
+      const hasAccess = canAccessModule(item.module)
+      return { ...item, isLocked: isLocked || !hasAccess }
+    }
+    return { ...item, isLocked: false }
   })
 
   const primaryColor = user?.center?.primary_color || '#1E40AF'
@@ -166,6 +183,21 @@ export function Sidebar() {
           const isActive = item.href === '/dashboard'
             ? pathname === '/dashboard'
             : pathname === item.href || pathname.startsWith(item.href + '/')
+
+          if (item.isLocked) {
+            return (
+              <button
+                key={item.href}
+                onClick={() => setLockedModule({ module: item.label, tier: item.requiresTier || 'premium' })}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 hover:bg-gray-50 cursor-pointer"
+              >
+                {item.icon}
+                <span className="font-medium flex-1 text-left">{item.label}</span>
+                <Lock className="w-4 h-4" />
+              </button>
+            )
+          }
+
           return (
             <Link
               key={item.href}
@@ -183,6 +215,48 @@ export function Sidebar() {
           )
         })}
       </nav>
+
+      {/* Locked Module Modal */}
+      {lockedModule && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6 text-center">
+            <div className={`mx-auto w-14 h-14 rounded-full flex items-center justify-center mb-4 ${
+              lockedModule.tier === 'premium' ? 'bg-purple-100' : 'bg-blue-100'
+            }`}>
+              <Lock className={`w-7 h-7 ${
+                lockedModule.tier === 'premium' ? 'text-purple-600' : 'text-blue-600'
+              }`} />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              {lockedModule.module} is Locked
+            </h3>
+            <p className="text-gray-600 text-sm mb-4">
+              This feature requires the{' '}
+              <span className={`font-semibold ${
+                lockedModule.tier === 'premium' ? 'text-purple-600' : 'text-blue-600'
+              }`}>
+                {lockedModule.tier.charAt(0).toUpperCase() + lockedModule.tier.slice(1)}
+              </span>{' '}
+              plan or higher.
+            </p>
+            <div className="flex justify-center gap-3">
+              <button
+                onClick={() => setLockedModule(null)}
+                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                Maybe Later
+              </button>
+              <Link
+                href="/dashboard/subscription"
+                onClick={() => setLockedModule(null)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                View Plans
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* User section */}
       <div className="p-4 border-t border-gray-200">

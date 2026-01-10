@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { validatePasswordForAPI } from '@/lib/password-validation'
+import { sanitizeText, sanitizeEmail } from '@/lib/sanitize'
+import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit'
 
 // Use service role for signup (no user context)
 const supabase = createClient(
@@ -16,8 +19,23 @@ function generateSlug(name: string): string {
 
 export async function POST(request: NextRequest) {
   try {
+    // Apply rate limiting (5 requests per minute)
+    const rateLimitResponse = await rateLimit(request, {
+      ...RATE_LIMITS.signup,
+      keyPrefix: 'signup',
+    })
+    if (rateLimitResponse) {
+      return rateLimitResponse
+    }
+
     const body = await request.json()
-    const { centerName, centerPhone, centerCity, fullName, email, phone, password } = body
+    let { centerName, centerPhone, centerCity, fullName, email, phone, password } = body
+
+    // Sanitize text inputs
+    centerName = sanitizeText(centerName || '')
+    centerCity = sanitizeText(centerCity || '')
+    fullName = sanitizeText(fullName || '')
+    email = sanitizeEmail(email || '')
 
     // Validate required fields
     if (!centerName || !centerCity || !fullName || !email || !password) {
@@ -35,10 +53,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate password length
-    if (password.length < 6) {
+    // Validate password with strong policy
+    const passwordError = validatePasswordForAPI(password)
+    if (passwordError) {
       return NextResponse.json(
-        { error: 'Password must be at least 6 characters' },
+        { error: passwordError },
         { status: 400 }
       )
     }

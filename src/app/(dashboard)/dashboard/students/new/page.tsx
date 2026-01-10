@@ -7,10 +7,11 @@ import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/auth-store'
 import { Button } from '@/components/ui/button'
 import { Input, Select, Textarea } from '@/components/ui/input'
-import { ArrowLeft, Save, Upload, User } from 'lucide-react'
+import { ArrowLeft, Save, Upload, User, AlertTriangle, TrendingUp } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { formatCurrency } from '@/lib/currency'
 import { isValidSAPhoneNumber, getPhoneValidationError } from '@/lib/phone-validation'
+import { checkStudentLimit, type StudentLimitCheck } from '@/lib/subscription-limits'
 
 interface Subject {
   id: string
@@ -42,6 +43,8 @@ export default function NewStudentPage() {
   })
   const [currentStep, setCurrentStep] = useState(1)
   const totalSteps = 4
+  const [studentLimit, setStudentLimit] = useState<StudentLimitCheck | null>(null)
+  const [limitLoading, setLimitLoading] = useState(true)
 
   // Form state - Student Information
   const [formData, setFormData] = useState({
@@ -80,8 +83,17 @@ export default function NewStudentPage() {
     if (user?.center_id) {
       fetchSubjects()
       fetchCenterSettings()
+      fetchStudentLimit()
     }
   }, [user?.center_id])
+
+  async function fetchStudentLimit() {
+    if (!user?.center_id) return
+    setLimitLoading(true)
+    const limit = await checkStudentLimit(user.center_id)
+    setStudentLimit(limit)
+    setLimitLoading(false)
+  }
 
   async function fetchSubjects() {
     if (!user?.center_id) return
@@ -335,6 +347,44 @@ export default function NewStudentPage() {
 • Registration fees are non-refundable under any circumstances
 • The College may prevent class attendance until fees are paid
 • I authorize the College to contact me regarding my account`
+
+  // Show blocked message if at limit
+  if (studentLimit?.isAtLimit) {
+    return (
+      <div className="p-8 max-w-2xl mx-auto">
+        <Link
+          href="/dashboard/students"
+          className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 mb-4"
+        >
+          <ArrowLeft className="w-4 h-4 mr-1" />
+          Back to Students
+        </Link>
+
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
+          <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-6">
+            <AlertTriangle className="w-8 h-8 text-red-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Student Limit Reached</h1>
+          <p className="text-gray-600 mb-6">
+            You&apos;ve reached your {studentLimit.tier} plan limit of {studentLimit.limit} students.
+            Upgrade your plan to add more students.
+          </p>
+          <div className="flex justify-center gap-3">
+            <Link href="/dashboard/students">
+              <Button variant="outline">
+                Back to Students
+              </Button>
+            </Link>
+            <Link href="/dashboard/subscription">
+              <Button leftIcon={<TrendingUp className="w-4 h-4" />}>
+                Upgrade Plan
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="p-8 max-w-4xl mx-auto">

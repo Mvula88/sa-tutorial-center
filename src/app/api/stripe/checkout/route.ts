@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
 
     const { plan } = await request.json()
 
-    if (!plan || !['starter', 'standard', 'premium'].includes(plan)) {
+    if (!plan || !['micro', 'starter', 'standard', 'premium'].includes(plan)) {
       return NextResponse.json(
         { error: 'Invalid subscription plan' },
         { status: 400 }
