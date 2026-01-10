@@ -31,8 +31,8 @@ const plans = [
   {
     id: 'micro',
     name: 'Micro',
-    price: 199,
-    description: 'Perfect for individual tutors with up to 15 students',
+    price: 99,
+    description: 'Individual tutors & township operators',
     features: [
       'Up to 15 students',
       'Student management',
@@ -45,8 +45,8 @@ const plans = [
   {
     id: 'starter',
     name: 'Starter',
-    price: 499,
-    description: 'Perfect for small tutors with up to 50 students',
+    price: 199,
+    description: 'Small tutorial centres',
     features: [
       'Up to 50 students',
       'Student management',
@@ -60,8 +60,8 @@ const plans = [
   {
     id: 'standard',
     name: 'Standard',
-    price: 899,
-    description: 'For growing tutorial centres with 50-150 students',
+    price: 399,
+    description: 'Growing tutorial centres',
     features: [
       'Up to 150 students',
       'Everything in Starter',
@@ -77,8 +77,8 @@ const plans = [
   {
     id: 'premium',
     name: 'Premium',
-    price: 1499,
-    description: 'For large centres with 150+ students',
+    price: 599,
+    description: 'Large centres & academies',
     features: [
       'Unlimited students',
       'Everything in Standard',

@@ -705,7 +705,7 @@ export default function CenterSettingsPage() {
                             className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 transition-colors text-left"
                           >
                             <h4 className="font-medium text-gray-900">Micro</h4>
-                            <p className="text-2xl font-bold text-gray-900 mt-1">R199<span className="text-sm font-normal text-gray-500">/mo</span></p>
+                            <p className="text-2xl font-bold text-gray-900 mt-1">R99<span className="text-sm font-normal text-gray-500">/mo</span></p>
                             <p className="text-xs text-gray-500 mt-1">Up to 15 students</p>
                           </button>
                           <button
@@ -714,7 +714,7 @@ export default function CenterSettingsPage() {
                             className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 transition-colors text-left"
                           >
                             <h4 className="font-medium text-gray-900">Starter</h4>
-                            <p className="text-2xl font-bold text-gray-900 mt-1">R499<span className="text-sm font-normal text-gray-500">/mo</span></p>
+                            <p className="text-2xl font-bold text-gray-900 mt-1">R199<span className="text-sm font-normal text-gray-500">/mo</span></p>
                             <p className="text-xs text-gray-500 mt-1">Up to 50 students</p>
                           </button>
                           <button
@@ -724,7 +724,7 @@ export default function CenterSettingsPage() {
                           >
                             <span className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">Popular</span>
                             <h4 className="font-medium text-gray-900">Standard</h4>
-                            <p className="text-2xl font-bold text-gray-900 mt-1">R899<span className="text-sm font-normal text-gray-500">/mo</span></p>
+                            <p className="text-2xl font-bold text-gray-900 mt-1">R399<span className="text-sm font-normal text-gray-500">/mo</span></p>
                             <p className="text-xs text-gray-500 mt-1">Up to 150 students</p>
                           </button>
                           <button
@@ -733,7 +733,7 @@ export default function CenterSettingsPage() {
                             className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 transition-colors text-left"
                           >
                             <h4 className="font-medium text-gray-900">Premium</h4>
-                            <p className="text-2xl font-bold text-gray-900 mt-1">R1,499<span className="text-sm font-normal text-gray-500">/mo</span></p>
+                            <p className="text-2xl font-bold text-gray-900 mt-1">R599<span className="text-sm font-normal text-gray-500">/mo</span></p>
                             <p className="text-xs text-gray-500 mt-1">Unlimited students</p>
                           </button>
                         </div>

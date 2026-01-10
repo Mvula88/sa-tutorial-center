@@ -16,13 +16,13 @@ export function getStripe(): Stripe {
   return _stripe
 }
 
-// Subscription plans configuration
+// Subscription plans configuration - Ultra-aggressive market penetration pricing
 export const SUBSCRIPTION_PLANS = {
   micro: {
     name: 'Micro',
-    description: 'Perfect for individual tutors with up to 15 students',
+    description: 'Individual tutors & township operators',
     priceId: process.env.STRIPE_MICRO_PRICE_ID!,
-    monthlyPrice: 199, // R199
+    monthlyPrice: 99, // R99
     setupFee: 0,
     maxStudents: 15,
     features: [
@@ -35,9 +35,9 @@ export const SUBSCRIPTION_PLANS = {
   },
   starter: {
     name: 'Starter',
-    description: 'Perfect for small tutors with up to 50 students',
+    description: 'Small tutorial centres',
     priceId: process.env.STRIPE_STARTER_PRICE_ID!,
-    monthlyPrice: 499, // R499
+    monthlyPrice: 199, // R199
     setupFee: 0,
     maxStudents: 50,
     features: [
@@ -51,10 +51,10 @@ export const SUBSCRIPTION_PLANS = {
   },
   standard: {
     name: 'Standard',
-    description: 'For growing tutorial centres with 50-150 students',
+    description: 'Growing tutorial centres',
     priceId: process.env.STRIPE_STANDARD_PRICE_ID!,
-    monthlyPrice: 899, // R899
-    setupFee: 1500, // R1,500
+    monthlyPrice: 399, // R399
+    setupFee: 0,
     maxStudents: 150,
     features: [
       'Everything in Starter',
@@ -66,10 +66,10 @@ export const SUBSCRIPTION_PLANS = {
   },
   premium: {
     name: 'Premium',
-    description: 'For large centres with 150+ students',
+    description: 'Large centres & academies',
     priceId: process.env.STRIPE_PREMIUM_PRICE_ID!,
-    monthlyPrice: 1499, // R1,499
-    setupFee: 2500, // R2,500
+    monthlyPrice: 599, // R599
+    setupFee: 0,
     maxStudents: -1, // Unlimited
     features: [
       'Everything in Standard',

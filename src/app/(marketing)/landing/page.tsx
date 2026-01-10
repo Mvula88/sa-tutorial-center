@@ -53,8 +53,8 @@ const features = [
 const plans = [
   {
     name: 'Micro',
-    description: 'Perfect for individual tutors',
-    monthlyPrice: 199,
+    description: 'Individual tutors & township operators',
+    monthlyPrice: 99,
     setupFee: 0,
     students: 'Up to 15 students',
     features: [
@@ -67,8 +67,8 @@ const plans = [
   },
   {
     name: 'Starter',
-    description: 'Perfect for small tutors',
-    monthlyPrice: 499,
+    description: 'Small tutorial centres',
+    monthlyPrice: 199,
     setupFee: 0,
     students: 'Up to 50 students',
     features: [
@@ -80,9 +80,9 @@ const plans = [
   },
   {
     name: 'Standard',
-    description: 'For growing tutorial centres',
-    monthlyPrice: 899,
-    setupFee: 1500,
+    description: 'Growing tutorial centres',
+    monthlyPrice: 399,
+    setupFee: 0,
     students: '50-150 students',
     features: [
       'Everything in Starter',
@@ -96,10 +96,10 @@ const plans = [
   },
   {
     name: 'Premium',
-    description: 'For large centres',
-    monthlyPrice: 1499,
-    setupFee: 2500,
-    students: '150+ students',
+    description: 'Large centres & academies',
+    monthlyPrice: 599,
+    setupFee: 0,
+    students: 'Unlimited students',
     features: [
       'Everything in Standard',
       'Hostel management',
@@ -205,7 +205,7 @@ export default function LandingPage() {
               <div className="text-gray-400 mt-1">hours saved per week</div>
             </div>
             <div>
-              <div className="text-3xl md:text-4xl font-bold text-white">R199</div>
+              <div className="text-3xl md:text-4xl font-bold text-white">R99</div>
               <div className="text-gray-400 mt-1">starting price per month</div>
             </div>
             <div>
