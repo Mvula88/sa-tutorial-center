@@ -65,7 +65,7 @@ export function LogoUpload({ centerId, currentLogoUrl, onUploadComplete }: LogoU
       // Update center record
       const { error: updateError } = await supabase
         .from('tutorial_centers')
-        .update({ logo_url: publicUrl })
+        .update({ logo_url: publicUrl } as never)
         .eq('id', centerId)
 
       if (updateError) {
@@ -119,7 +119,7 @@ export function LogoUpload({ centerId, currentLogoUrl, onUploadComplete }: LogoU
       // Clear logo URL in database
       const { error } = await supabase
         .from('tutorial_centers')
-        .update({ logo_url: null })
+        .update({ logo_url: null } as never)
         .eq('id', centerId)
 
       if (error) {
