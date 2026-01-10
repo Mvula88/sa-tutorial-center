@@ -109,28 +109,34 @@ export function GlobalSearch() {
       const searchTerm = `%${searchQuery}%`
 
       // Search students
-      const { data: students } = await supabase
+      const { data: studentsData } = await supabase
         .from('students')
         .select('id, first_name, last_name, student_id')
         .eq('center_id', user.center_id)
         .or(`first_name.ilike.${searchTerm},last_name.ilike.${searchTerm},student_id.ilike.${searchTerm}`)
         .limit(5)
 
+      const students = studentsData as { id: string; first_name: string; last_name: string; student_id: string | null }[] | null
+
       // Search teachers
-      const { data: teachers } = await supabase
+      const { data: teachersData } = await supabase
         .from('teachers')
         .select('id, first_name, last_name')
         .eq('center_id', user.center_id)
         .or(`first_name.ilike.${searchTerm},last_name.ilike.${searchTerm}`)
         .limit(5)
 
+      const teachers = teachersData as { id: string; first_name: string; last_name: string }[] | null
+
       // Search subjects
-      const { data: subjects } = await supabase
+      const { data: subjectsData } = await supabase
         .from('subjects')
         .select('id, name')
         .eq('center_id', user.center_id)
         .ilike('name', searchTerm)
         .limit(5)
+
+      const subjects = subjectsData as { id: string; name: string }[] | null
 
       const searchResults: SearchResult[] = []
 
