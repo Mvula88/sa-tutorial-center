@@ -13,7 +13,6 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  ExternalLink,
   MessageCircle,
   Mail,
   Loader2,
@@ -312,7 +311,7 @@ export default function ReferralsPage() {
               if (navigator.share) {
                 navigator.share({
                   title: 'Join SA Tutorial Centres',
-                  text: `Use my referral code ${data?.referralCode} to get R50 credit!`,
+                  text: `Use my referral code ${data?.referralCode} to get an extended 30-day free trial!`,
                   url: referralLink,
                 })
               } else {
@@ -329,7 +328,7 @@ export default function ReferralsPage() {
       {/* How It Works */}
       <div className="bg-blue-50 rounded-xl p-6 mb-8">
         <h3 className="font-semibold text-gray-900 mb-4">How It Works</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="flex items-start gap-3">
             <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0">
               1
@@ -357,9 +356,20 @@ export default function ReferralsPage() {
               3
             </div>
             <div>
-              <p className="font-medium text-gray-900">You Get 1 Month Free</p>
+              <p className="font-medium text-gray-900">They Subscribe</p>
               <p className="text-sm text-gray-600">
-                When they subscribe, you earn 1 free month!
+                After trial, they subscribe and stay active for 30 days
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0">
+              4
+            </div>
+            <div>
+              <p className="font-medium text-gray-900">You Earn Reward</p>
+              <p className="text-sm text-gray-600">
+                You get 1 free month after the 30-day verification
               </p>
             </div>
           </div>
