@@ -254,7 +254,7 @@ export default function StudentImportPage() {
               </div>
               <div className="bg-gray-50 rounded-lg p-4 text-center">
                 <p className="text-2xl font-bold text-gray-900">
-                  {limitCheck?.limit === -1 ? '∞' : limitCheck?.limit - limitCheck?.current}
+                  {limitCheck?.limit === -1 ? '∞' : ((limitCheck?.limit ?? 0) - (limitCheck?.current ?? 0))}
                 </p>
                 <p className="text-sm text-gray-600">Available slots</p>
               </div>
