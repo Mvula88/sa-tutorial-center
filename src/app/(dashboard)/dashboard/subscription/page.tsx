@@ -93,7 +93,7 @@ const plans = [
 ]
 
 export default function SubscriptionPage() {
-  const { user } = useAuthStore()
+  const { user, fetchUser } = useAuthStore()
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [upgradeLoading, setUpgradeLoading] = useState<string | null>(null)
@@ -181,8 +181,9 @@ export default function SubscriptionPage() {
       }
 
       if (data.synced) {
-        toast.success('Subscription synced successfully!')
-        fetchSubscription() // Refresh the data
+        toast.success('Subscription synced successfully! Refreshing...')
+        fetchSubscription() // Refresh the subscription data
+        fetchUser() // Refresh the auth store so sidebar updates
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to sync subscription')
