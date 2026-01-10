@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { GraduationCap, Eye, EyeOff, Loader2, Check, Building2, User, Mail, Phone, Lock } from 'lucide-react'
+import { GraduationCap, Eye, EyeOff, Loader2, Check, Building2, User, Mail, Phone, Lock, Gift, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const TRIAL_FEATURES = [
@@ -16,9 +16,16 @@ const TRIAL_FEATURES = [
 
 export default function SignupPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [step, setStep] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+
+  // Referral state
+  const [referralCode, setReferralCode] = useState('')
+  const [referralValid, setReferralValid] = useState<boolean | null>(null)
+  const [referralInfo, setReferralInfo] = useState<{ referrerName: string; discount: string } | null>(null)
+  const [isValidatingReferral, setIsValidatingReferral] = useState(false)
 
   const [formData, setFormData] = useState({
     // Center details
@@ -32,6 +39,50 @@ export default function SignupPage() {
     password: '',
     confirmPassword: '',
   })
+
+  // Check for referral code in URL on mount
+  useEffect(() => {
+    const refCode = searchParams.get('ref')
+    if (refCode) {
+      setReferralCode(refCode.toUpperCase())
+      validateReferralCode(refCode)
+    }
+  }, [searchParams])
+
+  async function validateReferralCode(code: string) {
+    if (!code || code.length < 4) {
+      setReferralValid(null)
+      setReferralInfo(null)
+      return
+    }
+
+    setIsValidatingReferral(true)
+    try {
+      const response = await fetch('/api/referrals/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: code.toUpperCase() }),
+      })
+      const data = await response.json()
+
+      if (data.valid) {
+        setReferralValid(true)
+        setReferralInfo({
+          referrerName: data.referrerName,
+          discount: data.discount,
+        })
+      } else {
+        setReferralValid(false)
+        setReferralInfo(null)
+      }
+    } catch (error) {
+      console.error('Error validating referral:', error)
+      setReferralValid(false)
+      setReferralInfo(null)
+    } finally {
+      setIsValidatingReferral(false)
+    }
+  }
 
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -107,6 +158,7 @@ export default function SignupPage() {
           email: formData.email,
           phone: formData.phone,
           password: formData.password,
+          referralCode: referralValid ? referralCode : undefined,
         }),
       })
 
@@ -172,6 +224,75 @@ export default function SignupPage() {
             {step === 1 && (
               <div className="space-y-4">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Tutorial Center Details</h2>
+
+                {/* Referral Code Banner */}
+                {referralValid && referralInfo && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-start gap-3">
+                    <Gift className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-green-800">
+                        Referral code applied!
+                      </p>
+                      <p className="text-xs text-green-700 mt-0.5">
+                        Referred by {referralInfo.referrerName} - {referralInfo.discount}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setReferralCode('')
+                        setReferralValid(null)
+                        setReferralInfo(null)
+                      }}
+                      className="text-green-600 hover:text-green-800"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Referral Code Input (only show if not already valid) */}
+                {!referralValid && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Referral Code (optional)
+                    </label>
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Gift className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <input
+                          type="text"
+                          value={referralCode}
+                          onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                          onBlur={() => referralCode && validateReferralCode(referralCode)}
+                          className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
+                            referralValid === false ? 'border-red-300' : 'border-gray-300'
+                          } focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none uppercase`}
+                          placeholder="Enter referral code"
+                          maxLength={12}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => validateReferralCode(referralCode)}
+                        disabled={isValidatingReferral || !referralCode}
+                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors disabled:opacity-50"
+                      >
+                        {isValidatingReferral ? (
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                          'Apply'
+                        )}
+                      </button>
+                    </div>
+                    {referralValid === false && (
+                      <p className="text-red-500 text-sm mt-1">Invalid referral code</p>
+                    )}
+                    <p className="text-xs text-gray-500 mt-1">
+                      Have a referral code? Enter it to get R50 credit!
+                    </p>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">

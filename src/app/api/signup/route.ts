@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    let { centerName, centerPhone, centerCity, fullName, email, phone, password } = body
+    let { centerName, centerPhone, centerCity, fullName, email, phone, password, referralCode } = body
 
     // Sanitize text inputs
     centerName = sanitizeText(centerName || '')
@@ -109,6 +109,20 @@ export async function POST(request: NextRequest) {
     const trialEndsAt = new Date()
     trialEndsAt.setDate(trialEndsAt.getDate() + 14)
 
+    // Validate referral code if provided
+    let validReferralCode: { id: string; center_id: string } | null = null
+    if (referralCode) {
+      const { data: refCode } = await supabase
+        .from('referral_codes')
+        .select('id, center_id, is_active')
+        .eq('code', referralCode.toUpperCase())
+        .single()
+
+      if (refCode && refCode.is_active) {
+        validReferralCode = refCode as { id: string; center_id: string }
+      }
+    }
+
     // Step 1: Create tutorial center with trial status
     const { data: center, error: centerError } = await supabase
       .from('tutorial_centers')
@@ -124,6 +138,7 @@ export async function POST(request: NextRequest) {
         trial_ends_at: trialEndsAt.toISOString(),
         payment_months: [1, 2, 3, 4, 5, 6, 7, 8, 9], // Feb-Oct default (South African school year)
         default_registration_fee: 300,
+        referred_by_code: validReferralCode ? referralCode.toUpperCase() : null,
       })
       .select()
       .single()
@@ -202,11 +217,49 @@ export async function POST(request: NextRequest) {
         }))
       )
 
+    // Step 5: Create referral tracking if valid referral code was used
+    if (validReferralCode) {
+      // Create the referral record
+      await supabase
+        .from('referrals')
+        .insert({
+          referral_code_id: validReferralCode.id,
+          referrer_center_id: validReferralCode.center_id,
+          referred_center_id: center.id,
+          referred_email: email.toLowerCase(),
+          status: 'pending',
+          referrer_reward_amount: 100,
+          referred_reward_amount: 50,
+        })
+
+      // Update total referrals count on the referral code
+      // First get current count, then increment
+      const { data: currentCode } = await supabase
+        .from('referral_codes')
+        .select('total_referrals')
+        .eq('id', validReferralCode.id)
+        .single()
+
+      await supabase
+        .from('referral_codes')
+        .update({
+          total_referrals: ((currentCode as { total_referrals: number } | null)?.total_referrals || 0) + 1,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', validReferralCode.id)
+
+      // Note: Rewards are granted automatically when subscription becomes active
+      // via the database trigger (complete_referral_on_subscription)
+    }
+
     return NextResponse.json({
       success: true,
-      message: 'Account created successfully! You can now sign in.',
+      message: validReferralCode
+        ? 'Account created successfully! Your R50 referral credit will be applied when you subscribe.'
+        : 'Account created successfully! You can now sign in.',
       centerId: center.id,
       userId: authData.user.id,
+      referralApplied: !!validReferralCode,
     })
   } catch (error) {
     console.error('Signup error:', error)
