@@ -70,7 +70,7 @@ export async function createAuditLog(entry: AuditLogEntry): Promise<{ success: b
       new_values: entry.newValues || null,
       ip_address: entry.ipAddress || null,
       user_agent: entry.userAgent || null,
-    })
+    } as never)
 
     if (error) {
       console.error('Error creating audit log:', error)
