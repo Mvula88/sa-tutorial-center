@@ -181,9 +181,11 @@ export default function SubscriptionPage() {
       }
 
       if (data.synced) {
-        toast.success('Subscription synced successfully! Refreshing...')
-        fetchSubscription() // Refresh the subscription data
-        fetchUser() // Refresh the auth store so sidebar updates
+        toast.success('Subscription synced successfully! Reloading page...')
+        // Force a full page reload to refresh all user data including sidebar
+        setTimeout(() => {
+          window.location.reload()
+        }, 1000)
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to sync subscription')
