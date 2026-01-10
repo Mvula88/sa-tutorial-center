@@ -162,7 +162,7 @@ export async function POST() {
 
     if (updateError) {
       console.error('Failed to update subscription:', updateError)
-      return NextResponse.json({ error: 'Failed to update subscription' }, { status: 500 })
+      return NextResponse.json({ error: `Failed to update subscription: ${updateError.message}` }, { status: 500 })
     }
 
     return NextResponse.json({
@@ -175,7 +175,8 @@ export async function POST() {
     })
   } catch (error) {
     console.error('Sync error:', error)
-    return NextResponse.json({ error: 'Failed to sync subscription' }, { status: 500 })
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    return NextResponse.json({ error: `Failed to sync subscription: ${errorMessage}` }, { status: 500 })
   }
 }
 // Build timestamp: 1767777023
