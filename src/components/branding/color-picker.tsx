@@ -69,7 +69,7 @@ export function ColorPicker({
 
       const { error } = await supabase
         .from('tutorial_centers')
-        .update({ [field]: color })
+        .update({ [field]: color } as Record<string, string>)
         .eq('id', centerId)
 
       if (error) {
