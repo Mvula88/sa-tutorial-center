@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
-import { Eye, EyeOff, Loader2, GraduationCap, CheckCircle } from 'lucide-react'
+import { Eye, EyeOff, Loader2, GraduationCap, CheckCircle, ArrowLeft } from 'lucide-react'
 
 function LoginForm() {
   const router = useRouter()
@@ -92,6 +92,15 @@ function LoginForm() {
 
   return (
     <div className="w-full max-w-md relative z-10">
+      {/* Back to home link */}
+      <Link
+        href="/"
+        className="inline-flex items-center gap-2 text-white/80 hover:text-white mb-6 transition-colors group"
+      >
+        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+        <span className="text-sm">Back to home</span>
+      </Link>
+
       {/* Logo/Brand */}
       <div className="text-center mb-8">
         <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white mb-4">
