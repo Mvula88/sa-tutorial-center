@@ -56,11 +56,13 @@ export default function TeacherAttendancePage() {
     const supabase = createClient()
 
     // Get teacher's center
-    const { data: teacher } = await supabase
+    const { data: teacherData } = await supabase
       .from('teachers')
       .select('center_id')
       .eq('id', token)
       .single()
+
+    const teacher = teacherData as { center_id: string } | null
 
     if (teacher) {
       setCenterId(teacher.center_id)
