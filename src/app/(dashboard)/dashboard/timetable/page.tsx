@@ -152,13 +152,14 @@ export default function TimetablePage() {
         .order('full_name'),
     ])
 
-    setClasses((classesRes.data || []) as Class[])
+    const classesData = (classesRes.data || []) as Class[]
+    setClasses(classesData)
     setSubjects((subjectsRes.data || []) as Subject[])
     setTeachers((teachersRes.data || []) as Teacher[])
 
     // Set first class as selected if available
-    if (classesRes.data && classesRes.data.length > 0) {
-      setSelectedClassId(classesRes.data[0].id)
+    if (classesData.length > 0) {
+      setSelectedClassId(classesData[0].id)
     }
     setIsLoading(false)
   }
