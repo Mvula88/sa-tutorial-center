@@ -291,6 +291,11 @@ export default function PaymentsPage() {
         <div className="flex items-center gap-3">
           {isCenterAdmin() && (
             <>
+              <Link href="/dashboard/payments/outstanding">
+                <Button variant="outline" leftIcon={<AlertCircle className="w-4 h-4" />}>
+                  Outstanding Fees
+                </Button>
+              </Link>
               <Button
                 variant="outline"
                 leftIcon={<CalendarPlus className="w-4 h-4" />}
