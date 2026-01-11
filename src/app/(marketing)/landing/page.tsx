@@ -824,13 +824,13 @@ export default function LandingPage() {
           <p className="text-xl text-blue-100 mb-8">
             Sign up takes 2 minutes. No credit card required. See if it works for you.
           </p>
-          <Link
-            href="/login"
+          <a
+            href="#pricing"
             className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-600 rounded-xl font-semibold text-lg hover:bg-blue-50 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105 group"
           >
             Try it free
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-          </Link>
+          </a>
         </div>
       </section>
 
