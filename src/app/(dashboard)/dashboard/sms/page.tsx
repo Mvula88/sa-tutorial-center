@@ -26,6 +26,12 @@ import {
   Filter,
   Copy,
   Sparkles,
+  Calendar,
+  CreditCard,
+  TrendingDown,
+  History,
+  ShoppingCart,
+  Check,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -70,6 +76,15 @@ interface StudentRecipient {
   class_id: string | null
 }
 
+interface CreditTransaction {
+  id: string
+  transaction_type: string
+  amount: number
+  balance_after: number
+  description: string | null
+  created_at: string
+}
+
 const ITEMS_PER_PAGE = 10
 
 const GRADE_LEVELS = [
@@ -94,10 +109,24 @@ const STATUS_BADGES: Record<string, { bg: string; text: string; icon: React.Reac
   cancelled: { bg: 'bg-gray-100', text: 'text-gray-500', icon: <X className="w-3 h-3" /> },
 }
 
+// SMS Credit Packages
+const SMS_CREDIT_PACKAGES = [
+  { id: 'small', name: '100 SMS Credits', credits: 100, price: 50, perSms: '0.50' },
+  { id: 'medium', name: '500 SMS Credits', credits: 500, price: 200, perSms: '0.40', popular: true },
+  { id: 'large', name: '1000 SMS Credits', credits: 1000, price: 350, perSms: '0.35' },
+  { id: 'bulk', name: '5000 SMS Credits', credits: 5000, price: 1500, perSms: '0.30', bestValue: true },
+]
+
 export default function SMSCampaignsPage() {
   const { user } = useAuthStore()
-  const [activeTab, setActiveTab] = useState<'campaigns' | 'templates' | 'compose'>('campaigns')
+  const [activeTab, setActiveTab] = useState<'campaigns' | 'templates' | 'compose' | 'credits'>('campaigns')
   const [isLoading, setIsLoading] = useState(true)
+
+  // SMS Credits state
+  const [smsCredits, setSmsCredits] = useState(0)
+  const [creditsUsed, setCreditsUsed] = useState(0)
+  const [lowBalanceThreshold, setLowBalanceThreshold] = useState(50)
+  const [creditTransactions, setCreditTransactions] = useState<CreditTransaction[]>([])
 
   // Campaigns state
   const [campaigns, setCampaigns] = useState<SMSCampaign[]>([])
@@ -126,6 +155,9 @@ export default function SMSCampaignsPage() {
     target_grade: '',
     target_class_id: '',
     target_status: '',
+    schedule_enabled: false,
+    scheduled_date: '',
+    scheduled_time: '',
   })
   const [previewRecipients, setPreviewRecipients] = useState<StudentRecipient[]>([])
   const [isLoadingPreview, setIsLoadingPreview] = useState(false)
@@ -142,16 +174,41 @@ export default function SMSCampaignsPage() {
   // View campaign modal
   const [viewingCampaign, setViewingCampaign] = useState<SMSCampaign | null>(null)
 
+  // Buy credits modal
+  const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false)
+  const [selectedPackage, setSelectedPackage] = useState<string | null>(null)
+  const [isPurchasing, setIsPurchasing] = useState(false)
+
+  // Check for URL params on mount (for Stripe checkout redirects)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const creditsParam = params.get('credits')
+
+    if (creditsParam === 'success') {
+      toast.success('SMS credits purchased successfully!')
+      setActiveTab('credits')
+      // Clean up URL
+      window.history.replaceState({}, '', '/dashboard/sms')
+    } else if (creditsParam === 'cancelled') {
+      toast.error('Credit purchase was cancelled')
+      window.history.replaceState({}, '', '/dashboard/sms')
+    }
+  }, [])
+
   useEffect(() => {
     if (user?.center_id) {
       fetchClasses()
       fetchTemplates()
+      fetchSMSCredits()
     }
   }, [user?.center_id])
 
   useEffect(() => {
     if (activeTab === 'campaigns' && user?.center_id) {
       fetchCampaigns()
+    }
+    if (activeTab === 'credits' && user?.center_id) {
+      fetchCreditTransactions()
     }
   }, [activeTab, user?.center_id, currentPage, statusFilter])
 
@@ -161,6 +218,35 @@ export default function SMSCampaignsPage() {
       previewRecipientsDebounced()
     }
   }, [activeTab, composeForm.target_type, composeForm.target_grade, composeForm.target_class_id, composeForm.target_status])
+
+  async function fetchSMSCredits() {
+    if (!user?.center_id) return
+    const supabase = createClient()
+    const { data } = await supabase
+      .from('tutorial_centers')
+      .select('sms_credits, sms_credits_used, sms_low_balance_threshold')
+      .eq('id', user.center_id)
+      .single()
+
+    if (data) {
+      setSmsCredits(data.sms_credits || 0)
+      setCreditsUsed(data.sms_credits_used || 0)
+      setLowBalanceThreshold(data.sms_low_balance_threshold || 50)
+    }
+  }
+
+  async function fetchCreditTransactions() {
+    if (!user?.center_id) return
+    const supabase = createClient()
+    const { data } = await supabase
+      .from('sms_credit_transactions')
+      .select('id, transaction_type, amount, balance_after, description, created_at')
+      .eq('center_id', user.center_id)
+      .order('created_at', { ascending: false })
+      .limit(50)
+
+    setCreditTransactions((data || []) as CreditTransaction[])
+  }
 
   async function fetchClasses() {
     if (!user?.center_id) return
@@ -331,10 +417,37 @@ export default function SMSCampaignsPage() {
       return
     }
 
+    // Check credits
+    const smsCount = Math.ceil(composeForm.message.length / 160) || 1
+    const requiredCredits = previewRecipients.length * smsCount
+    if (smsCredits < requiredCredits) {
+      toast.error(`Insufficient SMS credits. Need ${requiredCredits}, have ${smsCredits}`)
+      return
+    }
+
+    // Check if scheduling
+    if (composeForm.schedule_enabled) {
+      if (!composeForm.scheduled_date || !composeForm.scheduled_time) {
+        toast.error('Please select a date and time for scheduled send')
+        return
+      }
+      const scheduledAt = new Date(`${composeForm.scheduled_date}T${composeForm.scheduled_time}`)
+      if (scheduledAt <= new Date()) {
+        toast.error('Scheduled time must be in the future')
+        return
+      }
+    }
+
     setIsSending(true)
     const supabase = createClient()
 
     try {
+      // Determine scheduled_at
+      let scheduledAt = null
+      if (composeForm.schedule_enabled && composeForm.scheduled_date && composeForm.scheduled_time) {
+        scheduledAt = new Date(`${composeForm.scheduled_date}T${composeForm.scheduled_time}`).toISOString()
+      }
+
       // Create campaign
       const campaignData = {
         center_id: user.center_id,
@@ -344,7 +457,8 @@ export default function SMSCampaignsPage() {
         target_grade: composeForm.target_grade || null,
         target_class_id: composeForm.target_class_id || null,
         target_status: composeForm.target_status || null,
-        status: 'sending',
+        status: scheduledAt ? 'scheduled' : 'sending',
+        scheduled_at: scheduledAt,
         total_recipients: previewRecipients.length,
         sent_count: 0,
         failed_count: 0,
@@ -373,6 +487,15 @@ export default function SMSCampaignsPage() {
         .insert(recipients as never)
 
       if (recipientError) throw recipientError
+
+      // If scheduled, just save and return
+      if (scheduledAt) {
+        toast.success(`Campaign scheduled for ${new Date(scheduledAt).toLocaleString('en-ZA')}`)
+        resetComposeForm()
+        setActiveTab('campaigns')
+        fetchCampaigns()
+        return
+      }
 
       // Send SMS to each recipient
       let sentCount = 0
@@ -427,10 +550,34 @@ export default function SMSCampaignsPage() {
         } as never)
         .eq('id', (campaign as { id: string }).id)
 
+      // Deduct credits
+      const creditsUsedNow = sentCount * smsCount
+      await supabase
+        .from('tutorial_centers')
+        .update({
+          sms_credits: smsCredits - creditsUsedNow,
+          sms_credits_used: creditsUsed + creditsUsedNow,
+        } as never)
+        .eq('id', user.center_id)
+
+      // Log credit transaction
+      await supabase
+        .from('sms_credit_transactions')
+        .insert({
+          center_id: user.center_id,
+          transaction_type: 'usage',
+          amount: -creditsUsedNow,
+          balance_after: smsCredits - creditsUsedNow,
+          description: `Campaign: ${composeForm.name} (${sentCount} messages)`,
+          campaign_id: (campaign as { id: string }).id,
+          created_by: user.id,
+        } as never)
+
       toast.success(`Campaign sent: ${sentCount} delivered, ${failedCount} failed`)
       resetComposeForm()
       setActiveTab('campaigns')
       fetchCampaigns()
+      fetchSMSCredits()
     } catch (error) {
       console.error('Error sending campaign:', error)
       toast.error('Failed to send campaign')
@@ -447,6 +594,9 @@ export default function SMSCampaignsPage() {
       target_grade: '',
       target_class_id: '',
       target_status: '',
+      schedule_enabled: false,
+      scheduled_date: '',
+      scheduled_time: '',
     })
     setPreviewRecipients([])
   }
@@ -490,9 +640,58 @@ export default function SMSCampaignsPage() {
     }
   }
 
+  async function cancelScheduledCampaign(campaign: SMSCampaign) {
+    const supabase = createClient()
+    try {
+      await supabase
+        .from('sms_campaigns')
+        .update({ status: 'cancelled' } as never)
+        .eq('id', campaign.id)
+      toast.success('Scheduled campaign cancelled')
+      fetchCampaigns()
+    } catch (error) {
+      console.error('Error cancelling campaign:', error)
+      toast.error('Failed to cancel campaign')
+    }
+  }
+
+  async function handlePurchaseCredits() {
+    if (!selectedPackage) {
+      toast.error('Please select a package')
+      return
+    }
+
+    setIsPurchasing(true)
+    try {
+      const response = await fetch('/api/sms/credits/purchase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ packageType: selectedPackage }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to initiate checkout')
+      }
+
+      // Redirect to Stripe Checkout
+      if (data.url) {
+        window.location.href = data.url
+      }
+    } catch (error) {
+      console.error('Error purchasing credits:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to initiate checkout')
+    } finally {
+      setIsPurchasing(false)
+    }
+  }
+
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE)
   const charCount = composeForm.message.length
   const smsCount = Math.ceil(charCount / 160) || 1
+  const requiredCredits = previewRecipients.length * smsCount
+  const hasEnoughCredits = smsCredits >= requiredCredits
 
   return (
     <div className="min-h-screen bg-gray-50/50">
@@ -504,15 +703,37 @@ export default function SMSCampaignsPage() {
               <h1 className="text-2xl font-semibold text-gray-900">SMS Campaigns</h1>
               <p className="mt-1 text-sm text-gray-500">Send bulk SMS messages to students and parents</p>
             </div>
-            <Button
-              leftIcon={<Plus className="w-4 h-4" />}
-              onClick={() => {
-                resetComposeForm()
-                setActiveTab('compose')
-              }}
-            >
-              New Campaign
-            </Button>
+            <div className="flex items-center gap-4">
+              {/* SMS Credits Badge */}
+              <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
+                smsCredits <= lowBalanceThreshold ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+              }`}>
+                <CreditCard className="w-4 h-4" />
+                <span className="font-medium">{smsCredits} credits</span>
+                {smsCredits <= lowBalanceThreshold && (
+                  <AlertTriangle className="w-4 h-4" />
+                )}
+              </div>
+              <Button
+                variant="secondary"
+                leftIcon={<ShoppingCart className="w-4 h-4" />}
+                onClick={() => {
+                  setSelectedPackage(null)
+                  setShowBuyCreditsModal(true)
+                }}
+              >
+                Buy Credits
+              </Button>
+              <Button
+                leftIcon={<Plus className="w-4 h-4" />}
+                onClick={() => {
+                  resetComposeForm()
+                  setActiveTab('compose')
+                }}
+              >
+                New Campaign
+              </Button>
+            </div>
           </div>
 
           {/* Tabs */}
@@ -549,6 +770,17 @@ export default function SMSCampaignsPage() {
             >
               <Send className="w-4 h-4" />
               Compose
+            </button>
+            <button
+              onClick={() => setActiveTab('credits')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'credits'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <History className="w-4 h-4" />
+              Credits
             </button>
           </div>
         </div>
@@ -638,7 +870,10 @@ export default function SMSCampaignsPage() {
                                 {campaign.target_type === 'class' && campaign.target_class?.name}
                                 {campaign.target_type === 'with_balance' && 'With Balance'}
                                 {' • '}
-                                {new Date(campaign.created_at).toLocaleDateString('en-ZA')}
+                                {campaign.status === 'scheduled' && campaign.scheduled_at
+                                  ? `Scheduled: ${new Date(campaign.scheduled_at).toLocaleString('en-ZA')}`
+                                  : new Date(campaign.created_at).toLocaleDateString('en-ZA')
+                                }
                               </p>
                             </div>
                           </div>
@@ -661,6 +896,15 @@ export default function SMSCampaignsPage() {
                               >
                                 <Eye className="w-4 h-4" />
                               </button>
+                              {campaign.status === 'scheduled' && (
+                                <button
+                                  onClick={() => cancelScheduledCampaign(campaign)}
+                                  className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg"
+                                  title="Cancel Scheduled"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              )}
                               <button
                                 onClick={() => setDeleteModal({ open: true, type: 'campaign', item: campaign })}
                                 className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
@@ -820,6 +1064,38 @@ export default function SMSCampaignsPage() {
                     </div>
                   </div>
 
+                  {/* Scheduling */}
+                  <div className="border-t border-gray-100 pt-4">
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={composeForm.schedule_enabled}
+                        onChange={(e) => setComposeForm({ ...composeForm, schedule_enabled: e.target.checked })}
+                        className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700">Schedule for later</span>
+                      <Calendar className="w-4 h-4 text-gray-400" />
+                    </label>
+
+                    {composeForm.schedule_enabled && (
+                      <div className="mt-3 grid grid-cols-2 gap-4">
+                        <Input
+                          label="Date"
+                          type="date"
+                          value={composeForm.scheduled_date}
+                          onChange={(e) => setComposeForm({ ...composeForm, scheduled_date: e.target.value })}
+                          min={new Date().toISOString().split('T')[0]}
+                        />
+                        <Input
+                          label="Time"
+                          type="time"
+                          value={composeForm.scheduled_time}
+                          onChange={(e) => setComposeForm({ ...composeForm, scheduled_time: e.target.value })}
+                        />
+                      </div>
+                    )}
+                  </div>
+
                   {/* Quick Templates */}
                   {templates.length > 0 && (
                     <div>
@@ -877,6 +1153,21 @@ export default function SMSCampaignsPage() {
                     />
                   )}
 
+                  {/* Credits Info */}
+                  <div className={`p-4 rounded-lg ${hasEnoughCredits ? 'bg-green-50' : 'bg-red-50'}`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-700">Required Credits</span>
+                      <span className={`font-medium ${hasEnoughCredits ? 'text-green-700' : 'text-red-700'}`}>
+                        {requiredCredits} / {smsCredits} available
+                      </span>
+                    </div>
+                    {!hasEnoughCredits && (
+                      <p className="mt-1 text-xs text-red-600">
+                        You need {requiredCredits - smsCredits} more credits to send this campaign
+                      </p>
+                    )}
+                  </div>
+
                   {/* Recipients Preview */}
                   <div className="border-t border-gray-100 pt-4 mt-4">
                     <div className="flex items-center justify-between mb-3">
@@ -927,13 +1218,121 @@ export default function SMSCampaignsPage() {
               </Button>
               <Button
                 type="submit"
-                disabled={isSending || previewRecipients.length === 0}
-                leftIcon={isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                disabled={isSending || previewRecipients.length === 0 || !hasEnoughCredits}
+                leftIcon={isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : composeForm.schedule_enabled ? <Calendar className="w-4 h-4" /> : <Send className="w-4 h-4" />}
               >
-                {isSending ? 'Sending...' : `Send to ${previewRecipients.length} Recipients`}
+                {isSending ? 'Processing...' : composeForm.schedule_enabled ? 'Schedule Campaign' : `Send to ${previewRecipients.length} Recipients`}
               </Button>
             </div>
           </form>
+        )}
+
+        {/* Credits Tab */}
+        {activeTab === 'credits' && (
+          <div className="space-y-6">
+            {/* Buy Credits CTA */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-6 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold">Need more SMS credits?</h3>
+                  <p className="text-blue-100 mt-1">Purchase credits to continue sending campaigns</p>
+                </div>
+                <Button
+                  variant="secondary"
+                  leftIcon={<ShoppingCart className="w-4 h-4" />}
+                  onClick={() => {
+                    setSelectedPackage(null)
+                    setShowBuyCreditsModal(true)
+                  }}
+                  className="bg-white text-blue-600 hover:bg-blue-50"
+                >
+                  Buy Credits
+                </Button>
+              </div>
+            </div>
+
+            {/* Credits Summary */}
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-green-100 rounded-lg">
+                    <CreditCard className="w-6 h-6 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Available Credits</p>
+                    <p className="text-2xl font-semibold text-gray-900">{smsCredits}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-blue-100 rounded-lg">
+                    <TrendingDown className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Credits Used</p>
+                    <p className="text-2xl font-semibold text-gray-900">{creditsUsed}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <div className="flex items-center gap-3">
+                  <div className={`p-3 rounded-lg ${smsCredits <= lowBalanceThreshold ? 'bg-red-100' : 'bg-gray-100'}`}>
+                    <AlertTriangle className={`w-6 h-6 ${smsCredits <= lowBalanceThreshold ? 'text-red-600' : 'text-gray-600'}`} />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Low Balance Alert</p>
+                    <p className="text-2xl font-semibold text-gray-900">{lowBalanceThreshold}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Transaction History */}
+            <div className="bg-white rounded-xl border border-gray-200">
+              <div className="p-4 border-b border-gray-100">
+                <h3 className="font-medium text-gray-900">Credit History</h3>
+              </div>
+              {creditTransactions.length === 0 ? (
+                <div className="p-12 text-center">
+                  <History className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No transactions yet</h3>
+                  <p className="text-gray-500">Credit purchases and usage will appear here</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-100">
+                  {creditTransactions.map((tx) => (
+                    <div key={tx.id} className="p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className={`p-2 rounded-lg ${
+                          tx.transaction_type === 'purchase' ? 'bg-green-100' :
+                          tx.transaction_type === 'usage' ? 'bg-blue-100' :
+                          tx.transaction_type === 'refund' ? 'bg-amber-100' : 'bg-purple-100'
+                        }`}>
+                          {tx.transaction_type === 'purchase' && <Plus className="w-4 h-4 text-green-600" />}
+                          {tx.transaction_type === 'usage' && <Send className="w-4 h-4 text-blue-600" />}
+                          {tx.transaction_type === 'refund' && <History className="w-4 h-4 text-amber-600" />}
+                          {tx.transaction_type === 'bonus' && <Sparkles className="w-4 h-4 text-purple-600" />}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900 capitalize">{tx.transaction_type}</p>
+                          <p className="text-sm text-gray-500">{tx.description || 'No description'}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className={`font-medium ${tx.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {tx.amount >= 0 ? '+' : ''}{tx.amount}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {new Date(tx.created_at).toLocaleDateString('en-ZA')}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </div>
 
@@ -1051,6 +1450,14 @@ export default function SMSCampaignsPage() {
                   <p className="font-medium text-red-600">{viewingCampaign.failed_count}</p>
                 </div>
               </div>
+              {viewingCampaign.scheduled_at && (
+                <div>
+                  <label className="text-sm text-gray-500">Scheduled For</label>
+                  <p className="font-medium">
+                    {new Date(viewingCampaign.scheduled_at).toLocaleString('en-ZA')}
+                  </p>
+                </div>
+              )}
               {viewingCampaign.sent_at && (
                 <div>
                   <label className="text-sm text-gray-500">Sent At</label>
@@ -1074,6 +1481,110 @@ export default function SMSCampaignsPage() {
         confirmText="Delete"
         isLoading={isDeleting}
       />
+
+      {/* Buy Credits Modal */}
+      {showBuyCreditsModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Buy SMS Credits</h2>
+                <p className="text-sm text-gray-500 mt-1">Choose a package that fits your needs</p>
+              </div>
+              <button
+                onClick={() => setShowBuyCreditsModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6">
+              <div className="grid md:grid-cols-2 gap-4">
+                {SMS_CREDIT_PACKAGES.map((pkg) => (
+                  <div
+                    key={pkg.id}
+                    onClick={() => setSelectedPackage(pkg.id)}
+                    className={`relative p-5 border-2 rounded-xl cursor-pointer transition-all ${
+                      selectedPackage === pkg.id
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    {pkg.popular && (
+                      <span className="absolute -top-2 left-4 bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">
+                        Most Popular
+                      </span>
+                    )}
+                    {pkg.bestValue && (
+                      <span className="absolute -top-2 left-4 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">
+                        Best Value
+                      </span>
+                    )}
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="font-semibold text-gray-900">{pkg.name}</p>
+                        <p className="text-sm text-gray-500 mt-1">R{pkg.perSms} per SMS</p>
+                      </div>
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                        selectedPackage === pkg.id
+                          ? 'border-blue-500 bg-blue-500'
+                          : 'border-gray-300'
+                      }`}>
+                        {selectedPackage === pkg.id && <Check className="w-3 h-3 text-white" />}
+                      </div>
+                    </div>
+                    <div className="mt-4">
+                      <span className="text-2xl font-bold text-gray-900">R{pkg.price}</span>
+                    </div>
+                    <ul className="mt-3 space-y-1.5 text-sm text-gray-600">
+                      <li className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-500" />
+                        {pkg.credits.toLocaleString()} SMS credits
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-500" />
+                        Never expires
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-500" />
+                        Instant activation
+                      </li>
+                    </ul>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600">
+                  <strong>Secure Payment:</strong> Your payment is processed securely via Stripe.
+                  Credits are added instantly after successful payment.
+                </p>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <Button
+                  variant="secondary"
+                  onClick={() => setShowBuyCreditsModal(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handlePurchaseCredits}
+                  disabled={!selectedPackage || isPurchasing}
+                  leftIcon={isPurchasing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShoppingCart className="w-4 h-4" />}
+                  className="flex-1"
+                >
+                  {isPurchasing ? 'Processing...' : selectedPackage
+                    ? `Buy for R${SMS_CREDIT_PACKAGES.find(p => p.id === selectedPackage)?.price || 0}`
+                    : 'Select a Package'
+                  }
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

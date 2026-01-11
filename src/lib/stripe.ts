@@ -84,6 +84,36 @@ export const SUBSCRIPTION_PLANS = {
 
 export type SubscriptionPlan = keyof typeof SUBSCRIPTION_PLANS
 
+// SMS Credit Packages - One-time purchases
+export const SMS_CREDIT_PACKAGES = {
+  small: {
+    name: '100 SMS Credits',
+    credits: 100,
+    priceId: process.env.STRIPE_SMS_SMALL_PRICE_ID || '',
+    price: 50, // R50 = R0.50 per SMS
+  },
+  medium: {
+    name: '500 SMS Credits',
+    credits: 500,
+    priceId: process.env.STRIPE_SMS_MEDIUM_PRICE_ID || '',
+    price: 200, // R200 = R0.40 per SMS
+  },
+  large: {
+    name: '1000 SMS Credits',
+    credits: 1000,
+    priceId: process.env.STRIPE_SMS_LARGE_PRICE_ID || '',
+    price: 350, // R350 = R0.35 per SMS
+  },
+  bulk: {
+    name: '5000 SMS Credits',
+    credits: 5000,
+    priceId: process.env.STRIPE_SMS_BULK_PRICE_ID || '',
+    price: 1500, // R1500 = R0.30 per SMS
+  },
+} as const
+
+export type SMSCreditPackage = keyof typeof SMS_CREDIT_PACKAGES
+
 /**
  * Create a Stripe Checkout Session for subscription
  */
@@ -139,6 +169,59 @@ export async function createCheckoutSession({
 
   const session = await getStripe().checkout.sessions.create(sessionParams)
 
+  return session
+}
+
+/**
+ * Create a Stripe Checkout Session for SMS Credits (one-time payment)
+ */
+export async function createSMSCreditCheckoutSession({
+  centerId,
+  centerEmail,
+  centerName,
+  packageType,
+  successUrl,
+  cancelUrl,
+}: {
+  centerId: string
+  centerEmail: string
+  centerName: string
+  packageType: SMSCreditPackage
+  successUrl: string
+  cancelUrl: string
+}) {
+  const packageConfig = SMS_CREDIT_PACKAGES[packageType]
+
+  const sessionParams: Stripe.Checkout.SessionCreateParams = {
+    mode: 'payment',
+    payment_method_types: ['card'],
+    customer_email: centerEmail,
+    client_reference_id: centerId,
+    line_items: [
+      {
+        price_data: {
+          currency: 'zar',
+          product_data: {
+            name: packageConfig.name,
+            description: `${packageConfig.credits} SMS credits for ${centerName}`,
+          },
+          unit_amount: packageConfig.price * 100, // Convert to cents
+        },
+        quantity: 1,
+      },
+    ],
+    success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: cancelUrl,
+    metadata: {
+      centerId,
+      centerName,
+      type: 'sms_credits',
+      package: packageType,
+      credits: packageConfig.credits.toString(),
+    },
+  }
+
+  const session = await getStripe().checkout.sessions.create(sessionParams)
   return session
 }
 

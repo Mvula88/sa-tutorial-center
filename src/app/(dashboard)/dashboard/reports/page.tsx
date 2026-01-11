@@ -15,6 +15,8 @@ import {
   CreditCard,
   PieChart,
   BarChart3,
+  ClipboardCheck,
+  Award,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/input'
@@ -537,6 +539,117 @@ export default function ReportsPage() {
         break
       }
 
+      case 'attendance_report': {
+        interface AttendanceRecord {
+          status: string
+          student: { full_name: string; student_number: string | null; grade: string | null } | null
+          session: { session_date: string; subject: { name: string } | null } | null
+        }
+
+        const { data: records } = await supabase
+          .from('attendance_records')
+          .select(`
+            status,
+            student:students(full_name, student_number, grade),
+            session:attendance_sessions(session_date, subject:subjects(name))
+          `)
+          .eq('center_id', user.center_id)
+          .order('created_at', { ascending: false })
+          .limit(1000)
+
+        const typedRecords = (records || []) as AttendanceRecord[]
+
+        // Calculate summary
+        const total = typedRecords.length
+        const present = typedRecords.filter(r => r.status === 'present').length
+        const absent = typedRecords.filter(r => r.status === 'absent').length
+        const late = typedRecords.filter(r => r.status === 'late').length
+        const excused = typedRecords.filter(r => r.status === 'excused').length
+
+        const csvData = [
+          ['Attendance Report'],
+          ['Generated', new Date().toLocaleString()],
+          [''],
+          ['SUMMARY', ''],
+          ['Total Records', total.toString()],
+          ['Present', `${present} (${total > 0 ? ((present/total)*100).toFixed(1) : 0}%)`],
+          ['Absent', `${absent} (${total > 0 ? ((absent/total)*100).toFixed(1) : 0}%)`],
+          ['Late', `${late} (${total > 0 ? ((late/total)*100).toFixed(1) : 0}%)`],
+          ['Excused', `${excused} (${total > 0 ? ((excused/total)*100).toFixed(1) : 0}%)`],
+          [''],
+          ['DETAILED RECORDS', ''],
+          ['Date', 'Student Name', 'Student Number', 'Grade', 'Subject', 'Status'],
+          ...typedRecords.map(r => [
+            r.session?.session_date ? new Date(r.session.session_date).toLocaleDateString() : '',
+            r.student?.full_name || '',
+            r.student?.student_number || '',
+            r.student?.grade || '',
+            r.session?.subject?.name || '',
+            r.status || '',
+          ])
+        ]
+        downloadCSV(csvData, 'attendance_report')
+        break
+      }
+
+      case 'grade_report': {
+        interface GradeRecord {
+          marks_obtained: number | null
+          percentage: number | null
+          grade: string | null
+          status: string
+          student: { full_name: string; student_number: string | null; grade: string | null } | null
+          assessment: { name: string; assessment_type: string; max_marks: number; subject: { name: string } | null } | null
+        }
+
+        const { data: grades } = await supabase
+          .from('student_grades')
+          .select(`
+            marks_obtained, percentage, grade, status,
+            student:students(full_name, student_number, grade),
+            assessment:assessments(name, assessment_type, max_marks, subject:subjects(name))
+          `)
+          .eq('center_id', user.center_id)
+          .order('created_at', { ascending: false })
+          .limit(1000)
+
+        const typedGrades = (grades || []) as GradeRecord[]
+
+        // Calculate summary
+        const gradedRecords = typedGrades.filter(g => g.marks_obtained !== null)
+        const avgPercentage = gradedRecords.length > 0
+          ? gradedRecords.reduce((sum, g) => sum + (g.percentage || 0), 0) / gradedRecords.length
+          : 0
+        const passedCount = gradedRecords.filter(g => (g.percentage || 0) >= 50).length
+
+        const csvData = [
+          ['Grade Report'],
+          ['Generated', new Date().toLocaleString()],
+          [''],
+          ['SUMMARY', ''],
+          ['Total Graded', gradedRecords.length.toString()],
+          ['Average Percentage', `${avgPercentage.toFixed(1)}%`],
+          ['Pass Rate (>=50%)', `${gradedRecords.length > 0 ? ((passedCount/gradedRecords.length)*100).toFixed(1) : 0}%`],
+          [''],
+          ['DETAILED GRADES', ''],
+          ['Student Name', 'Student Number', 'Class', 'Subject', 'Assessment', 'Type', 'Marks', 'Max', 'Percentage', 'Grade'],
+          ...typedGrades.map(g => [
+            g.student?.full_name || '',
+            g.student?.student_number || '',
+            g.student?.grade || '',
+            g.assessment?.subject?.name || '',
+            g.assessment?.name || '',
+            g.assessment?.assessment_type || '',
+            g.marks_obtained?.toString() || '-',
+            g.assessment?.max_marks?.toString() || '',
+            g.percentage ? `${g.percentage.toFixed(1)}%` : '-',
+            g.grade || '-',
+          ])
+        ]
+        downloadCSV(csvData, 'grade_report')
+        break
+      }
+
       default:
         console.error('Unknown report type:', reportType)
     }
@@ -772,6 +885,8 @@ export default function ReportsPage() {
             { title: 'Teacher Summary', description: 'Teacher assignments and subjects', icon: <Users className="w-5 h-5" />, type: 'teacher_summary' },
             { title: 'Monthly Summary', description: 'Monthly performance overview', icon: <Calendar className="w-5 h-5" />, type: 'monthly_summary' },
             { title: 'Payment History', description: 'All payment transactions', icon: <FileText className="w-5 h-5" />, type: 'payment_history' },
+            { title: 'Attendance Report', description: 'Student attendance summary and details', icon: <ClipboardCheck className="w-5 h-5" />, type: 'attendance_report' },
+            { title: 'Grade Report', description: 'Student grades and assessment results', icon: <Award className="w-5 h-5" />, type: 'grade_report' },
           ].map((report) => (
             <button
               key={report.title}

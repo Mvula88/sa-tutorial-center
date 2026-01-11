@@ -83,14 +83,23 @@ export async function POST(request: NextRequest) {
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const centerId = session.metadata?.centerId
-  const plan = session.metadata?.plan
-  const customerId = session.customer as string
-  const subscriptionId = session.subscription as string
+  const type = session.metadata?.type
 
   if (!centerId) {
     console.error('No centerId in checkout session metadata')
     return
   }
+
+  // Handle SMS credit purchases (one-time payment)
+  if (type === 'sms_credits') {
+    await handleSMSCreditPurchase(session)
+    return
+  }
+
+  // Handle subscription checkout
+  const plan = session.metadata?.plan
+  const customerId = session.customer as string
+  const subscriptionId = session.subscription as string
 
   // Update center with Stripe customer and subscription info
   const { error } = await supabase
@@ -110,6 +119,66 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   }
 
   console.log(`Checkout completed for center ${centerId}, plan: ${plan}`)
+}
+
+async function handleSMSCreditPurchase(session: Stripe.Checkout.Session) {
+  const centerId = session.metadata?.centerId
+  const packageType = session.metadata?.package
+  const creditsStr = session.metadata?.credits
+  const credits = creditsStr ? parseInt(creditsStr, 10) : 0
+
+  if (!centerId || !credits) {
+    console.error('Invalid SMS credit purchase metadata')
+    return
+  }
+
+  // Get current center credits
+  const { data: center, error: fetchError } = await supabase
+    .from('tutorial_centers')
+    .select('sms_credits')
+    .eq('id', centerId)
+    .single()
+
+  if (fetchError) {
+    console.error('Failed to fetch center:', fetchError)
+    throw fetchError
+  }
+
+  const currentCredits = center?.sms_credits || 0
+  const newCredits = currentCredits + credits
+
+  // Update center's SMS credits
+  const { error: updateError } = await supabase
+    .from('tutorial_centers')
+    .update({
+      sms_credits: newCredits,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', centerId)
+
+  if (updateError) {
+    console.error('Failed to update SMS credits:', updateError)
+    throw updateError
+  }
+
+  // Record the credit transaction
+  const { error: txError } = await supabase
+    .from('sms_credit_transactions')
+    .insert({
+      center_id: centerId,
+      type: 'purchase',
+      amount: credits,
+      balance_after: newCredits,
+      description: `Purchased ${packageType} package (${credits} credits)`,
+      reference_id: session.id,
+    })
+
+  if (txError) {
+    console.error('Failed to record SMS credit transaction:', txError)
+    // Don't throw - credits were added, just logging failed
+  }
+
+  console.log(`SMS credits purchased for center ${centerId}: ${credits} credits (package: ${packageType})`)
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
