@@ -26,7 +26,6 @@ import {
   Gift,
   UserCog,
   Lock,
-  Zap,
 } from 'lucide-react'
 
 const features = [
@@ -417,11 +416,9 @@ export default function LandingPage() {
           ref={heroRef.ref}
           className={`max-w-7xl mx-auto text-center relative z-10 ${heroRef.isInView ? 'animate-fade-in-up' : 'opacity-0'}`}
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100/80 backdrop-blur-sm rounded-full text-blue-700 text-sm font-medium mb-6 border border-blue-200/50 hover:bg-blue-100 transition-colors cursor-default group">
-            <Zap className="w-4 h-4 group-hover:animate-pulse" />
-            <span>Built for South African Tutorial Centres</span>
-            <Sparkles className="w-4 h-4 text-yellow-500 animate-pulse" />
-          </div>
+          <p className="text-blue-600 font-medium mb-6 tracking-wide uppercase text-sm">
+            Proudly South African
+          </p>
           <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
             Simple School Management<br />
             <span className="text-gradient">For Tutorial Centres</span>
@@ -625,10 +622,8 @@ export default function LandingPage() {
             <div className="absolute -top-4 -left-4 w-40 h-40 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full opacity-15 blur-2xl animate-float-delayed"></div>
           </div>
 
-          <p className="text-center text-gray-500 mt-8 text-sm flex items-center justify-center gap-2">
-            <Sparkles className="w-4 h-4 text-yellow-500 animate-pulse" />
+          <p className="text-center text-gray-500 mt-8 text-sm">
             See exactly what your centre management dashboard will look like
-            <Sparkles className="w-4 h-4 text-yellow-500 animate-pulse" />
           </p>
         </div>
       </section>
