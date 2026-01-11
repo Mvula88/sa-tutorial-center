@@ -8,52 +8,108 @@ import { createClient } from '@/lib/supabase/client'
 /**
  * Plan limits configuration
  * -1 means unlimited
+ *
+ * Module Categories:
+ * - Core Features (all plans): attendance, grades, classes, timetable
+ * - Standard+ Features: report_cards, student_portal, teacher_portal, library, sms
+ * - Premium Features: hostel, transport
  */
 export const PLAN_LIMITS = {
   micro: {
     maxStudents: 15,
     maxStaff: 0, // Solo operator - center admin only, no additional staff
     modules: {
-      hostel: false,
-      transport: false,
+      // Core features - included in all plans
+      attendance: true,
+      grades: true,
+      classes: true,
+      timetable: true,
+      // Standard+ features
+      report_cards: false,
+      student_portal: false,
+      teacher_portal: false,
       library: false,
       sms: false,
+      // Premium features
+      hostel: false,
+      transport: false,
     },
   },
   starter: {
     maxStudents: 50,
     maxStaff: 2, // Center admin + 2 staff members
     modules: {
-      hostel: false,
-      transport: false,
+      // Core features - included in all plans
+      attendance: true,
+      grades: true,
+      classes: true,
+      timetable: true,
+      // Standard+ features
+      report_cards: false,
+      student_portal: false,
+      teacher_portal: false,
       library: false,
       sms: false,
+      // Premium features
+      hostel: false,
+      transport: false,
     },
   },
   standard: {
     maxStudents: 150,
     maxStaff: 5,
     modules: {
-      hostel: false,
-      transport: false,
+      // Core features - included in all plans
+      attendance: true,
+      grades: true,
+      classes: true,
+      timetable: true,
+      // Standard+ features
+      report_cards: true,
+      student_portal: true,
+      teacher_portal: true,
       library: true,
       sms: true,
+      // Premium features
+      hostel: false,
+      transport: false,
     },
   },
   premium: {
     maxStudents: -1, // Unlimited
     maxStaff: -1, // Unlimited
     modules: {
-      hostel: true,
-      transport: true,
+      // Core features - included in all plans
+      attendance: true,
+      grades: true,
+      classes: true,
+      timetable: true,
+      // Standard+ features
+      report_cards: true,
+      student_portal: true,
+      teacher_portal: true,
       library: true,
       sms: true,
+      // Premium features
+      hostel: true,
+      transport: true,
     },
   },
 } as const
 
 export type SubscriptionTier = keyof typeof PLAN_LIMITS
-export type ModuleName = 'hostel' | 'transport' | 'library' | 'sms'
+export type ModuleName =
+  | 'attendance'
+  | 'grades'
+  | 'classes'
+  | 'timetable'
+  | 'report_cards'
+  | 'student_portal'
+  | 'teacher_portal'
+  | 'library'
+  | 'sms'
+  | 'hostel'
+  | 'transport'
 
 export interface StudentLimitCheck {
   canAdd: boolean
@@ -229,7 +285,18 @@ export async function checkModuleAccess(
   const tierAllows = planLimits.modules[module]
 
   // Check if module is enabled in database
+  // Core modules are always enabled, premium modules have database flags
   const moduleEnabledMap: Record<ModuleName, boolean> = {
+    // Core features - always enabled (no database flag needed)
+    attendance: true,
+    grades: true,
+    classes: true,
+    timetable: true,
+    // Standard+ features - enabled based on tier (no database flag needed)
+    report_cards: true, // Controlled by tier only
+    student_portal: true, // Controlled by tier only
+    teacher_portal: true, // Controlled by tier only
+    // Premium features with database flags
     hostel: center.hostel_module_enabled ?? false,
     transport: center.transport_module_enabled ?? false,
     library: center.library_module_enabled ?? false,
