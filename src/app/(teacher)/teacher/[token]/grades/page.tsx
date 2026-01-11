@@ -102,29 +102,32 @@ export default function TeacherGradesPage() {
     const supabase = createClient()
 
     // Get teacher data
-    const { data: teacher } = await supabase
+    const { data: teacherData } = await supabase
       .from('teachers')
       .select('center_id')
       .eq('id', token)
       .single()
 
+    const teacher = teacherData as { center_id: string } | null
+
     if (teacher) {
       setCenterId(teacher.center_id)
 
       // Get classes and subjects from timetable entries
-      const { data: entries } = await supabase
+      const { data: entriesData } = await supabase
         .from('timetable_entries')
         .select('class:classes(id, name), subject:subjects(id, name)')
         .eq('teacher_id', token)
         .eq('is_active', true)
 
-      if (entries) {
+      const entries = (entriesData || []) as { class: { id: string; name: string } | null; subject: { id: string; name: string } | null }[]
+      if (entries.length > 0) {
         const uniqueClasses = new Map()
         const uniqueSubjects = new Map()
 
         for (const entry of entries) {
-          const cls = entry.class as { id: string; name: string } | null
-          const subj = entry.subject as { id: string; name: string } | null
+          const cls = entry.class
+          const subj = entry.subject
           if (cls && !uniqueClasses.has(cls.id)) {
             uniqueClasses.set(cls.id, cls)
           }
