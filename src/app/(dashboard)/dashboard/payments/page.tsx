@@ -14,6 +14,7 @@ import {
   ChevronRight,
   CreditCard,
   Calendar,
+  CalendarPlus,
   Download,
   X,
   TrendingUp,
@@ -23,6 +24,7 @@ import {
 import toast from 'react-hot-toast'
 import { formatCurrency, CURRENCY_CONFIG } from '@/lib/currency'
 import { ProcessRefundModal } from '@/components/refunds/process-refund-modal'
+import { BulkGenerateFeesModal } from '@/components/fees/bulk-generate-fees-modal'
 
 interface Payment {
   id: string
@@ -64,6 +66,7 @@ export default function PaymentsPage() {
   const [totalCount, setTotalCount] = useState(0)
   const [totalAmount, setTotalAmount] = useState(0)
   const [refundModalOpen, setRefundModalOpen] = useState(false)
+  const [bulkGenerateModalOpen, setBulkGenerateModalOpen] = useState(false)
 
   useEffect(() => {
     fetchPayments()
@@ -180,6 +183,13 @@ export default function PaymentsPage() {
         <div className="flex items-center gap-3">
           {isCenterAdmin() && (
             <>
+              <Button
+                variant="outline"
+                leftIcon={<CalendarPlus className="w-4 h-4" />}
+                onClick={() => setBulkGenerateModalOpen(true)}
+              >
+                Generate Fees
+              </Button>
               <Link href="/dashboard/payments/refunds">
                 <Button variant="outline" leftIcon={<FileText className="w-4 h-4" />}>
                   View Refunds
@@ -511,6 +521,15 @@ export default function PaymentsPage() {
         onClose={() => setRefundModalOpen(false)}
         onSuccess={() => {
           fetchPayments()
+        }}
+      />
+
+      {/* Bulk Generate Fees Modal */}
+      <BulkGenerateFeesModal
+        isOpen={bulkGenerateModalOpen}
+        onClose={() => setBulkGenerateModalOpen(false)}
+        onSuccess={() => {
+          // Optionally refresh something here
         }}
       />
     </div>
