@@ -125,19 +125,19 @@ const plans = [
 
 const testimonials = [
   {
-    name: 'Thabo Molefe',
-    role: 'Owner, Soweto Learning Hub',
-    quote: 'This system has transformed how we manage our tutorial centre. No more spreadsheets!',
+    name: 'Thabo M.',
+    role: 'Soweto Learning Hub',
+    quote: 'I used to spend Sunday evenings updating my Excel sheet. Now I just check the dashboard on Monday morning and everything is there.',
   },
   {
-    name: 'Nomsa Dlamini',
-    role: 'Administrator, Cape Town Tutors',
-    quote: 'The fee tracking alone saves us hours every month. Highly recommended.',
+    name: 'Nomsa D.',
+    role: 'Cape Town Tutors',
+    quote: 'Parents stopped asking me "did we pay last month?" because now I can show them the statement on my phone right there.',
   },
   {
-    name: 'David van der Berg',
-    role: 'Director, Pretoria Academy',
-    quote: 'Finally, a system built for tutorial centres, not complicated school ERPs.',
+    name: 'David vdB.',
+    role: 'Pretoria Academy',
+    quote: 'We tried those big school systems before. Way too complicated. This one we actually use.',
   },
 ]
 
@@ -686,10 +686,10 @@ export default function LandingPage() {
         <div ref={pricingRef.ref} className="max-w-7xl mx-auto relative z-10">
           <div className={`text-center mb-16 ${pricingRef.isInView ? 'animate-fade-in-up' : 'opacity-0'}`}>
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Simple, Transparent Pricing
+              What it costs
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Choose the plan that fits your centre. All prices in South African Rand.
+              Pick a plan based on how many students you have. Upgrade or downgrade anytime.
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
@@ -748,9 +748,9 @@ export default function LandingPage() {
           </div>
           <div className="text-center mt-12">
             <p className="text-gray-600">
-              Need a custom plan for multiple centres?{' '}
+              Running multiple centres or need something different?{' '}
               <a href="#contact" className="text-blue-600 font-medium hover:underline hover:text-blue-700 transition-colors">
-                Contact us
+                Let&apos;s talk
               </a>
             </p>
           </div>
@@ -764,9 +764,9 @@ export default function LandingPage() {
         <div ref={testimonialsRef.ref} className="max-w-7xl mx-auto relative z-10">
           <div className={`text-center mb-16 ${testimonialsRef.isInView ? 'animate-fade-in-up' : 'opacity-0'}`}>
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Trusted by Tutorial Centres
+              From people who use it
             </h2>
-            <p className="text-xl text-gray-600">See what other centre owners are saying</p>
+            <p className="text-xl text-gray-600">Real feedback from centre owners like you</p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
@@ -819,16 +819,16 @@ export default function LandingPage() {
 
         <div className={`max-w-4xl mx-auto text-center relative z-10 ${ctaRef.isInView ? 'animate-scale-in' : 'opacity-0'}`}>
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-            Ready to Simplify Your Centre Management?
+            Want to give it a try?
           </h2>
           <p className="text-xl text-blue-100 mb-8">
-            Join other tutorial centres across South Africa. Start your free trial today.
+            Sign up takes 2 minutes. No credit card required. See if it works for you.
           </p>
           <Link
             href="/login"
             className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-600 rounded-xl font-semibold text-lg hover:bg-blue-50 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105 group"
           >
-            Start Free Trial
+            Try it free
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
@@ -839,10 +839,10 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Get in Touch
+              Questions?
             </h2>
             <p className="text-xl text-gray-600">
-              Have questions? We&apos;re here to help.
+              Drop us a message. We usually reply within a few hours.
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
@@ -850,17 +850,17 @@ export default function LandingPage() {
               <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
                 <Mail className="w-6 h-6 text-blue-600" />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Email</h3>
+              <h3 className="font-semibold text-gray-900 mb-2">Email us</h3>
               <a href="mailto:support@satutorialcentres.co.za" className="text-blue-600 hover:text-blue-700 hover:underline transition-colors">
                 support@satutorialcentres.co.za
               </a>
             </div>
             <div className="text-center p-6 bg-white rounded-2xl border border-gray-100 hover-lift hover-glow group">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-                <Phone className="w-6 h-6 text-blue-600" />
+              <div className="w-12 h-12 bg-gradient-to-br from-green-100 to-green-200 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                <Phone className="w-6 h-6 text-green-600" />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">WhatsApp</h3>
-              <a href="https://wa.me/27000000000" className="text-blue-600 hover:text-blue-700 hover:underline transition-colors">
+              <h3 className="font-semibold text-gray-900 mb-2">WhatsApp us</h3>
+              <a href="https://wa.me/27000000000" className="text-green-600 hover:text-green-700 hover:underline transition-colors">
                 +27 00 000 0000
               </a>
             </div>
@@ -868,9 +868,9 @@ export default function LandingPage() {
               <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
                 <Globe className="w-6 h-6 text-blue-600" />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Demo</h3>
+              <h3 className="font-semibold text-gray-900 mb-2">See it in action</h3>
               <a href="#" className="text-blue-600 hover:text-blue-700 hover:underline transition-colors">
-                Book a free demo
+                Book a quick call
               </a>
             </div>
           </div>
@@ -897,7 +897,7 @@ export default function LandingPage() {
                 <span className="text-xl font-bold text-white">SA Tutorial Centres</span>
               </div>
               <p className="text-gray-400">
-                Affordable school management software for South African tutorial centres.
+                Simple software for tutorial centres. Made in South Africa.
               </p>
             </div>
             <div>
