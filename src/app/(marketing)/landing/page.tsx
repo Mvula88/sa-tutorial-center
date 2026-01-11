@@ -589,15 +589,45 @@ export default function LandingPage() {
       </section>
 
       {/* Problem Statement Section */}
-      <section className="py-16 bg-gray-900 relative overflow-hidden">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <section className="py-20 relative overflow-hidden">
+        {/* South African inspired background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900"></div>
+
+        {/* Subtle SA flag-inspired accent stripes */}
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-600 via-yellow-500 to-red-600 opacity-60"></div>
+        <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-red-600 via-yellow-500 to-green-600 opacity-60"></div>
+
+        {/* Abstract educational elements - books/pencils silhouette */}
+        <div className="absolute inset-0 opacity-5">
+          <svg className="absolute bottom-0 left-0 w-64 h-64 text-white" viewBox="0 0 100 100" fill="currentColor">
+            <rect x="10" y="60" width="25" height="35" rx="2" />
+            <rect x="20" y="55" width="25" height="40" rx="2" />
+            <rect x="30" y="50" width="25" height="45" rx="2" />
+          </svg>
+          <svg className="absolute top-10 right-10 w-32 h-32 text-white transform rotate-12" viewBox="0 0 100 100" fill="currentColor">
+            <polygon points="50,5 55,35 85,35 60,55 70,85 50,65 30,85 40,55 15,35 45,35" />
+          </svg>
+          <svg className="absolute bottom-20 right-20 w-48 h-48 text-white" viewBox="0 0 100 100" fill="currentColor">
+            <path d="M20,80 L20,30 L80,30 L80,80 Z M25,35 L25,75 L75,75 L75,35 Z" />
+            <rect x="30" y="40" width="40" height="3" />
+            <rect x="30" y="48" width="35" height="3" />
+            <rect x="30" y="56" width="40" height="3" />
+            <rect x="30" y="64" width="25" height="3" />
+          </svg>
+        </div>
+
+        {/* Warm glow accents */}
+        <div className="absolute top-1/2 left-1/4 w-64 h-64 bg-yellow-500 rounded-full filter blur-[120px] opacity-10 transform -translate-y-1/2"></div>
+        <div className="absolute top-1/2 right-1/4 w-64 h-64 bg-green-600 rounded-full filter blur-[120px] opacity-10 transform -translate-y-1/2"></div>
+
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">
             Running a tutorial centre is hard enough
           </h2>
-          <p className="text-gray-400 text-lg leading-relaxed">
+          <p className="text-gray-300 text-lg leading-relaxed">
             You shouldn&apos;t have to spend your evenings chasing payments, updating spreadsheets, or trying to remember which parent you need to call back. We built this because we saw too many dedicated educators drowning in admin work instead of doing what they do best - teaching.
           </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-6 text-sm text-gray-500">
+          <div className="mt-8 flex flex-wrap justify-center gap-6 text-sm text-gray-400">
             <span>From R99/month</span>
             <span className="text-gray-600">•</span>
             <span>No setup fees</span>
