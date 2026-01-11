@@ -13,11 +13,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user's center
-    const { data: userData } = await supabase
+    const { data: userDataRaw } = await supabase
       .from('users')
       .select('center_id')
       .eq('id', user.id)
       .single()
+
+    const userData = userDataRaw as { center_id: string | null } | null
 
     if (!userData?.center_id) {
       return NextResponse.json({ error: 'No center associated' }, { status: 400 })
