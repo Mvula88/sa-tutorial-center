@@ -170,6 +170,7 @@ export default function StudentDetailPage() {
   }
 
   // Calculate expected fees based on academic year settings
+  // Each calendar year is treated separately - we don't look back to previous years
   const getExpectedFeeMonths = () => {
     if (!center || !student) return { expected: [], missing: [], totalExpectedAmount: 0 }
 
@@ -177,39 +178,24 @@ export default function StudentDetailPage() {
     const currentYear = currentDate.getFullYear()
     const currentMonth = currentDate.getMonth() // 0-11
 
-    // Get the academic year start month (default to January = 0 if not set)
-    const academicStartMonth = center.academic_year_start_month ?? 0
-
     // Get the payment months array (default to Feb-Oct if not set)
     const paymentMonths = center.payment_months || [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
     // Calculate the monthly tuition based on enrolled subjects
     const monthlyTuition = subjects.reduce((sum, s) => sum + s.monthly_fee, 0)
 
-    // Determine which academic year we're in
-    // If current month is before academic year start, we're still in previous academic year
-    const academicYear = currentMonth >= academicStartMonth ? currentYear : currentYear - 1
-
-    // Get all months from academic year start until current month (inclusive)
+    // Only look at the CURRENT calendar year
+    // Each year is a fresh start - we don't go back to previous years
     const expectedMonths: { month: number; year: number; monthLabel: string; feeMonth: string }[] = []
 
     for (const monthNum of paymentMonths) {
-      // Determine the year for this month
-      let year = academicYear
-      // If this payment month is before the academic start month, it belongs to next calendar year
-      if (monthNum < academicStartMonth) {
-        year = academicYear + 1
-      }
-
-      const feeMonth = `${year}-${String(monthNum + 1).padStart(2, '0')}-01`
-      const feeDate = new Date(year, monthNum, 1)
-
-      // Only include months up to the current month
-      if (feeDate <= currentDate) {
+      // Only include months in the current year that have already started
+      if (monthNum <= currentMonth) {
+        const feeMonth = `${currentYear}-${String(monthNum + 1).padStart(2, '0')}-01`
         expectedMonths.push({
           month: monthNum,
-          year,
-          monthLabel: `${monthNames[monthNum]} ${year}`,
+          year: currentYear,
+          monthLabel: `${monthNames[monthNum]} ${currentYear}`,
           feeMonth,
         })
       }
