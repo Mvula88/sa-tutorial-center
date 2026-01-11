@@ -190,8 +190,8 @@ function SignupContent() {
       {/* Dark overlay for readability */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-900/70 via-blue-800/60 to-amber-900/50" />
 
-      <div className="w-full max-w-lg relative z-10">
-        {/* Logo/Brand */}
+      <div className="w-full max-w-5xl relative z-10">
+        {/* Logo/Brand - Centered above the card */}
         <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white mb-3">
             <GraduationCap className="w-8 h-8" />
@@ -200,329 +200,338 @@ function SignupContent() {
           <p className="text-blue-100 mt-1">Get started in minutes - no credit card required</p>
         </div>
 
-        {/* Progress Steps */}
-        <div className="flex items-center justify-center gap-3 mb-6">
-          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm ${
-            step === 1 ? 'bg-white text-blue-600' : 'bg-white/20 text-white'
-          }`}>
-            <Building2 className="w-4 h-4" />
-            <span className="font-medium">Center Info</span>
-          </div>
-          <div className="w-8 h-0.5 bg-white/30" />
-          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm ${
-            step === 2 ? 'bg-white text-blue-600' : 'bg-white/20 text-white'
-          }`}>
-            <User className="w-4 h-4" />
-            <span className="font-medium">Admin Account</span>
-          </div>
-        </div>
+        {/* Two Column Layout */}
+        <div className="flex flex-col lg:flex-row bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden">
+          {/* Left Side - Form */}
+          <div className="flex-1 p-6 lg:p-8">
+            {/* Progress Steps */}
+            <div className="flex items-center justify-center gap-3 mb-6">
+              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm ${
+                step === 1 ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
+              }`}>
+                <Building2 className="w-4 h-4" />
+                <span className="font-medium">Center Info</span>
+              </div>
+              <div className="w-8 h-0.5 bg-gray-300" />
+              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm ${
+                step === 2 ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
+              }`}>
+                <User className="w-4 h-4" />
+                <span className="font-medium">Admin Account</span>
+              </div>
+            </div>
 
-        {/* Signup Form */}
-        <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-6">
-          <form onSubmit={handleSubmit}>
-            {/* Step 1: Center Details */}
-            {step === 1 && (
-              <div className="space-y-4">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Tutorial Center Details</h2>
+            {/* Signup Form */}
+            <form onSubmit={handleSubmit}>
+              {/* Step 1: Center Details */}
+              {step === 1 && (
+                <div className="space-y-4">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Tutorial Center Details</h2>
 
-                {/* Referral Code Banner */}
-                {referralValid && referralInfo && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-start gap-3">
-                    <Gift className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-green-800">
-                        Referral code applied!
-                      </p>
-                      <p className="text-xs text-green-700 mt-0.5">
-                        Referred by {referralInfo.referrerName} - {referralInfo.discount}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setReferralCode('')
-                        setReferralValid(null)
-                        setReferralInfo(null)
-                      }}
-                      className="text-green-600 hover:text-green-800"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                )}
-
-                {/* Referral Code Input (only show if not already valid) */}
-                {!referralValid && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Referral Code (optional)
-                    </label>
-                    <div className="flex gap-2">
-                      <div className="relative flex-1">
-                        <Gift className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <input
-                          type="text"
-                          value={referralCode}
-                          onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                          onBlur={() => referralCode && validateReferralCode(referralCode)}
-                          className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
-                            referralValid === false ? 'border-red-300' : 'border-gray-300'
-                          } focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none uppercase`}
-                          placeholder="Enter referral code"
-                          maxLength={12}
-                        />
+                  {/* Referral Code Banner */}
+                  {referralValid && referralInfo && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-start gap-3">
+                      <Gift className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-green-800">
+                          Referral code applied!
+                        </p>
+                        <p className="text-xs text-green-700 mt-0.5">
+                          Referred by {referralInfo.referrerName} - {referralInfo.discount}
+                        </p>
                       </div>
                       <button
                         type="button"
-                        onClick={() => validateReferralCode(referralCode)}
-                        disabled={isValidatingReferral || !referralCode}
-                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors disabled:opacity-50"
+                        onClick={() => {
+                          setReferralCode('')
+                          setReferralValid(null)
+                          setReferralInfo(null)
+                        }}
+                        className="text-green-600 hover:text-green-800"
                       >
-                        {isValidatingReferral ? (
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                        ) : (
-                          'Apply'
-                        )}
+                        <X className="w-4 h-4" />
                       </button>
                     </div>
-                    {referralValid === false && (
-                      <p className="text-red-500 text-sm mt-1">Invalid referral code</p>
-                    )}
-                    <p className="text-xs text-gray-500 mt-1">
-                      Have a referral code? Enter it to get 30 days free trial!
-                    </p>
-                  </div>
-                )}
+                  )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Center Name *
-                  </label>
-                  <div className="relative">
-                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  {/* Referral Code Input (only show if not already valid) */}
+                  {!referralValid && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Referral Code (optional)
+                      </label>
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <Gift className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                          <input
+                            type="text"
+                            value={referralCode}
+                            onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                            onBlur={() => referralCode && validateReferralCode(referralCode)}
+                            className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
+                              referralValid === false ? 'border-red-300' : 'border-gray-300'
+                            } focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none uppercase`}
+                            placeholder="Enter referral code"
+                            maxLength={12}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => validateReferralCode(referralCode)}
+                          disabled={isValidatingReferral || !referralCode}
+                          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          {isValidatingReferral ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                          ) : (
+                            'Apply'
+                          )}
+                        </button>
+                      </div>
+                      {referralValid === false && (
+                        <p className="text-red-500 text-sm mt-1">Invalid referral code</p>
+                      )}
+                      <p className="text-xs text-gray-500 mt-1">
+                        Have a referral code? Enter it to get 30 days free trial!
+                      </p>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Center Name *
+                    </label>
+                    <div className="relative">
+                      <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="text"
+                        value={formData.centerName}
+                        onChange={(e) => setFormData({ ...formData, centerName: e.target.value })}
+                        className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
+                          errors.centerName ? 'border-red-500' : 'border-gray-300'
+                        } focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none`}
+                        placeholder="e.g., Johannesburg Tutorial Centre"
+                      />
+                    </div>
+                    {errors.centerName && (
+                      <p className="text-red-500 text-sm mt-1">{errors.centerName}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Center Phone (optional)
+                    </label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="tel"
+                        value={formData.centerPhone}
+                        onChange={(e) => setFormData({ ...formData, centerPhone: e.target.value })}
+                        className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
+                        placeholder="e.g., 011 123 4567"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      City *
+                    </label>
                     <input
                       type="text"
-                      value={formData.centerName}
-                      onChange={(e) => setFormData({ ...formData, centerName: e.target.value })}
-                      className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
-                        errors.centerName ? 'border-red-500' : 'border-gray-300'
+                      value={formData.centerCity}
+                      onChange={(e) => setFormData({ ...formData, centerCity: e.target.value })}
+                      className={`w-full px-4 py-3 rounded-lg border ${
+                        errors.centerCity ? 'border-red-500' : 'border-gray-300'
                       } focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none`}
-                      placeholder="e.g., Johannesburg Tutorial Centre"
+                      placeholder="e.g., Johannesburg"
                     />
+                    {errors.centerCity && (
+                      <p className="text-red-500 text-sm mt-1">{errors.centerCity}</p>
+                    )}
                   </div>
-                  {errors.centerName && (
-                    <p className="text-red-500 text-sm mt-1">{errors.centerName}</p>
-                  )}
-                </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Center Phone (optional)
-                  </label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type="tel"
-                      value={formData.centerPhone}
-                      onChange={(e) => setFormData({ ...formData, centerPhone: e.target.value })}
-                      className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
-                      placeholder="e.g., 011 123 4567"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    City *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.centerCity}
-                    onChange={(e) => setFormData({ ...formData, centerCity: e.target.value })}
-                    className={`w-full px-4 py-3 rounded-lg border ${
-                      errors.centerCity ? 'border-red-500' : 'border-gray-300'
-                    } focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none`}
-                    placeholder="e.g., Johannesburg"
-                  />
-                  {errors.centerCity && (
-                    <p className="text-red-500 text-sm mt-1">{errors.centerCity}</p>
-                  )}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
-                >
-                  Continue
-                </button>
-              </div>
-            )}
-
-            {/* Step 2: Admin Account */}
-            {step === 2 && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold text-gray-900">Your Admin Account</h2>
                   <button
                     type="button"
-                    onClick={handleBack}
-                    className="text-sm text-blue-600 hover:text-blue-700"
+                    onClick={handleNext}
+                    className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
                   >
-                    Back
+                    Continue
                   </button>
                 </div>
+              )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Full Name *
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type="text"
-                      value={formData.fullName}
-                      onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                      className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
-                        errors.fullName ? 'border-red-500' : 'border-gray-300'
-                      } focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none`}
-                      placeholder="Your full name"
-                    />
-                  </div>
-                  {errors.fullName && (
-                    <p className="text-red-500 text-sm mt-1">{errors.fullName}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email Address *
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
-                        errors.email ? 'border-red-500' : 'border-gray-300'
-                      } focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none`}
-                      placeholder="you@example.com"
-                    />
-                  </div>
-                  {errors.email && (
-                    <p className="text-red-500 text-sm mt-1">{errors.email}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone Number (optional)
-                  </label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
-                        errors.phone ? 'border-red-500' : 'border-gray-300'
-                      } focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none`}
-                      placeholder="e.g., 082 123 4567"
-                    />
-                  </div>
-                  {errors.phone && (
-                    <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Password *
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      className={`w-full pl-10 pr-12 py-3 rounded-lg border ${
-                        errors.password ? 'border-red-500' : 'border-gray-300'
-                      } focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none`}
-                      placeholder="Minimum 6 characters"
-                    />
+              {/* Step 2: Admin Account */}
+              {step === 2 && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-semibold text-gray-900">Your Admin Account</h2>
                     <button
                       type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      onClick={handleBack}
+                      className="text-sm text-blue-600 hover:text-blue-700"
                     >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      Back
                     </button>
                   </div>
-                  {errors.password && (
-                    <p className="text-red-500 text-sm mt-1">{errors.password}</p>
-                  )}
-                </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Confirm Password *
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type="password"
-                      value={formData.confirmPassword}
-                      onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                      className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
-                        errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
-                      } focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none`}
-                      placeholder="Confirm your password"
-                    />
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Full Name *
+                    </label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="text"
+                        value={formData.fullName}
+                        onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                        className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
+                          errors.fullName ? 'border-red-500' : 'border-gray-300'
+                        } focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none`}
+                        placeholder="Your full name"
+                      />
+                    </div>
+                    {errors.fullName && (
+                      <p className="text-red-500 text-sm mt-1">{errors.fullName}</p>
+                    )}
                   </div>
-                  {errors.confirmPassword && (
-                    <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>
-                  )}
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email Address *
+                    </label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
+                          errors.email ? 'border-red-500' : 'border-gray-300'
+                        } focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none`}
+                        placeholder="you@example.com"
+                      />
+                    </div>
+                    {errors.email && (
+                      <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Phone Number (optional)
+                    </label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
+                          errors.phone ? 'border-red-500' : 'border-gray-300'
+                        } focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none`}
+                        placeholder="e.g., 082 123 4567"
+                      />
+                    </div>
+                    {errors.phone && (
+                      <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Password *
+                    </label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        className={`w-full pl-10 pr-12 py-3 rounded-lg border ${
+                          errors.password ? 'border-red-500' : 'border-gray-300'
+                        } focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none`}
+                        placeholder="Minimum 6 characters"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      >
+                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
+                    </div>
+                    {errors.password && (
+                      <p className="text-red-500 text-sm mt-1">{errors.password}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Confirm Password *
+                    </label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="password"
+                        value={formData.confirmPassword}
+                        onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                        className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
+                          errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
+                        } focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none`}
+                        placeholder="Confirm your password"
+                      />
+                    </div>
+                    {errors.confirmPassword && (
+                      <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>
+                    )}
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Creating Account...
+                      </>
+                    ) : (
+                      'Start Free Trial'
+                    )}
+                  </button>
                 </div>
-
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      Creating Account...
-                    </>
-                  ) : (
-                    'Start Free Trial'
-                  )}
-                </button>
-              </div>
-            )}
-          </form>
-
-          {/* Trial Features */}
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <p className="text-sm text-gray-600 mb-3">Your free trial includes:</p>
-            <ul className="space-y-2">
-              {TRIAL_FEATURES.map((feature, index) => (
-                <li key={index} className="flex items-center gap-2 text-sm text-gray-700">
-                  <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
-                  {feature}
-                </li>
-              ))}
-            </ul>
+              )}
+            </form>
           </div>
 
-          {/* Login Link */}
-          <p className="text-center text-sm text-gray-500 mt-6">
-            Already have an account?{' '}
-            <Link href="/login" className="text-blue-600 hover:text-blue-700 font-medium">
-              Sign in
-            </Link>
-          </p>
+          {/* Right Side - Trial Info */}
+          <div className="lg:w-80 bg-gradient-to-br from-blue-600 to-blue-700 p-6 lg:p-8 text-white flex flex-col justify-center">
+            <div>
+              <h3 className="text-lg font-semibold mb-6">Our free trial includes:</h3>
+              <ul className="space-y-4">
+                {TRIAL_FEATURES.map((feature, index) => (
+                  <li key={index} className="flex items-center gap-3">
+                    <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                      <Check className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="text-blue-50">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="mt-8 pt-6 border-t border-white/20">
+              <p className="text-blue-100 text-sm">
+                Already have an account?{' '}
+                <Link href="/login" className="text-white font-semibold hover:underline">
+                  Sign in
+                </Link>
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Bottom text */}
