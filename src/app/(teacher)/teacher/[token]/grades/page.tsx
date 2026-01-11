@@ -152,11 +152,12 @@ export default function TeacherGradesPage() {
       .eq('status', 'active')
       .order('full_name')
 
-    setStudents((data || []) as Student[])
+    const studentList = (data || []) as Student[]
+    setStudents(studentList)
 
     // Initialize grades
     const initialGrades: Record<string, Grade> = {}
-    for (const student of (data || [])) {
+    for (const student of studentList) {
       initialGrades[student.id] = { student_id: student.id, marks_obtained: null, grade: null }
     }
     setGrades(initialGrades)
