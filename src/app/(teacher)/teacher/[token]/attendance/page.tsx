@@ -114,14 +114,15 @@ export default function TeacherAttendancePage() {
     setAttendance(initialAttendance)
 
     // Check for existing attendance today
-    const { data: existing } = await supabase
+    const { data: existingData } = await supabase
       .from('attendance')
       .select('student_id, status')
       .eq('date', today)
       .in('student_id', studentList.map(s => s.id))
 
+    const existing = (existingData || []) as { student_id: string; status: string }[]
     const existingMap: Record<string, string> = {}
-    for (const record of (existing || [])) {
+    for (const record of existing) {
       existingMap[record.student_id] = record.status
       if (initialAttendance[record.student_id]) {
         initialAttendance[record.student_id].status = record.status
