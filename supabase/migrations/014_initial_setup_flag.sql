@@ -1,4 +1,4 @@
--- ============================================
+b-- ============================================
 -- INITIAL SETUP COMPLETED FLAG
 -- ============================================
 -- Tracks whether a center has completed the initial setup wizard

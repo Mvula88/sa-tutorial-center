@@ -1,20 +1,22 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/auth-store'
-import { AlertTriangle, CreditCard, Clock, Sparkles } from 'lucide-react'
-import Link from 'next/link'
+import { Shield, ArrowRight } from 'lucide-react'
 
 export function TrialExpiredModal() {
   const { user, isCenterAdmin } = useAuthStore()
   const router = useRouter()
+  const pathname = usePathname()
   const supabase = createClient()
 
   const [isExpired, setIsExpired] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
-  const [daysLeft, setDaysLeft] = useState<number | null>(null)
+
+  // Don't show modal on subscription page - let user see the plans
+  const isOnSubscriptionPage = pathname === '/dashboard/subscription'
 
   useEffect(() => {
     async function checkTrialStatus() {
@@ -38,13 +40,7 @@ export function TrialExpiredModal() {
             const now = new Date()
             const expired = trialEndsAt < now
             setIsExpired(expired)
-
-            if (!expired) {
-              const days = Math.ceil((trialEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-              setDaysLeft(days)
-            }
           } else if (center.subscription_status === 'active') {
-            // Has active subscription
             setIsExpired(false)
           }
         }
@@ -58,53 +54,48 @@ export function TrialExpiredModal() {
     checkTrialStatus()
   }, [user?.center_id, isCenterAdmin, supabase])
 
-  if (isLoading || !isExpired) return null
+  // Don't show if loading, not expired, or already on subscription page
+  if (isLoading || !isExpired || isOnSubscriptionPage) return null
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-6 text-white text-center">
-          <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Clock className="w-8 h-8" />
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-gray-900/80 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+        {/* Icon */}
+        <div className="pt-8 pb-4 px-6 text-center">
+          <div className="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-5">
+            <Shield className="w-7 h-7 text-blue-600" />
           </div>
-          <h2 className="text-2xl font-bold">Your Trial Has Ended</h2>
-          <p className="text-amber-100 mt-2">Choose a plan to continue using all features</p>
+
+          <h2 className="text-xl font-semibold text-gray-900 tracking-tight">
+            Your trial has ended
+          </h2>
+          <p className="text-gray-500 mt-2 text-sm leading-relaxed">
+            Subscribe to continue managing your tutorial centre. Your data is safe.
+          </p>
         </div>
 
-        {/* Content */}
-        <div className="p-6">
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+        {/* Pricing hint */}
+        <div className="px-6 pb-6">
+          <div className="bg-gray-50 rounded-xl p-4 mb-5">
+            <div className="flex items-baseline justify-between">
+              <span className="text-sm text-gray-600">Plans from</span>
               <div>
-                <p className="text-sm text-amber-800">
-                  Your free trial period has ended. Subscribe to a plan to continue managing your tutorial centre.
-                </p>
+                <span className="text-2xl font-bold text-gray-900">R99</span>
+                <span className="text-gray-500 text-sm">/mo</span>
               </div>
             </div>
           </div>
 
-          <div className="space-y-3 mb-6">
-            <div className="flex items-center gap-3 text-gray-600">
-              <Sparkles className="w-5 h-5 text-blue-500" />
-              <span className="text-sm">All your data is safe and preserved</span>
-            </div>
-            <div className="flex items-center gap-3 text-gray-600">
-              <CreditCard className="w-5 h-5 text-blue-500" />
-              <span className="text-sm">Plans start from just R99/month</span>
-            </div>
-          </div>
-
-          <Link
-            href="/dashboard/subscription"
-            className="block w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-center rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all"
+          <button
+            onClick={() => router.push('/dashboard/subscription')}
+            className="w-full py-3 px-4 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 group"
           >
-            Choose a Plan
-          </Link>
+            View Plans
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+          </button>
 
-          <p className="text-center text-xs text-gray-500 mt-4">
-            Need help? Contact support@satutorialcentres.co.za
+          <p className="text-center text-xs text-gray-400 mt-4">
+            Questions? <a href="mailto:support@satutorialcentres.co.za" className="text-gray-500 hover:text-gray-700">Contact support</a>
           </p>
         </div>
       </div>
