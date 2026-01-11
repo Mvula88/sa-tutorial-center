@@ -48,16 +48,17 @@ export default function TeacherStudentsPage() {
     const supabase = createClient()
 
     // Get classes assigned to this teacher
-    const { data: entries } = await supabase
+    const { data: entriesData } = await supabase
       .from('timetable_entries')
       .select('class:classes(id, name)')
       .eq('teacher_id', token)
       .eq('is_active', true)
 
-    if (entries) {
+    const entries = (entriesData || []) as { class: { id: string; name: string } | null }[]
+    if (entries.length > 0) {
       const uniqueClasses = new Map()
       for (const entry of entries) {
-        const cls = entry.class as { id: string; name: string } | null
+        const cls = entry.class
         if (cls && !uniqueClasses.has(cls.id)) {
           uniqueClasses.set(cls.id, cls)
         }
