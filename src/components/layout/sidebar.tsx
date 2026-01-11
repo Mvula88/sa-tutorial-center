@@ -309,7 +309,7 @@ export function Sidebar() {
       </aside>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex h-screen w-64 bg-white border-r border-gray-200 flex-col flex-shrink-0">
+      <aside className="hidden lg:flex fixed top-0 left-0 h-screen w-64 bg-white border-r border-gray-200 flex-col z-30">
         <NavContent />
       </aside>
     </>
@@ -451,7 +451,7 @@ export function AdminSidebar() {
       </aside>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex h-screen w-64 bg-gray-900 flex-col flex-shrink-0">
+      <aside className="hidden lg:flex fixed top-0 left-0 h-screen w-64 bg-gray-900 flex-col z-30">
         <NavContent />
       </aside>
     </>
