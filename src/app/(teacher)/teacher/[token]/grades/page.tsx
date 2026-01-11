@@ -189,9 +189,10 @@ export default function TeacherGradesPage() {
       .eq('assessment_id', selectedAssessmentId)
       .in('student_id', students.map(s => s.id))
 
+    const existingGrades = (data || []) as { student_id: string; marks_obtained: number | null; grade: string | null }[]
     const gradesMap: Record<string, Grade> = {}
     for (const student of students) {
-      const existing = (data || []).find(g => g.student_id === student.id)
+      const existing = existingGrades.find(g => g.student_id === student.id)
       gradesMap[student.id] = existing || { student_id: student.id, marks_obtained: null, grade: null }
     }
     setGrades(gradesMap)
