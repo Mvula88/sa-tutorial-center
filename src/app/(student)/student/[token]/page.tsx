@@ -99,29 +99,31 @@ export default function StudentPortalOverview() {
       }
 
       // Latest grade
-      const { data: grades } = await supabase
+      const { data: gradesData } = await supabase
         .from('student_grades')
         .select('marks_obtained, assessment:assessments(max_marks)')
         .eq('student_id', token)
         .order('created_at', { ascending: false })
         .limit(1)
 
-      if (grades && grades.length > 0 && grades[0].marks_obtained !== null) {
-        const grade = grades[0] as { marks_obtained: number; assessment?: { max_marks: number } }
+      const grades = (gradesData || []) as { marks_obtained: number | null; assessment?: { max_marks: number } }[]
+      if (grades.length > 0 && grades[0].marks_obtained !== null) {
+        const grade = grades[0]
         const percentage = grade.assessment?.max_marks
-          ? Math.round((grade.marks_obtained / grade.assessment.max_marks) * 100)
+          ? Math.round((grade.marks_obtained! / grade.assessment.max_marks) * 100)
           : grade.marks_obtained
         setStats(s => ({ ...s, latestGrade: `${percentage}%` }))
       }
 
       // Outstanding fees
-      const { data: fees } = await supabase
+      const { data: feesData } = await supabase
         .from('student_fees')
         .select('total_amount, amount_paid')
         .eq('student_id', token)
         .eq('status', 'pending')
 
-      if (fees) {
+      const fees = (feesData || []) as { total_amount: number; amount_paid: number }[]
+      if (fees.length > 0) {
         const outstanding = fees.reduce((sum, f) => sum + (f.total_amount - f.amount_paid), 0)
         setStats(s => ({ ...s, outstandingFees: outstanding }))
       }
