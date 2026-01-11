@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
         email: email,
         status: 'active',
         subscription_status: 'trialing',
-        subscription_tier: 'starter',
+        subscription_tier: 'trial', // Full access during trial, then user picks a plan
         trial_ends_at: trialEndsAt.toISOString(),
         payment_months: [1, 2, 3, 4, 5, 6, 7, 8, 9], // Feb-Oct default (South African school year)
         default_registration_fee: 300,

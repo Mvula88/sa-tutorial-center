@@ -7,6 +7,7 @@ import { Sidebar } from '@/components/layout/sidebar'
 import { Loader2 } from 'lucide-react'
 import { ProductTour } from '@/components/onboarding'
 import { SetupWizard } from '@/components/onboarding/setup-wizard'
+import { TrialExpiredModal } from '@/components/subscription/trial-expired-modal'
 import { dashboardTourSteps } from '@/config/tour-steps'
 
 export default function DashboardLayout({
@@ -63,6 +64,9 @@ export default function DashboardLayout({
 
       {/* Setup Wizard for first-time center admins */}
       <SetupWizard />
+
+      {/* Trial Expired Modal - blocks access when trial ends */}
+      <TrialExpiredModal />
     </div>
   )
 }

@@ -247,13 +247,15 @@ export default function SubscriptionPage() {
 
   const isTrialing = subscription?.subscription_status === 'trialing'
   const isActive = subscription?.subscription_status === 'active'
-  const currentPlan = subscription?.subscription_tier || 'starter'
+  const currentPlan = subscription?.subscription_tier || 'trial'
   const trialEndsAt = subscription?.trial_ends_at ? new Date(subscription.trial_ends_at) : null
   const daysLeftInTrial = trialEndsAt ? Math.max(0, Math.ceil((trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : 0
+  const isTrialExpired = isTrialing && daysLeftInTrial === 0
 
-  // Tier hierarchy for comparison
-  const tierHierarchy: Record<string, number> = { micro: 1, starter: 2, standard: 3, premium: 4 }
-  const currentTierLevel = tierHierarchy[currentPlan] || 2
+  // Tier hierarchy for comparison (trial = 0 so all plans are available)
+  const tierHierarchy: Record<string, number> = { trial: 0, micro: 1, starter: 2, standard: 3, premium: 4 }
+  // When trialing or trial tier, treat as level 0 so all plans are selectable
+  const currentTierLevel = (isTrialing || currentPlan === 'trial') ? 0 : (tierHierarchy[currentPlan] || 0)
 
   return (
     <div className="p-4 md:p-8 max-w-6xl mx-auto">
@@ -285,7 +287,9 @@ export default function SubscriptionPage() {
                 </span>
               )}
             </div>
-            <p className="text-2xl font-bold text-gray-900 capitalize">{currentPlan} Plan</p>
+            <p className="text-2xl font-bold text-gray-900 capitalize">
+              {currentPlan === 'trial' ? 'Free Trial' : `${currentPlan} Plan`}
+            </p>
             {isTrialing && trialEndsAt && (
               <div className="flex items-center gap-2 mt-2 text-amber-600">
                 <Calendar className="w-4 h-4" />
@@ -334,7 +338,18 @@ export default function SubscriptionPage() {
       </div>
 
       {/* Trial Warning */}
-      {isTrialing && daysLeftInTrial <= 3 && (
+      {isTrialExpired && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-8 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="font-medium text-red-800">Your trial has expired!</p>
+            <p className="text-sm text-red-700 mt-1">
+              Choose a plan below to continue using all features. Your data is safe.
+            </p>
+          </div>
+        </div>
+      )}
+      {isTrialing && !isTrialExpired && daysLeftInTrial <= 3 && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-8 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
           <div>
@@ -351,10 +366,11 @@ export default function SubscriptionPage() {
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Available Plans</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {plans.map((plan) => {
-            const isCurrent = currentPlan === plan.id
+            // When on trial, no plan is "current" - user needs to pick one
+            const isCurrent = !isTrialing && currentPlan === plan.id
             const PlanIcon = plan.icon
             const planLevel = tierHierarchy[plan.id] || 1
-            const isLowerTier = planLevel < currentTierLevel
+            const isLowerTier = !isTrialing && planLevel < currentTierLevel
             const isHigherTier = planLevel > currentTierLevel
 
             return (
