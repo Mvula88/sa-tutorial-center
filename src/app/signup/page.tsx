@@ -305,6 +305,8 @@ function SignupContent() {
                       <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                       <input
                         type="text"
+                        name="centerName"
+                        autoComplete="organization"
                         value={formData.centerName}
                         onChange={(e) => setFormData({ ...formData, centerName: e.target.value })}
                         className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
@@ -326,6 +328,8 @@ function SignupContent() {
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                       <input
                         type="tel"
+                        name="centerPhone"
+                        autoComplete="tel"
                         value={formData.centerPhone}
                         onChange={(e) => setFormData({ ...formData, centerPhone: e.target.value })}
                         className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
@@ -340,6 +344,8 @@ function SignupContent() {
                     </label>
                     <input
                       type="text"
+                      name="centerCity"
+                      autoComplete="address-level2"
                       value={formData.centerCity}
                       onChange={(e) => setFormData({ ...formData, centerCity: e.target.value })}
                       className={`w-full px-4 py-3 rounded-lg border ${
@@ -384,6 +390,8 @@ function SignupContent() {
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                       <input
                         type="text"
+                        name="fullName"
+                        autoComplete="name"
                         value={formData.fullName}
                         onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                         className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
@@ -405,6 +413,8 @@ function SignupContent() {
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                       <input
                         type="email"
+                        name="email"
+                        autoComplete="email"
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                         className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
@@ -426,6 +436,8 @@ function SignupContent() {
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                       <input
                         type="tel"
+                        name="phone"
+                        autoComplete="tel"
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                         className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
@@ -447,6 +459,8 @@ function SignupContent() {
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                       <input
                         type={showPassword ? 'text' : 'password'}
+                        name="password"
+                        autoComplete="new-password"
                         value={formData.password}
                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                         className={`w-full pl-10 pr-12 py-3 rounded-lg border ${
@@ -475,6 +489,8 @@ function SignupContent() {
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                       <input
                         type="password"
+                        name="confirmPassword"
+                        autoComplete="new-password"
                         value={formData.confirmPassword}
                         onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                         className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
