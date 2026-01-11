@@ -192,6 +192,136 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Dashboard Preview Section */}
+      <section className="py-12 px-4 sm:px-6 lg:px-8 bg-white -mt-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="relative">
+            {/* Browser mockup frame */}
+            <div className="bg-gray-800 rounded-t-xl p-3 flex items-center gap-2">
+              <div className="flex gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+              </div>
+              <div className="flex-1 mx-4">
+                <div className="bg-gray-700 rounded-md px-3 py-1 text-gray-400 text-sm">
+                  app.satutorialcentres.co.za/dashboard
+                </div>
+              </div>
+            </div>
+
+            {/* Dashboard mockup */}
+            <div className="bg-gray-100 rounded-b-xl shadow-2xl overflow-hidden border border-gray-200">
+              <div className="flex">
+                {/* Sidebar */}
+                <div className="w-56 bg-white border-r border-gray-200 p-4 hidden md:block">
+                  <div className="flex items-center gap-2 mb-6">
+                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                      <GraduationCap className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="font-semibold text-gray-900 text-sm">My Tutorial Centre</span>
+                  </div>
+                  <nav className="space-y-1">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium">
+                      <BarChart3 className="w-4 h-4" />
+                      Dashboard
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-2 text-gray-600 rounded-lg text-sm">
+                      <Users className="w-4 h-4" />
+                      Students
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-2 text-gray-600 rounded-lg text-sm">
+                      <CreditCard className="w-4 h-4" />
+                      Payments
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-2 text-gray-600 rounded-lg text-sm">
+                      <GraduationCap className="w-4 h-4" />
+                      Teachers
+                    </div>
+                  </nav>
+                </div>
+
+                {/* Main content */}
+                <div className="flex-1 p-4 md:p-6 bg-gray-50">
+                  <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4">Dashboard Overview</h2>
+
+                  {/* Stats cards */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
+                    <div className="bg-white rounded-xl p-3 md:p-4 shadow-sm border border-gray-100">
+                      <p className="text-xs text-gray-500">Total Students</p>
+                      <p className="text-xl md:text-2xl font-bold text-gray-900">247</p>
+                      <p className="text-xs text-green-600">+12 this month</p>
+                    </div>
+                    <div className="bg-white rounded-xl p-3 md:p-4 shadow-sm border border-gray-100">
+                      <p className="text-xs text-gray-500">Revenue (Jan)</p>
+                      <p className="text-xl md:text-2xl font-bold text-gray-900">R48,500</p>
+                      <p className="text-xs text-green-600">+8% vs Dec</p>
+                    </div>
+                    <div className="bg-white rounded-xl p-3 md:p-4 shadow-sm border border-gray-100">
+                      <p className="text-xs text-gray-500">Outstanding</p>
+                      <p className="text-xl md:text-2xl font-bold text-orange-600">R12,300</p>
+                      <p className="text-xs text-gray-500">23 students</p>
+                    </div>
+                    <div className="bg-white rounded-xl p-3 md:p-4 shadow-sm border border-gray-100">
+                      <p className="text-xs text-gray-500">Active Subjects</p>
+                      <p className="text-xl md:text-2xl font-bold text-gray-900">8</p>
+                      <p className="text-xs text-gray-500">Maths most popular</p>
+                    </div>
+                  </div>
+
+                  {/* Recent payments table */}
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="px-4 py-3 border-b border-gray-100">
+                      <h3 className="font-semibold text-gray-900 text-sm">Recent Payments</h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Student</th>
+                            <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 hidden sm:table-cell">Date</th>
+                            <th className="text-right px-4 py-2 text-xs font-medium text-gray-500">Amount</th>
+                            <th className="text-center px-4 py-2 text-xs font-medium text-gray-500 hidden sm:table-cell">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          <tr>
+                            <td className="px-4 py-2 font-medium text-gray-900">Thabo Molefe</td>
+                            <td className="px-4 py-2 text-gray-500 hidden sm:table-cell">Today, 10:30</td>
+                            <td className="px-4 py-2 text-right text-green-600 font-medium">R450.00</td>
+                            <td className="px-4 py-2 text-center hidden sm:table-cell"><span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs">Paid</span></td>
+                          </tr>
+                          <tr>
+                            <td className="px-4 py-2 font-medium text-gray-900">Nomsa Dlamini</td>
+                            <td className="px-4 py-2 text-gray-500 hidden sm:table-cell">Today, 09:15</td>
+                            <td className="px-4 py-2 text-right text-green-600 font-medium">R300.00</td>
+                            <td className="px-4 py-2 text-center hidden sm:table-cell"><span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs">Paid</span></td>
+                          </tr>
+                          <tr>
+                            <td className="px-4 py-2 font-medium text-gray-900">Sipho Ndlovu</td>
+                            <td className="px-4 py-2 text-gray-500 hidden sm:table-cell">Yesterday</td>
+                            <td className="px-4 py-2 text-right text-green-600 font-medium">R600.00</td>
+                            <td className="px-4 py-2 text-center hidden sm:table-cell"><span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs">Paid</span></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Floating elements for visual appeal */}
+            <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-blue-600 rounded-full opacity-10 blur-2xl"></div>
+            <div className="absolute -top-4 -left-4 w-32 h-32 bg-purple-600 rounded-full opacity-10 blur-2xl"></div>
+          </div>
+
+          <p className="text-center text-gray-500 mt-6 text-sm">
+            See exactly what your centre management dashboard will look like
+          </p>
+        </div>
+      </section>
+
       {/* Stats Section */}
       <section className="py-12 bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
