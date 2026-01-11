@@ -20,6 +20,7 @@ interface Payment {
     full_name: string
     student_number: string | null
   }
+  refundable_amount?: number // Calculated: original - already refunded
 }
 
 interface ProcessRefundModalProps {
@@ -66,8 +67,17 @@ export function ProcessRefundModal({
     if (isOpen && !preselectedPayment) {
       loadPayments()
     }
-    if (preselectedPayment) {
-      setSelectedPayment(preselectedPayment)
+    if (isOpen && preselectedPayment) {
+      // Load refundable amount for preselected payment
+      loadRefundableAmount(preselectedPayment.id, preselectedPayment.amount).then((refundable) => {
+        setSelectedPayment({
+          ...preselectedPayment,
+          refundable_amount: refundable,
+        })
+        if (refundable > 0) {
+          setFormData((prev) => ({ ...prev, amount: refundable.toString() }))
+        }
+      })
     }
   }, [isOpen, preselectedPayment])
 
@@ -90,7 +100,8 @@ export function ProcessRefundModal({
 
     setLoadingPayments(true)
     try {
-      const { data, error } = await supabase
+      // Load payments
+      const { data: paymentsData, error } = await supabase
         .from('payments')
         .select(`
           id,
@@ -106,12 +117,50 @@ export function ProcessRefundModal({
         .limit(100)
 
       if (error) throw error
-      setPayments((data || []) as unknown as Payment[])
+
+      // Load existing refunds to calculate refundable amounts
+      const { data: refundsData } = await supabase
+        .from('refunds')
+        .select('original_payment_id, amount')
+        .eq('center_id', user.center_id)
+
+      // Calculate refundable amount for each payment
+      const refundsByPayment: Record<string, number> = {}
+      ;((refundsData || []) as { original_payment_id: string; amount: number }[]).forEach((r) => {
+        refundsByPayment[r.original_payment_id] =
+          (refundsByPayment[r.original_payment_id] || 0) + Number(r.amount)
+      })
+
+      const paymentsWithRefundable = ((paymentsData || []) as { id: string; amount: number }[]).map((p) => ({
+        ...p,
+        refundable_amount: p.amount - (refundsByPayment[p.id] || 0),
+      }))
+
+      // Only show payments that have refundable amount > 0
+      setPayments(paymentsWithRefundable.filter((p) => p.refundable_amount > 0) as unknown as Payment[])
     } catch (error) {
       console.error('Failed to load payments:', error)
       toast.error('Failed to load payments')
     } finally {
       setLoadingPayments(false)
+    }
+  }
+
+  // Load refundable amount for preselected payment
+  const loadRefundableAmount = async (paymentId: string, originalAmount: number) => {
+    try {
+      const { data: refundsData } = await supabase
+        .from('refunds')
+        .select('amount')
+        .eq('original_payment_id', paymentId)
+
+      const totalRefunded = ((refundsData || []) as { amount: number }[]).reduce(
+        (sum, r) => sum + Number(r.amount),
+        0
+      )
+      return originalAmount - totalRefunded
+    } catch {
+      return originalAmount
     }
   }
 
@@ -122,10 +171,14 @@ export function ProcessRefundModal({
       newErrors.payment = 'Please select a payment'
     }
 
+    const maxRefundable = selectedPayment?.refundable_amount ?? selectedPayment?.amount ?? 0
+
     if (!formData.amount || parseFloat(formData.amount) <= 0) {
       newErrors.amount = 'Please enter a valid refund amount'
-    } else if (selectedPayment && parseFloat(formData.amount) > selectedPayment.amount) {
-      newErrors.amount = 'Refund amount cannot exceed the original payment'
+    } else if (maxRefundable <= 0) {
+      newErrors.amount = 'This payment has already been fully refunded'
+    } else if (parseFloat(formData.amount) > maxRefundable) {
+      newErrors.amount = `Refund amount cannot exceed R ${maxRefundable.toFixed(2)} (remaining refundable)`
     }
 
     if (!formData.reason) {
@@ -219,14 +272,15 @@ export function ProcessRefundModal({
                   const payment = payments.find((p) => p.id === e.target.value)
                   setSelectedPayment(payment || null)
                   if (payment) {
-                    setFormData((prev) => ({ ...prev, amount: payment.amount.toString() }))
+                    const refundable = payment.refundable_amount ?? payment.amount
+                    setFormData((prev) => ({ ...prev, amount: refundable.toString() }))
                   }
                 }}
               >
                 <option value="">Select a payment...</option>
                 {payments.map((payment) => (
                   <option key={payment.id} value={payment.id}>
-                    {payment.student?.full_name} - {formatCurrency(payment.amount)} ({formatDate(payment.payment_date)})
+                    {payment.student?.full_name} - {formatCurrency(payment.refundable_amount ?? payment.amount)} refundable ({formatDate(payment.payment_date)})
                   </option>
                 ))}
               </select>
@@ -251,8 +305,13 @@ export function ProcessRefundModal({
                 )}
               </div>
               <div>
-                <span className="text-gray-500">Amount:</span>
+                <span className="text-gray-500">Original Amount:</span>
                 <p className="font-medium text-green-600">{formatCurrency(selectedPayment.amount)}</p>
+                {selectedPayment.refundable_amount !== undefined && selectedPayment.refundable_amount < selectedPayment.amount && (
+                  <p className="text-xs text-amber-600">
+                    Refundable: {formatCurrency(selectedPayment.refundable_amount)}
+                  </p>
+                )}
               </div>
               <div>
                 <span className="text-gray-500">Date:</span>
@@ -283,7 +342,7 @@ export function ProcessRefundModal({
               type="number"
               step="0.01"
               min="0"
-              max={selectedPayment?.amount || undefined}
+              max={selectedPayment?.refundable_amount ?? selectedPayment?.amount ?? undefined}
               className={`w-full pl-8 pr-3 py-2 rounded-lg border transition-colors outline-none ${
                 errors.amount
                   ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-200'
@@ -297,7 +356,7 @@ export function ProcessRefundModal({
           {errors.amount && <p className="mt-1 text-sm text-red-600">{errors.amount}</p>}
           {selectedPayment && (
             <p className="mt-1 text-xs text-gray-500">
-              Maximum refundable: {formatCurrency(selectedPayment.amount)}
+              Maximum refundable: {formatCurrency(selectedPayment.refundable_amount ?? selectedPayment.amount)}
             </p>
           )}
         </div>

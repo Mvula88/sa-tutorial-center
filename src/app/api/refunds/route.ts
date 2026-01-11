@@ -93,10 +93,28 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify refund amount doesn't exceed original payment
-    if (amount > payment.amount) {
+    // Get existing refunds for this payment to prevent over-refunding
+    const { data: existingRefunds } = await supabase
+      .from('refunds')
+      .select('amount')
+      .eq('original_payment_id', original_payment_id)
+
+    const totalAlreadyRefunded = (existingRefunds || []).reduce(
+      (sum, r) => sum + Number(r.amount),
+      0
+    )
+    const remainingRefundable = payment.amount - totalAlreadyRefunded
+
+    // Verify refund amount doesn't exceed remaining refundable amount
+    if (amount > remainingRefundable) {
+      if (remainingRefundable <= 0) {
+        return NextResponse.json(
+          { error: 'This payment has already been fully refunded' },
+          { status: 400 }
+        )
+      }
       return NextResponse.json(
-        { error: 'Refund amount cannot exceed the original payment amount' },
+        { error: `Refund amount cannot exceed R ${remainingRefundable.toFixed(2)} (remaining refundable amount)` },
         { status: 400 }
       )
     }

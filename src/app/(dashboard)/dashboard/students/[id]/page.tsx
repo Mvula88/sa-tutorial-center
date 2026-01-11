@@ -105,6 +105,14 @@ interface Payment {
   reference_number: string | null
 }
 
+interface Refund {
+  id: string
+  amount: number
+  reason: string
+  reason_notes: string | null
+  refund_date: string
+}
+
 export default function StudentDetailPage() {
   const params = useParams()
   const studentId = params.id as string
@@ -117,6 +125,7 @@ export default function StudentDetailPage() {
   const [center, setCenter] = useState<Center | null>(null)
   const [studentFees, setStudentFees] = useState<StudentFee[]>([])
   const [payments, setPayments] = useState<Payment[]>([])
+  const [refunds, setRefunds] = useState<Refund[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -164,6 +173,7 @@ export default function StudentDetailPage() {
       fetchCenter()
       fetchStudentFees()
       fetchPayments()
+      fetchRefunds()
     }
   }, [studentId, user?.center_id])
 
@@ -240,6 +250,18 @@ export default function StudentDetailPage() {
       .limit(10)
 
     setPayments((data || []) as Payment[])
+  }
+
+  async function fetchRefunds() {
+    const supabase = createClient()
+    const { data } = await supabase
+      .from('refunds')
+      .select('id, amount, reason, reason_notes, refund_date')
+      .eq('student_id', studentId)
+      .order('refund_date', { ascending: false })
+      .limit(10)
+
+    setRefunds((data || []) as Refund[])
   }
 
   async function handleDelete() {
@@ -621,6 +643,7 @@ export default function StudentDetailPage() {
 
     const totalDue = studentFees.reduce((sum, f) => sum + f.amount_due, 0)
     const totalPaid = studentFees.reduce((sum, f) => sum + f.amount_paid, 0)
+    const totalRefunded = refunds.reduce((sum, r) => sum + r.amount, 0)
     const totalBalance = studentFees.reduce((sum, f) => sum + f.balance, 0)
     const brandColor = center.primary_color || '#1E40AF'
 
@@ -671,6 +694,7 @@ export default function StudentDetailPage() {
           .summary-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }
           .summary-row.total { border-top: 2px solid #333; font-size: 18px; font-weight: bold; }
           .balance-due { color: #dc2626; }
+          .refund-amount { color: #dc2626; }
           .banking { margin-top: 30px; padding: 15px; background: #f0f9ff; border: 1px solid ${brandColor}; }
           .banking h3 { margin-bottom: 10px; color: ${brandColor}; }
           .footer { margin-top: 40px; text-align: center; font-size: 12px; color: #666; }
@@ -749,6 +773,12 @@ export default function StudentDetailPage() {
             <span>Total Amount Paid</span>
             <span>R ${totalPaid.toFixed(2)}</span>
           </div>
+          ${totalRefunded > 0 ? `
+          <div class="summary-row">
+            <span>Total Refunded</span>
+            <span class="refund-amount">-R ${totalRefunded.toFixed(2)}</span>
+          </div>
+          ` : ''}
           <div class="summary-row total">
             <span>Outstanding Balance</span>
             <span class="${totalBalance > 0 ? 'balance-due' : ''}">R ${totalBalance.toFixed(2)}</span>
@@ -773,6 +803,28 @@ export default function StudentDetailPage() {
                   <td>${p.reference_number || '-'}</td>
                   <td style="text-transform: capitalize">${p.payment_method?.replace('_', ' ') || '-'}</td>
                   <td style="text-align: right">R ${p.amount.toFixed(2)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        ` : ''}
+
+        ${refunds.length > 0 ? `
+          <h3 style="margin-top: 30px;">Refunds</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Reason</th>
+                <th style="text-align: right">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${refunds.slice(0, 5).map(r => `
+                <tr>
+                  <td>${new Date(r.refund_date).toLocaleDateString('en-ZA')}</td>
+                  <td style="text-transform: capitalize">${r.reason.replace('_', ' ')}${r.reason_notes ? ` - ${r.reason_notes}` : ''}</td>
+                  <td style="text-align: right" class="refund-amount">-R ${r.amount.toFixed(2)}</td>
                 </tr>
               `).join('')}
             </tbody>
