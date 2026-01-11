@@ -14,7 +14,17 @@ import {
   Smartphone,
   Globe,
   Mail,
-  Phone
+  Phone,
+  BookOpen,
+  Home,
+  Bus,
+  Library,
+  FileText,
+  Settings,
+  Sparkles,
+  Gift,
+  UserCog,
+  Lock,
 } from 'lucide-react'
 
 const features = [
@@ -214,29 +224,67 @@ export default function LandingPage() {
             <div className="bg-gray-100 rounded-b-xl shadow-2xl overflow-hidden border border-gray-200">
               <div className="flex">
                 {/* Sidebar */}
-                <div className="w-56 bg-white border-r border-gray-200 p-4 hidden md:block">
-                  <div className="flex items-center gap-2 mb-6">
+                <div className="w-56 bg-white border-r border-gray-200 p-3 hidden md:block">
+                  <div className="flex items-center gap-2 mb-4 px-2">
                     <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                       <GraduationCap className="w-4 h-4 text-white" />
                     </div>
                     <span className="font-semibold text-gray-900 text-sm">My Tutorial Centre</span>
                   </div>
-                  <nav className="space-y-1">
-                    <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium">
-                      <BarChart3 className="w-4 h-4" />
+                  <nav className="space-y-0.5">
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium">
+                      <BarChart3 className="w-3.5 h-3.5" />
                       Dashboard
                     </div>
-                    <div className="flex items-center gap-2 px-3 py-2 text-gray-600 rounded-lg text-sm">
-                      <Users className="w-4 h-4" />
+                    <div className="flex items-center gap-2 px-3 py-1.5 text-gray-600 hover:bg-gray-50 rounded-lg text-xs">
+                      <GraduationCap className="w-3.5 h-3.5" />
                       Students
                     </div>
-                    <div className="flex items-center gap-2 px-3 py-2 text-gray-600 rounded-lg text-sm">
-                      <CreditCard className="w-4 h-4" />
+                    <div className="flex items-center gap-2 px-3 py-1.5 text-gray-600 hover:bg-gray-50 rounded-lg text-xs">
+                      <Users className="w-3.5 h-3.5" />
+                      Teachers
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-1.5 text-gray-600 hover:bg-gray-50 rounded-lg text-xs">
+                      <UserCog className="w-3.5 h-3.5" />
+                      Staff
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-1.5 text-gray-600 hover:bg-gray-50 rounded-lg text-xs">
+                      <BookOpen className="w-3.5 h-3.5" />
+                      Subjects
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-1.5 text-gray-600 hover:bg-gray-50 rounded-lg text-xs">
+                      <CreditCard className="w-3.5 h-3.5" />
                       Payments
                     </div>
-                    <div className="flex items-center gap-2 px-3 py-2 text-gray-600 rounded-lg text-sm">
-                      <GraduationCap className="w-4 h-4" />
-                      Teachers
+                    <div className="flex items-center gap-2 px-3 py-1.5 text-gray-400 rounded-lg text-xs">
+                      <Home className="w-3.5 h-3.5" />
+                      Hostel
+                      <Lock className="w-3 h-3 ml-auto" />
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-1.5 text-gray-400 rounded-lg text-xs">
+                      <Bus className="w-3.5 h-3.5" />
+                      Transport
+                      <Lock className="w-3 h-3 ml-auto" />
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-1.5 text-gray-600 hover:bg-gray-50 rounded-lg text-xs">
+                      <Library className="w-3.5 h-3.5" />
+                      Library
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-1.5 text-gray-600 hover:bg-gray-50 rounded-lg text-xs">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      Subscription
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-1.5 text-gray-600 hover:bg-gray-50 rounded-lg text-xs">
+                      <FileText className="w-3.5 h-3.5" />
+                      Reports
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-1.5 text-gray-600 hover:bg-gray-50 rounded-lg text-xs">
+                      <Gift className="w-3.5 h-3.5" />
+                      Referrals
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-1.5 text-gray-600 hover:bg-gray-50 rounded-lg text-xs">
+                      <Settings className="w-3.5 h-3.5" />
+                      Settings
                     </div>
                   </nav>
                 </div>
