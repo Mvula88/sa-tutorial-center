@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/auth-store'
 import { useOnboardingStore } from '@/stores/onboarding-store'
@@ -59,6 +59,7 @@ export function SetupWizard() {
   const [currentStep, setCurrentStep] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const [isCheckingSetup, setIsCheckingSetup] = useState(true)
+  const contentRef = useRef<HTMLDivElement>(null)
 
   // Academic Year State
   const [paymentMonths, setPaymentMonths] = useState<number[]>([1, 2, 3, 4, 5, 6, 7, 8, 9])
@@ -159,6 +160,10 @@ export function SetupWizard() {
 
       toast.success('Academic year settings saved!')
       setCurrentStep(1) // Move to subjects step
+      // Scroll content to top
+      setTimeout(() => {
+        contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+      }, 100)
     } catch (error) {
       console.error('Error saving academic settings:', error)
       toast.error('Failed to save settings')
@@ -356,23 +361,47 @@ export function SetupWizard() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div ref={contentRef} className="flex-1 overflow-y-auto p-6">
           {/* Step 1: Academic Year */}
           {currentStep === 0 && (
-            <div className="space-y-6">
+            <div className="space-y-5">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Configure Your Academic Year
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                  Academic Year & Fees
                 </h3>
-                <p className="text-gray-600 text-sm">
-                  Select the months when students will be charged fees. This helps calculate yearly totals automatically.
+                <p className="text-gray-500 text-sm">
+                  Set up payment months and registration fee for your centre.
                 </p>
+              </div>
+
+              {/* Two Column Layout for compact view */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Registration Fee - Now First and Prominent */}
+                <div className="sm:col-span-2 bg-gray-50 rounded-xl p-4 border border-gray-200">
+                  <label className="block text-sm font-semibold text-gray-800 mb-2">
+                    Registration Fee
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-500 font-medium">R</span>
+                    <input
+                      type="number"
+                      value={registrationFee}
+                      onChange={(e) => setRegistrationFee(parseFloat(e.target.value) || 0)}
+                      className="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg font-medium"
+                      placeholder="0"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    One-time fee charged when enrolling new students
+                  </p>
+                </div>
               </div>
 
               {/* Month Selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
+                <label className="block text-sm font-semibold text-gray-800 mb-3">
                   Payment Months
+                  <span className="font-normal text-gray-500 ml-2">({paymentMonths.length} selected)</span>
                 </label>
                 <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
                   {MONTHS.map((month) => {
@@ -382,57 +411,36 @@ export function SetupWizard() {
                         key={month.value}
                         type="button"
                         onClick={() => togglePaymentMonth(month.value)}
-                        className={`relative p-3 rounded-lg border-2 transition-all ${
+                        className={`relative py-2.5 px-2 rounded-lg border transition-all text-center ${
                           isSelected
-                            ? 'border-blue-500 bg-blue-50 text-blue-700'
-                            : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                            ? 'border-blue-500 bg-blue-600 text-white font-medium shadow-sm'
+                            : 'border-gray-200 hover:border-gray-300 text-gray-600 bg-white'
                         }`}
                       >
-                        {isSelected && (
-                          <CheckCircle className="absolute top-1 right-1 w-3 h-3 text-blue-600" />
-                        )}
-                        <span className="text-sm font-medium">{month.short}</span>
+                        <span className="text-sm">{month.short}</span>
                       </button>
                     )
                   })}
                 </div>
-                <p className="text-sm text-gray-500 mt-3">
-                  Selected: <span className="font-medium text-gray-900">{paymentMonths.length} months</span>
-                </p>
               </div>
 
-              {/* Fee Calculation Preview */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <Sparkles className="w-5 h-5 text-blue-600 mt-0.5" />
-                  <div>
-                    <h4 className="font-medium text-blue-900">Fee Calculation Example</h4>
-                    <p className="text-sm text-blue-700 mt-1">
-                      If a subject costs R 300/month, the yearly total will be:
-                      <br />
-                      <span className="font-bold">
-                        R 300 x {paymentMonths.length} months = R {(300 * paymentMonths.length).toLocaleString()}
-                      </span>
-                    </p>
-                  </div>
+              {/* Fee Summary */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="w-4 h-4 text-blue-600" />
+                  <span className="text-sm font-semibold text-blue-900">Fee Preview</span>
                 </div>
-              </div>
-
-              {/* Registration Fee */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Default Registration Fee (R)
-                </label>
-                <input
-                  type="number"
-                  value={registrationFee}
-                  onChange={(e) => setRegistrationFee(parseFloat(e.target.value) || 0)}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="e.g., 500"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  This one-time fee will be added when enrolling new students
+                <p className="text-sm text-blue-800">
+                  For a subject at <span className="font-semibold">R300/month</span>:
+                  <span className="font-bold text-blue-900 ml-1">
+                    R{(300 * paymentMonths.length).toLocaleString()}/year
+                  </span>
                 </p>
+                {registrationFee > 0 && (
+                  <p className="text-sm text-blue-800 mt-1">
+                    + Registration fee: <span className="font-bold text-blue-900">R{registrationFee.toLocaleString()}</span>
+                  </p>
+                )}
               </div>
             </div>
           )}
@@ -607,7 +615,12 @@ export function SetupWizard() {
           <div className="flex items-center justify-between">
             {currentStep > 0 ? (
               <button
-                onClick={() => setCurrentStep(currentStep - 1)}
+                onClick={() => {
+                  setCurrentStep(currentStep - 1)
+                  setTimeout(() => {
+                    contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+                  }, 100)
+                }}
                 className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900"
               >
                 <ChevronLeft className="w-4 h-4" />
