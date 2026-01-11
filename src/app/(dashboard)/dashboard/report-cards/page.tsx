@@ -393,16 +393,18 @@ export default function ReportCardsPage() {
       }
 
       // Get the period for date range
-      const { data: period } = await supabase
+      const { data: periodData } = await supabase
         .from('report_periods')
-        .select('*')
+        .select('id, name, start_date, end_date')
         .eq('id', generateForm.period_id)
         .single()
 
-      if (!period) {
+      if (!periodData) {
         toast.error('Report period not found')
         return
       }
+
+      const period = periodData as { id: string; name: string; start_date: string; end_date: string }
 
       // Get subjects
       const { data: subjects } = await supabase
