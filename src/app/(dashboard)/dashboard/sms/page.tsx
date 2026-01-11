@@ -229,9 +229,10 @@ export default function SMSCampaignsPage() {
       .single()
 
     if (data) {
-      setSmsCredits(data.sms_credits || 0)
-      setCreditsUsed(data.sms_credits_used || 0)
-      setLowBalanceThreshold(data.sms_low_balance_threshold || 50)
+      const centerData = data as { sms_credits: number | null; sms_credits_used: number | null; sms_low_balance_threshold: number | null }
+      setSmsCredits(centerData.sms_credits || 0)
+      setCreditsUsed(centerData.sms_credits_used || 0)
+      setLowBalanceThreshold(centerData.sms_low_balance_threshold || 50)
     }
   }
 
