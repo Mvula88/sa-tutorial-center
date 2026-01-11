@@ -43,6 +43,11 @@ export interface Database {
           transport_module_enabled: boolean
           library_module_enabled: boolean
           sms_module_enabled: boolean
+          payment_months: number[]
+          academic_year_start_month: number
+          academic_year_end_month: number
+          default_registration_fee: number
+          initial_setup_completed: boolean
           created_at: string
           updated_at: string
         }
@@ -68,6 +73,11 @@ export interface Database {
           transport_module_enabled?: boolean
           library_module_enabled?: boolean
           sms_module_enabled?: boolean
+          payment_months?: number[]
+          academic_year_start_month?: number
+          academic_year_end_month?: number
+          default_registration_fee?: number
+          initial_setup_completed?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -93,6 +103,11 @@ export interface Database {
           transport_module_enabled?: boolean
           library_module_enabled?: boolean
           sms_module_enabled?: boolean
+          payment_months?: number[]
+          academic_year_start_month?: number
+          academic_year_end_month?: number
+          default_registration_fee?: number
+          initial_setup_completed?: boolean
           created_at?: string
           updated_at?: string
         }

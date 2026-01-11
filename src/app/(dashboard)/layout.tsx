@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/auth-store'
 import { Sidebar } from '@/components/layout/sidebar'
 import { Loader2 } from 'lucide-react'
 import { ProductTour } from '@/components/onboarding'
+import { SetupWizard } from '@/components/onboarding/setup-wizard'
 import { dashboardTourSteps } from '@/config/tour-steps'
 
 export default function DashboardLayout({
@@ -59,6 +60,9 @@ export default function DashboardLayout({
 
       {/* Onboarding Product Tour */}
       <ProductTour steps={dashboardTourSteps} />
+
+      {/* Setup Wizard for first-time center admins */}
+      <SetupWizard />
     </div>
   )
 }
