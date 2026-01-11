@@ -15,8 +15,10 @@ import {
   Calendar,
   RefreshCw,
   User,
+  Users,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { PLAN_LIMITS, SubscriptionTier } from '@/lib/subscription-limits'
 
 interface SubscriptionData {
   subscription_status: string
@@ -35,6 +37,7 @@ const plans = [
     description: 'Individual tutors & township operators',
     features: [
       'Up to 15 students',
+      'Solo operator (no staff)',
       'Student management',
       'Fee tracking',
       'Payment recording',
@@ -49,6 +52,7 @@ const plans = [
     description: 'Small tutorial centres',
     features: [
       'Up to 50 students',
+      'Up to 2 staff members',
       'Student management',
       'Fee tracking',
       'Payment recording',
@@ -64,8 +68,8 @@ const plans = [
     description: 'Growing tutorial centres',
     features: [
       'Up to 150 students',
+      'Up to 5 staff members',
       'Everything in Starter',
-      'Multiple staff accounts',
       'Advanced reports',
       'Library module',
       'SMS notifications',
@@ -81,6 +85,7 @@ const plans = [
     description: 'Large centres & academies',
     features: [
       'Unlimited students',
+      'Unlimited staff',
       'Everything in Standard',
       'Hostel management',
       'Transport tracking',
@@ -99,12 +104,28 @@ export default function SubscriptionPage() {
   const [upgradeLoading, setUpgradeLoading] = useState<string | null>(null)
   const [portalLoading, setPortalLoading] = useState(false)
   const [syncLoading, setSyncLoading] = useState(false)
+  const [staffCount, setStaffCount] = useState(0)
 
   useEffect(() => {
     if (user?.center_id) {
       fetchSubscription()
+      fetchStaffCount()
     }
   }, [user?.center_id])
+
+  async function fetchStaffCount() {
+    if (!user?.center_id) return
+
+    const supabase = createClient()
+    const { count } = await supabase
+      .from('users')
+      .select('id', { count: 'exact', head: true })
+      .eq('center_id', user.center_id)
+      .eq('role', 'center_staff')
+      .eq('is_active', true)
+
+    setStaffCount(count || 0)
+  }
 
   async function fetchSubscription() {
     if (!user?.center_id) return
@@ -157,6 +178,25 @@ export default function SubscriptionPage() {
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to open billing portal')
+      }
+
+      // Show warning if user has staff and might downgrade
+      if (data.staffCount > 0) {
+        const confirmed = window.confirm(
+          `Important: You have ${data.staffCount} active staff member${data.staffCount > 1 ? 's' : ''}.\n\n` +
+          `If you downgrade your plan, you may need to deactivate staff members first to comply with your new plan's limits.\n\n` +
+          `Staff limits by plan:\n` +
+          `- Micro: 0 staff (solo operator)\n` +
+          `- Starter: Up to 2 staff\n` +
+          `- Standard: Up to 5 staff\n` +
+          `- Premium: Unlimited staff\n\n` +
+          `Do you want to continue to billing management?`
+        )
+
+        if (!confirmed) {
+          setPortalLoading(false)
+          return
+        }
       }
 
       window.location.href = data.url
@@ -261,6 +301,14 @@ export default function SubscriptionPage() {
                   : `Renews on ${new Date(subscription.current_period_end).toLocaleDateString()}`}
               </p>
             )}
+            {staffCount > 0 && (
+              <div className="flex items-center gap-2 mt-2 text-gray-600">
+                <Users className="w-4 h-4" />
+                <span className="text-sm">
+                  {staffCount} active staff member{staffCount !== 1 ? 's' : ''}
+                </span>
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -358,24 +406,54 @@ export default function SubscriptionPage() {
                   ))}
                 </ul>
 
-                {isCurrent ? (
-                  <Button variant="outline" className="w-full" disabled>
-                    Current Plan
-                  </Button>
-                ) : isLowerTier ? (
-                  <Button variant="outline" className="w-full text-gray-400" disabled>
-                    Included in your plan
-                  </Button>
-                ) : (
-                  <Button
-                    className="w-full"
-                    variant={plan.popular ? 'primary' : 'outline'}
-                    onClick={() => handleUpgrade(plan.id)}
-                    isLoading={upgradeLoading === plan.id}
-                  >
-                    {isTrialing ? 'Start Plan' : 'Upgrade'}
-                  </Button>
-                )}
+                {(() => {
+                  // Check if downgrade is blocked due to staff limits
+                  const targetTier = plan.id as SubscriptionTier
+                  const targetStaffLimit = PLAN_LIMITS[targetTier]?.maxStaff ?? 0
+                  const isDowngradeBlocked = isLowerTier && targetStaffLimit !== -1 && staffCount > targetStaffLimit
+
+                  if (isCurrent) {
+                    return (
+                      <Button variant="outline" className="w-full" disabled>
+                        Current Plan
+                      </Button>
+                    )
+                  }
+
+                  if (isDowngradeBlocked) {
+                    return (
+                      <div className="space-y-2">
+                        <Button variant="outline" className="w-full text-red-400 border-red-200" disabled>
+                          Cannot Downgrade
+                        </Button>
+                        <p className="text-xs text-red-600 text-center">
+                          {targetStaffLimit === 0
+                            ? `Deactivate all ${staffCount} staff to downgrade`
+                            : `Deactivate ${staffCount - targetStaffLimit} staff to downgrade`}
+                        </p>
+                      </div>
+                    )
+                  }
+
+                  if (isLowerTier) {
+                    return (
+                      <Button variant="outline" className="w-full text-gray-400" disabled>
+                        Included in your plan
+                      </Button>
+                    )
+                  }
+
+                  return (
+                    <Button
+                      className="w-full"
+                      variant={plan.popular ? 'primary' : 'outline'}
+                      onClick={() => handleUpgrade(plan.id)}
+                      isLoading={upgradeLoading === plan.id}
+                    >
+                      {isTrialing ? 'Start Plan' : 'Upgrade'}
+                    </Button>
+                  )
+                })()}
               </div>
             )
           })}

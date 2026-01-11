@@ -22,6 +22,7 @@ import {
   History,
   Lock,
   Gift,
+  UserCog,
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
@@ -39,6 +40,7 @@ const centerNavItems: NavItem[] = [
   { label: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
   { label: 'Students', href: '/dashboard/students', icon: <GraduationCap className="w-5 h-5" /> },
   { label: 'Teachers', href: '/dashboard/teachers', icon: <Users className="w-5 h-5" />, adminOnly: true },
+  { label: 'Staff', href: '/dashboard/staff', icon: <UserCog className="w-5 h-5" />, adminOnly: true },
   { label: 'Subjects', href: '/dashboard/subjects', icon: <BookOpen className="w-5 h-5" /> },
   { label: 'Payments', href: '/dashboard/payments', icon: <CreditCard className="w-5 h-5" /> },
   { label: 'Hostel', href: '/dashboard/hostel', icon: <Home className="w-5 h-5" />, module: 'hostel', requiresTier: 'premium' },

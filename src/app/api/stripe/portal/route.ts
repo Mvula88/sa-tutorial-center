@@ -14,13 +14,14 @@ export async function POST() {
       )
     }
 
-    // Get user's center with Stripe customer ID
+    // Get user's center with Stripe customer ID and subscription tier
     const { data: profile } = await supabase
       .from('users')
       .select(`
         center_id,
         center:tutorial_centers(
-          stripe_customer_id
+          stripe_customer_id,
+          subscription_tier
         )
       `)
       .eq('id', user.id)
@@ -28,7 +29,7 @@ export async function POST() {
 
     interface UserProfile {
       center_id: string | null
-      center: { stripe_customer_id: string | null } | null
+      center: { stripe_customer_id: string | null; subscription_tier: string | null } | null
     }
 
     const typedProfile = profile as UserProfile | null
@@ -49,6 +50,14 @@ export async function POST() {
       )
     }
 
+    // Get staff count for warning
+    const { count: staffCount } = await supabase
+      .from('users')
+      .select('id', { count: 'exact', head: true })
+      .eq('center_id', typedProfile.center_id)
+      .eq('role', 'center_staff')
+      .eq('is_active', true)
+
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
     const session = await createCustomerPortalSession({
@@ -56,7 +65,11 @@ export async function POST() {
       returnUrl: `${baseUrl}/dashboard/settings`,
     })
 
-    return NextResponse.json({ url: session.url })
+    return NextResponse.json({
+      url: session.url,
+      staffCount: staffCount || 0,
+      currentTier: center.subscription_tier || 'starter'
+    })
   } catch (error) {
     console.error('Customer portal error:', error)
     return NextResponse.json(

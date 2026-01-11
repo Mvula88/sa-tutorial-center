@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import type { Database } from '@/types/database'
+import { PLAN_LIMITS, SubscriptionTier } from '@/lib/subscription-limits'
 
 // Create admin client with service role key
 function createAdminClient() {
@@ -14,6 +15,38 @@ function createAdminClient() {
       },
     }
   )
+}
+
+// Check staff limit for a center (server-side version)
+async function checkStaffLimitServer(supabase: ReturnType<typeof createAdminClient>, centerId: string) {
+  // Get center's subscription tier
+  const { data: centerData } = await supabase
+    .from('tutorial_centers')
+    .select('subscription_tier')
+    .eq('id', centerId)
+    .single()
+
+  const center = centerData as { subscription_tier: string | null } | null
+  const tier = (center?.subscription_tier as SubscriptionTier) || 'starter'
+  const limit = PLAN_LIMITS[tier]?.maxStaff ?? PLAN_LIMITS.starter.maxStaff
+
+  // Count active staff members (center_staff role only)
+  const { count } = await supabase
+    .from('users')
+    .select('id', { count: 'exact', head: true })
+    .eq('center_id', centerId)
+    .eq('role', 'center_staff')
+    .eq('is_active', true)
+
+  const current = count || 0
+  const isUnlimited = limit === -1
+
+  return {
+    canAdd: isUnlimited || current < limit,
+    current,
+    limit,
+    tier,
+  }
 }
 
 export async function POST(request: Request) {
@@ -44,6 +77,24 @@ export async function POST(request: Request) {
     }
 
     const supabase = createAdminClient()
+
+    // Check staff limit for center_staff role
+    if (role === 'center_staff' && center_id) {
+      const staffLimit = await checkStaffLimitServer(supabase, center_id)
+
+      if (!staffLimit.canAdd) {
+        if (staffLimit.limit === 0) {
+          return NextResponse.json(
+            { error: 'Your Micro plan does not include additional staff members. Please upgrade to the Starter plan or higher to add staff.' },
+            { status: 403 }
+          )
+        }
+        return NextResponse.json(
+          { error: `You have reached your staff limit of ${staffLimit.limit} for the ${staffLimit.tier} plan. Please upgrade to add more staff members.` },
+          { status: 403 }
+        )
+      }
+    }
 
     // Create auth user with admin API (creates confirmed user)
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({

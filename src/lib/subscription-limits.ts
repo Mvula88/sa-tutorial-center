@@ -12,7 +12,7 @@ import { createClient } from '@/lib/supabase/client'
 export const PLAN_LIMITS = {
   micro: {
     maxStudents: 15,
-    maxStaff: 1, // Just the admin
+    maxStaff: 0, // Solo operator - center admin only, no additional staff
     modules: {
       hostel: false,
       transport: false,
@@ -22,7 +22,7 @@ export const PLAN_LIMITS = {
   },
   starter: {
     maxStudents: 50,
-    maxStaff: 2,
+    maxStaff: 2, // Center admin + 2 staff members
     modules: {
       hostel: false,
       transport: false,
@@ -63,6 +63,16 @@ export interface StudentLimitCheck {
   remaining: number
   percentUsed: number
   isNearLimit: boolean // 80% or more
+  isAtLimit: boolean
+}
+
+export interface StaffLimitCheck {
+  canAdd: boolean
+  current: number
+  limit: number
+  tier: SubscriptionTier
+  remaining: number
+  percentUsed: number
   isAtLimit: boolean
 }
 
@@ -113,6 +123,67 @@ export async function checkStudentLimit(centerId: string): Promise<StudentLimitC
     isNearLimit: !isUnlimited && percentUsed >= 80,
     isAtLimit: !isUnlimited && current >= limit,
   }
+}
+
+/**
+ * Check if a center can add more staff based on their subscription tier
+ * Note: This counts center_staff role users only (not the center_admin)
+ */
+export async function checkStaffLimit(centerId: string): Promise<StaffLimitCheck> {
+  const supabase = createClient()
+
+  // Get center's subscription tier
+  const { data: centerData } = await supabase
+    .from('tutorial_centers')
+    .select('subscription_tier')
+    .eq('id', centerId)
+    .single()
+
+  const center = centerData as { subscription_tier: string | null } | null
+  const tier = (center?.subscription_tier as SubscriptionTier) || 'starter'
+  const limit = PLAN_LIMITS[tier]?.maxStaff ?? PLAN_LIMITS.starter.maxStaff
+
+  // Count active staff members (center_staff role only, not center_admin)
+  const { count } = await supabase
+    .from('users')
+    .select('id', { count: 'exact', head: true })
+    .eq('center_id', centerId)
+    .eq('role', 'center_staff')
+    .eq('is_active', true)
+
+  const current = count || 0
+  const isUnlimited = limit === -1
+  const remaining = isUnlimited ? Infinity : Math.max(0, limit - current)
+  const percentUsed = isUnlimited ? 0 : limit === 0 ? 100 : (current / limit) * 100
+
+  return {
+    canAdd: isUnlimited || current < limit,
+    current,
+    limit: isUnlimited ? -1 : limit,
+    tier,
+    remaining: isUnlimited ? -1 : remaining,
+    percentUsed: Math.round(percentUsed),
+    isAtLimit: !isUnlimited && current >= limit,
+  }
+}
+
+/**
+ * Get staff limit message for display
+ */
+export function getStaffLimitMessage(check: StaffLimitCheck): string | null {
+  if (check.limit === -1) {
+    return null // Unlimited
+  }
+
+  if (check.limit === 0) {
+    return 'Your Micro plan does not include additional staff. Upgrade to Starter to add staff members.'
+  }
+
+  if (check.isAtLimit) {
+    return `You've reached your ${check.tier} plan limit of ${check.limit} staff members. Upgrade to add more.`
+  }
+
+  return null
 }
 
 /**
