@@ -20,6 +20,13 @@ import {
   TrendingUp,
   RotateCcw,
   FileText,
+  DollarSign,
+  CheckCircle,
+  Clock,
+  AlertCircle,
+  ChevronDown,
+  ChevronUp,
+  PieChart,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { formatCurrency, CURRENCY_CONFIG } from '@/lib/currency'
@@ -41,6 +48,23 @@ interface Payment {
   recorded_by_user: {
     full_name: string
   } | null
+}
+
+interface FeeSummary {
+  totalDue: number
+  totalPaid: number
+  totalOutstanding: number
+  totalCredit: number
+  byType: {
+    registration: { due: number; paid: number; outstanding: number }
+    tuition: { due: number; paid: number; outstanding: number }
+  }
+  byStatus: {
+    paid: number
+    partial: number
+    unpaid: number
+  }
+  studentCount: number
 }
 
 const ITEMS_PER_PAGE = 10
@@ -67,9 +91,13 @@ export default function PaymentsPage() {
   const [totalAmount, setTotalAmount] = useState(0)
   const [refundModalOpen, setRefundModalOpen] = useState(false)
   const [bulkGenerateModalOpen, setBulkGenerateModalOpen] = useState(false)
+  const [feeSummary, setFeeSummary] = useState<FeeSummary | null>(null)
+  const [showFeeSummary, setShowFeeSummary] = useState(true)
+  const [isLoadingSummary, setIsLoadingSummary] = useState(true)
 
   useEffect(() => {
     fetchPayments()
+    fetchFeeSummary()
   }, [user?.center_id, currentPage, methodFilter, dateFromFilter, dateToFilter, monthFilter, yearFilter])
 
   async function fetchPayments() {
@@ -150,6 +178,86 @@ export default function PaymentsPage() {
     }
   }
 
+  async function fetchFeeSummary() {
+    if (!user?.center_id) return
+
+    setIsLoadingSummary(true)
+    const supabase = createClient()
+
+    try {
+      // Fetch all fees for the center
+      const { data: feesData, error: feesError } = await supabase
+        .from('student_fees')
+        .select('fee_type, amount_due, amount_paid, status')
+        .eq('center_id', user.center_id)
+
+      if (feesError) throw feesError
+
+      // Fetch total credit balance from students
+      const { data: studentsData, error: studentsError } = await supabase
+        .from('students')
+        .select('id, credit_balance')
+        .eq('center_id', user.center_id)
+        .eq('status', 'active')
+
+      if (studentsError) throw studentsError
+
+      // Calculate summary
+      const summary: FeeSummary = {
+        totalDue: 0,
+        totalPaid: 0,
+        totalOutstanding: 0,
+        totalCredit: 0,
+        byType: {
+          registration: { due: 0, paid: 0, outstanding: 0 },
+          tuition: { due: 0, paid: 0, outstanding: 0 },
+        },
+        byStatus: {
+          paid: 0,
+          partial: 0,
+          unpaid: 0,
+        },
+        studentCount: studentsData?.length || 0,
+      }
+
+      for (const fee of (feesData || []) as any[]) {
+        const due = fee.amount_due || 0
+        const paid = fee.amount_paid || 0
+        const outstanding = due - paid
+
+        summary.totalDue += due
+        summary.totalPaid += paid
+        summary.totalOutstanding += outstanding
+
+        // By type
+        const feeType = fee.fee_type === 'registration' ? 'registration' : 'tuition'
+        summary.byType[feeType].due += due
+        summary.byType[feeType].paid += paid
+        summary.byType[feeType].outstanding += outstanding
+
+        // By status
+        if (fee.status === 'paid') {
+          summary.byStatus.paid++
+        } else if (fee.status === 'partial') {
+          summary.byStatus.partial++
+        } else {
+          summary.byStatus.unpaid++
+        }
+      }
+
+      // Total credit balance
+      for (const student of (studentsData || []) as any[]) {
+        summary.totalCredit += student.credit_balance || 0
+      }
+
+      setFeeSummary(summary)
+    } catch (error) {
+      console.error('Error fetching fee summary:', error)
+    } finally {
+      setIsLoadingSummary(false)
+    }
+  }
+
   // Debounced search
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -212,7 +320,167 @@ export default function PaymentsPage() {
         </div>
       </div>
 
-      {/* Summary Card */}
+      {/* Fee Summary Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-6 overflow-hidden">
+        <button
+          onClick={() => setShowFeeSummary(!showFeeSummary)}
+          className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-blue-100">
+              <PieChart className="w-5 h-5 text-blue-600" />
+            </div>
+            <div className="text-left">
+              <h3 className="font-semibold text-gray-900">Fee Summary</h3>
+              <p className="text-sm text-gray-500">Overview of all fees across students</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            {!isLoadingSummary && feeSummary && (
+              <div className="text-right hidden md:block">
+                <p className="text-sm text-gray-500">Outstanding</p>
+                <p className="text-lg font-bold text-red-600">{formatCurrency(feeSummary.totalOutstanding)}</p>
+              </div>
+            )}
+            {showFeeSummary ? (
+              <ChevronUp className="w-5 h-5 text-gray-400" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-gray-400" />
+            )}
+          </div>
+        </button>
+
+        {showFeeSummary && (
+          <div className="px-6 pb-6 border-t border-gray-100">
+            {isLoadingSummary ? (
+              <div className="py-8 text-center">
+                <div className="animate-pulse space-y-4">
+                  <div className="h-20 bg-gray-100 rounded-lg"></div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="h-16 bg-gray-100 rounded-lg"></div>
+                    <div className="h-16 bg-gray-100 rounded-lg"></div>
+                    <div className="h-16 bg-gray-100 rounded-lg"></div>
+                  </div>
+                </div>
+              </div>
+            ) : feeSummary ? (
+              <div className="pt-4 space-y-6">
+                {/* Main totals */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <DollarSign className="w-4 h-4 text-gray-500" />
+                      <p className="text-sm text-gray-500">Total Due</p>
+                    </div>
+                    <p className="text-2xl font-bold text-gray-900">{formatCurrency(feeSummary.totalDue)}</p>
+                  </div>
+                  <div className="bg-green-50 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      <p className="text-sm text-gray-500">Total Paid</p>
+                    </div>
+                    <p className="text-2xl font-bold text-green-600">{formatCurrency(feeSummary.totalPaid)}</p>
+                  </div>
+                  <div className="bg-red-50 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <AlertCircle className="w-4 h-4 text-red-500" />
+                      <p className="text-sm text-gray-500">Outstanding</p>
+                    </div>
+                    <p className="text-2xl font-bold text-red-600">{formatCurrency(feeSummary.totalOutstanding)}</p>
+                  </div>
+                  <div className="bg-blue-50 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <TrendingUp className="w-4 h-4 text-blue-500" />
+                      <p className="text-sm text-gray-500">Credit Balance</p>
+                    </div>
+                    <p className="text-2xl font-bold text-blue-600">{formatCurrency(feeSummary.totalCredit)}</p>
+                  </div>
+                </div>
+
+                {/* Breakdown sections */}
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* By Fee Type */}
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h4 className="font-medium text-gray-900 mb-4">By Fee Type</h4>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-3 bg-white rounded-lg">
+                        <div>
+                          <p className="font-medium text-gray-900">Registration Fees</p>
+                          <p className="text-sm text-gray-500">
+                            {formatCurrency(feeSummary.byType.registration.paid)} paid of {formatCurrency(feeSummary.byType.registration.due)}
+                          </p>
+                        </div>
+                        <p className={`font-semibold ${feeSummary.byType.registration.outstanding > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                          {feeSummary.byType.registration.outstanding > 0
+                            ? `-${formatCurrency(feeSummary.byType.registration.outstanding)}`
+                            : 'Paid'}
+                        </p>
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-white rounded-lg">
+                        <div>
+                          <p className="font-medium text-gray-900">Tuition Fees</p>
+                          <p className="text-sm text-gray-500">
+                            {formatCurrency(feeSummary.byType.tuition.paid)} paid of {formatCurrency(feeSummary.byType.tuition.due)}
+                          </p>
+                        </div>
+                        <p className={`font-semibold ${feeSummary.byType.tuition.outstanding > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                          {feeSummary.byType.tuition.outstanding > 0
+                            ? `-${formatCurrency(feeSummary.byType.tuition.outstanding)}`
+                            : 'Paid'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* By Status */}
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h4 className="font-medium text-gray-900 mb-4">Fee Records by Status</h4>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-3 bg-white rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                          <p className="font-medium text-gray-900">Fully Paid</p>
+                        </div>
+                        <p className="font-semibold text-gray-900">{feeSummary.byStatus.paid}</p>
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-white rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-amber-500"></div>
+                          <p className="font-medium text-gray-900">Partially Paid</p>
+                        </div>
+                        <p className="font-semibold text-gray-900">{feeSummary.byStatus.partial}</p>
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-white rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                          <p className="font-medium text-gray-900">Unpaid</p>
+                        </div>
+                        <p className="font-semibold text-gray-900">{feeSummary.byStatus.unpaid}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick stats */}
+                <div className="flex items-center justify-between pt-4 border-t border-gray-200 text-sm text-gray-500">
+                  <p>Active students: <span className="font-medium text-gray-900">{feeSummary.studentCount}</span></p>
+                  <p>Collection rate: <span className="font-medium text-gray-900">
+                    {feeSummary.totalDue > 0
+                      ? `${((feeSummary.totalPaid / feeSummary.totalDue) * 100).toFixed(1)}%`
+                      : 'N/A'}
+                  </span></p>
+                </div>
+              </div>
+            ) : (
+              <div className="py-8 text-center text-gray-500">
+                Unable to load fee summary
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Payment Transactions Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
           <div className="flex items-center gap-3">
@@ -220,7 +488,7 @@ export default function PaymentsPage() {
               <TrendingUp className="w-5 h-5 text-green-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Total (This View)</p>
+              <p className="text-sm text-gray-500">Payments (This View)</p>
               <p className="text-xl font-bold text-green-600">{formatCurrency(totalAmount)}</p>
             </div>
           </div>
