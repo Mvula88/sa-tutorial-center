@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/auth-store'
 import { Button } from '@/components/ui/button'
-import { Input, Select } from '@/components/ui/input'
+import { Select } from '@/components/ui/input'
 import {
   Plus,
   Search,
@@ -15,21 +15,20 @@ import {
   CreditCard,
   Calendar,
   CalendarPlus,
-  Download,
   X,
   TrendingUp,
   RotateCcw,
   FileText,
   DollarSign,
   CheckCircle,
-  Clock,
   AlertCircle,
-  ChevronDown,
-  ChevronUp,
-  PieChart,
+  ArrowUpRight,
+  Users,
+  Receipt,
+  Loader2,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { formatCurrency, CURRENCY_CONFIG } from '@/lib/currency'
+import { formatCurrency } from '@/lib/currency'
 import { ProcessRefundModal } from '@/components/refunds/process-refund-modal'
 import { BulkGenerateFeesModal } from '@/components/fees/bulk-generate-fees-modal'
 
@@ -82,8 +81,6 @@ export default function PaymentsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [methodFilter, setMethodFilter] = useState('')
-  const [dateFromFilter, setDateFromFilter] = useState('')
-  const [dateToFilter, setDateToFilter] = useState('')
   const [monthFilter, setMonthFilter] = useState('')
   const [yearFilter, setYearFilter] = useState(new Date().getFullYear().toString())
   const [currentPage, setCurrentPage] = useState(1)
@@ -92,13 +89,13 @@ export default function PaymentsPage() {
   const [refundModalOpen, setRefundModalOpen] = useState(false)
   const [bulkGenerateModalOpen, setBulkGenerateModalOpen] = useState(false)
   const [feeSummary, setFeeSummary] = useState<FeeSummary | null>(null)
-  const [showFeeSummary, setShowFeeSummary] = useState(true)
   const [isLoadingSummary, setIsLoadingSummary] = useState(true)
+  const [activeTab, setActiveTab] = useState<'overview' | 'transactions'>('overview')
 
   useEffect(() => {
     fetchPayments()
     fetchFeeSummary()
-  }, [user?.center_id, currentPage, methodFilter, dateFromFilter, dateToFilter, monthFilter, yearFilter])
+  }, [user?.center_id, currentPage, methodFilter, monthFilter, yearFilter])
 
   async function fetchPayments() {
     if (!user?.center_id) return
@@ -122,20 +119,10 @@ export default function PaymentsPage() {
         .eq('center_id', user.center_id)
         .order('payment_date', { ascending: false })
 
-      // Apply filters
       if (methodFilter) {
         query = query.eq('payment_method', methodFilter)
       }
 
-      // Date range filter
-      if (dateFromFilter) {
-        query = query.gte('payment_date', `${dateFromFilter}T00:00:00`)
-      }
-      if (dateToFilter) {
-        query = query.lte('payment_date', `${dateToFilter}T23:59:59`)
-      }
-
-      // Month/Year filter
       if (monthFilter && yearFilter) {
         const startOfMonth = `${yearFilter}-${monthFilter.padStart(2, '0')}-01T00:00:00`
         const lastDay = new Date(parseInt(yearFilter), parseInt(monthFilter), 0).getDate()
@@ -143,7 +130,6 @@ export default function PaymentsPage() {
         query = query.gte('payment_date', startOfMonth).lte('payment_date', endOfMonth)
       }
 
-      // Pagination
       const from = (currentPage - 1) * ITEMS_PER_PAGE
       const to = from + ITEMS_PER_PAGE - 1
       query = query.range(from, to)
@@ -152,7 +138,6 @@ export default function PaymentsPage() {
 
       if (error) throw error
 
-      // Filter by search query on client side (student name/number)
       let filteredPayments = (data || []) as Payment[]
       if (searchQuery) {
         const search = searchQuery.toLowerCase()
@@ -166,10 +151,7 @@ export default function PaymentsPage() {
 
       setPayments(filteredPayments)
       setTotalCount(count || 0)
-
-      // Calculate total amount for filtered results
-      const total = filteredPayments.reduce((sum, p) => sum + p.amount, 0)
-      setTotalAmount(total)
+      setTotalAmount(filteredPayments.reduce((sum, p) => sum + p.amount, 0))
     } catch (error) {
       console.error('Error fetching payments:', error)
       toast.error('Failed to fetch payments')
@@ -185,7 +167,6 @@ export default function PaymentsPage() {
     const supabase = createClient()
 
     try {
-      // Fetch all fees for the center
       const { data: feesData, error: feesError } = await supabase
         .from('student_fees')
         .select('fee_type, amount_due, amount_paid, status')
@@ -193,7 +174,6 @@ export default function PaymentsPage() {
 
       if (feesError) throw feesError
 
-      // Fetch total credit balance from students
       const { data: studentsData, error: studentsError } = await supabase
         .from('students')
         .select('id, credit_balance')
@@ -202,7 +182,6 @@ export default function PaymentsPage() {
 
       if (studentsError) throw studentsError
 
-      // Calculate summary
       const summary: FeeSummary = {
         totalDue: 0,
         totalPaid: 0,
@@ -212,11 +191,7 @@ export default function PaymentsPage() {
           registration: { due: 0, paid: 0, outstanding: 0 },
           tuition: { due: 0, paid: 0, outstanding: 0 },
         },
-        byStatus: {
-          paid: 0,
-          partial: 0,
-          unpaid: 0,
-        },
+        byStatus: { paid: 0, partial: 0, unpaid: 0 },
         studentCount: studentsData?.length || 0,
       }
 
@@ -229,23 +204,16 @@ export default function PaymentsPage() {
         summary.totalPaid += paid
         summary.totalOutstanding += outstanding
 
-        // By type
         const feeType = fee.fee_type === 'registration' ? 'registration' : 'tuition'
         summary.byType[feeType].due += due
         summary.byType[feeType].paid += paid
         summary.byType[feeType].outstanding += outstanding
 
-        // By status
-        if (fee.status === 'paid') {
-          summary.byStatus.paid++
-        } else if (fee.status === 'partial') {
-          summary.byStatus.partial++
-        } else {
-          summary.byStatus.unpaid++
-        }
+        if (fee.status === 'paid') summary.byStatus.paid++
+        else if (fee.status === 'partial') summary.byStatus.partial++
+        else summary.byStatus.unpaid++
       }
 
-      // Total credit balance
       for (const student of (studentsData || []) as any[]) {
         summary.totalCredit += student.credit_balance || 0
       }
@@ -258,13 +226,11 @@ export default function PaymentsPage() {
     }
   }
 
-  // Debounced search
   useEffect(() => {
     const timer = setTimeout(() => {
       setCurrentPage(1)
       fetchPayments()
     }, 300)
-
     return () => clearTimeout(timer)
   }, [searchQuery])
 
@@ -275,535 +241,561 @@ export default function PaymentsPage() {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
+    })
+  }
+
+  const formatTime = (dateString: string) => {
+    return new Date(dateString).toLocaleTimeString('en-ZA', {
       hour: '2-digit',
       minute: '2-digit',
     })
   }
 
+  const collectionRate = feeSummary && feeSummary.totalDue > 0
+    ? ((feeSummary.totalPaid / feeSummary.totalDue) * 100).toFixed(1)
+    : '0'
+
   return (
-    <div className="p-8">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Payments</h1>
-          <p className="text-gray-500 mt-1">View and record student payments</p>
-        </div>
-        <div className="flex items-center gap-3">
-          {isCenterAdmin() && (
-            <>
-              <Link href="/dashboard/payments/outstanding">
-                <Button variant="outline" leftIcon={<AlertCircle className="w-4 h-4" />}>
-                  Outstanding Fees
-                </Button>
-              </Link>
-              <Button
-                variant="outline"
-                leftIcon={<CalendarPlus className="w-4 h-4" />}
-                onClick={() => setBulkGenerateModalOpen(true)}
-              >
-                Generate Fees
-              </Button>
-              <Link href="/dashboard/payments/refunds">
-                <Button variant="outline" leftIcon={<FileText className="w-4 h-4" />}>
-                  View Refunds
-                </Button>
-              </Link>
-              <Button
-                variant="outline"
-                leftIcon={<RotateCcw className="w-4 h-4" />}
-                onClick={() => setRefundModalOpen(true)}
-              >
-                Process Refund
-              </Button>
-            </>
-          )}
-          <Link href="/dashboard/payments/new">
-            <Button leftIcon={<Plus className="w-4 h-4" />}>
-              Record Payment
-            </Button>
-          </Link>
-        </div>
-      </div>
-
-      {/* Fee Summary Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-6 overflow-hidden">
-        <button
-          onClick={() => setShowFeeSummary(!showFeeSummary)}
-          className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-blue-100">
-              <PieChart className="w-5 h-5 text-blue-600" />
-            </div>
-            <div className="text-left">
-              <h3 className="font-semibold text-gray-900">Fee Summary</h3>
-              <p className="text-sm text-gray-500">Overview of all fees across students</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            {!isLoadingSummary && feeSummary && (
-              <div className="text-right hidden md:block">
-                <p className="text-sm text-gray-500">Outstanding</p>
-                <p className="text-lg font-bold text-red-600">{formatCurrency(feeSummary.totalOutstanding)}</p>
-              </div>
-            )}
-            {showFeeSummary ? (
-              <ChevronUp className="w-5 h-5 text-gray-400" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-gray-400" />
-            )}
-          </div>
-        </button>
-
-        {showFeeSummary && (
-          <div className="px-6 pb-6 border-t border-gray-100">
-            {isLoadingSummary ? (
-              <div className="py-8 text-center">
-                <div className="animate-pulse space-y-4">
-                  <div className="h-20 bg-gray-100 rounded-lg"></div>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="h-16 bg-gray-100 rounded-lg"></div>
-                    <div className="h-16 bg-gray-100 rounded-lg"></div>
-                    <div className="h-16 bg-gray-100 rounded-lg"></div>
-                  </div>
-                </div>
-              </div>
-            ) : feeSummary ? (
-              <div className="pt-4 space-y-6">
-                {/* Main totals */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <DollarSign className="w-4 h-4 text-gray-500" />
-                      <p className="text-sm text-gray-500">Total Due</p>
-                    </div>
-                    <p className="text-2xl font-bold text-gray-900">{formatCurrency(feeSummary.totalDue)}</p>
-                  </div>
-                  <div className="bg-green-50 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <CheckCircle className="w-4 h-4 text-green-500" />
-                      <p className="text-sm text-gray-500">Total Paid</p>
-                    </div>
-                    <p className="text-2xl font-bold text-green-600">{formatCurrency(feeSummary.totalPaid)}</p>
-                  </div>
-                  <div className="bg-red-50 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <AlertCircle className="w-4 h-4 text-red-500" />
-                      <p className="text-sm text-gray-500">Outstanding</p>
-                    </div>
-                    <p className="text-2xl font-bold text-red-600">{formatCurrency(feeSummary.totalOutstanding)}</p>
-                  </div>
-                  <div className="bg-blue-50 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <TrendingUp className="w-4 h-4 text-blue-500" />
-                      <p className="text-sm text-gray-500">Credit Balance</p>
-                    </div>
-                    <p className="text-2xl font-bold text-blue-600">{formatCurrency(feeSummary.totalCredit)}</p>
-                  </div>
-                </div>
-
-                {/* Breakdown sections */}
-                <div className="grid md:grid-cols-2 gap-6">
-                  {/* By Fee Type */}
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <h4 className="font-medium text-gray-900 mb-4">By Fee Type</h4>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between p-3 bg-white rounded-lg">
-                        <div>
-                          <p className="font-medium text-gray-900">Registration Fees</p>
-                          <p className="text-sm text-gray-500">
-                            {formatCurrency(feeSummary.byType.registration.paid)} paid of {formatCurrency(feeSummary.byType.registration.due)}
-                          </p>
-                        </div>
-                        <p className={`font-semibold ${feeSummary.byType.registration.outstanding > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                          {feeSummary.byType.registration.outstanding > 0
-                            ? `-${formatCurrency(feeSummary.byType.registration.outstanding)}`
-                            : 'Paid'}
-                        </p>
-                      </div>
-                      <div className="flex items-center justify-between p-3 bg-white rounded-lg">
-                        <div>
-                          <p className="font-medium text-gray-900">Tuition Fees</p>
-                          <p className="text-sm text-gray-500">
-                            {formatCurrency(feeSummary.byType.tuition.paid)} paid of {formatCurrency(feeSummary.byType.tuition.due)}
-                          </p>
-                        </div>
-                        <p className={`font-semibold ${feeSummary.byType.tuition.outstanding > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                          {feeSummary.byType.tuition.outstanding > 0
-                            ? `-${formatCurrency(feeSummary.byType.tuition.outstanding)}`
-                            : 'Paid'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* By Status */}
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <h4 className="font-medium text-gray-900 mb-4">Fee Records by Status</h4>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between p-3 bg-white rounded-lg">
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                          <p className="font-medium text-gray-900">Fully Paid</p>
-                        </div>
-                        <p className="font-semibold text-gray-900">{feeSummary.byStatus.paid}</p>
-                      </div>
-                      <div className="flex items-center justify-between p-3 bg-white rounded-lg">
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full bg-amber-500"></div>
-                          <p className="font-medium text-gray-900">Partially Paid</p>
-                        </div>
-                        <p className="font-semibold text-gray-900">{feeSummary.byStatus.partial}</p>
-                      </div>
-                      <div className="flex items-center justify-between p-3 bg-white rounded-lg">
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                          <p className="font-medium text-gray-900">Unpaid</p>
-                        </div>
-                        <p className="font-semibold text-gray-900">{feeSummary.byStatus.unpaid}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Quick stats */}
-                <div className="flex items-center justify-between pt-4 border-t border-gray-200 text-sm text-gray-500">
-                  <p>Active students: <span className="font-medium text-gray-900">{feeSummary.studentCount}</span></p>
-                  <p>Collection rate: <span className="font-medium text-gray-900">
-                    {feeSummary.totalDue > 0
-                      ? `${((feeSummary.totalPaid / feeSummary.totalDue) * 100).toFixed(1)}%`
-                      : 'N/A'}
-                  </span></p>
-                </div>
-              </div>
-            ) : (
-              <div className="py-8 text-center text-gray-500">
-                Unable to load fee summary
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Payment Transactions Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-green-100">
-              <TrendingUp className="w-5 h-5 text-green-600" />
-            </div>
+    <div className="min-h-screen bg-gray-50/50">
+      {/* Header Section */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="px-8 py-6">
+          <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Payments (This View)</p>
-              <p className="text-xl font-bold text-green-600">{formatCurrency(totalAmount)}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-blue-100">
-              <CreditCard className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Transactions</p>
-              <p className="text-xl font-bold text-gray-900">{totalCount}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-purple-100">
-              <Calendar className="w-5 h-5 text-purple-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Period</p>
-              <p className="text-xl font-bold text-gray-900">
-                {monthFilter
-                  ? `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][parseInt(monthFilter) - 1]} ${yearFilter}`
-                  : dateFromFilter || dateToFilter
-                    ? 'Custom Range'
-                    : 'All Time'}
+              <h1 className="text-2xl font-semibold text-gray-900">Payments</h1>
+              <p className="mt-1 text-sm text-gray-500">
+                Manage fees, payments, and financial records
               </p>
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Search */}
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search student or reference..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none text-sm"
-            />
+            <Link href="/dashboard/payments/new">
+              <Button size="lg" leftIcon={<Plus className="w-5 h-5" />}>
+                Record Payment
+              </Button>
+            </Link>
           </div>
 
-          {/* Method Filter */}
-          <Select
-            options={[
-              { value: 'cash', label: 'Cash' },
-              { value: 'bank_transfer', label: 'Bank Transfer' },
-              { value: 'card', label: 'Card' },
-              { value: 'mobile_money', label: 'Mobile Money' },
-            ]}
-            placeholder="Method"
-            value={methodFilter}
-            onChange={(e) => { setMethodFilter(e.target.value); setCurrentPage(1) }}
-            className="w-32"
-          />
-
-          {/* Month/Year Quick Filter */}
-          <div className="flex items-center gap-1 px-2 py-1 bg-purple-50 rounded-lg border border-purple-200">
-            <span className="text-xs text-purple-700 font-medium px-1">Month:</span>
-            <Select
-              options={[
-                { value: '1', label: 'Jan' }, { value: '2', label: 'Feb' }, { value: '3', label: 'Mar' },
-                { value: '4', label: 'Apr' }, { value: '5', label: 'May' }, { value: '6', label: 'Jun' },
-                { value: '7', label: 'Jul' }, { value: '8', label: 'Aug' }, { value: '9', label: 'Sep' },
-                { value: '10', label: 'Oct' }, { value: '11', label: 'Nov' }, { value: '12', label: 'Dec' },
-              ]}
-              placeholder="All"
-              value={monthFilter}
-              onChange={(e) => { setMonthFilter(e.target.value); setDateFromFilter(''); setDateToFilter(''); setCurrentPage(1) }}
-              className="w-20"
-            />
-            <Select
-              options={[
-                { value: (new Date().getFullYear() - 1).toString(), label: (new Date().getFullYear() - 1).toString() },
-                { value: new Date().getFullYear().toString(), label: new Date().getFullYear().toString() },
-                { value: (new Date().getFullYear() + 1).toString(), label: (new Date().getFullYear() + 1).toString() },
-              ]}
-              value={yearFilter}
-              onChange={(e) => { setYearFilter(e.target.value); setCurrentPage(1) }}
-              className="w-20"
-            />
-          </div>
-
-          {/* Date Range Filter */}
-          <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 rounded-lg border border-blue-200">
-            <span className="text-xs text-blue-700 font-medium px-1">From:</span>
-            <input
-              type="date"
-              value={dateFromFilter}
-              onChange={(e) => { setDateFromFilter(e.target.value); setMonthFilter(''); setCurrentPage(1) }}
-              className="px-2 py-1 border border-gray-300 rounded text-sm w-32"
-            />
-            <span className="text-xs text-blue-700 font-medium px-1">To:</span>
-            <input
-              type="date"
-              value={dateToFilter}
-              onChange={(e) => { setDateToFilter(e.target.value); setMonthFilter(''); setCurrentPage(1) }}
-              className="px-2 py-1 border border-gray-300 rounded text-sm w-32"
-            />
-          </div>
-
-          {/* Clear All */}
-          {(methodFilter || dateFromFilter || dateToFilter || monthFilter) && (
+          {/* Tabs */}
+          <div className="mt-6 flex gap-1 border-b border-gray-200 -mb-px">
             <button
-              onClick={() => {
-                setMethodFilter(''); setDateFromFilter(''); setDateToFilter(''); setMonthFilter('')
-                setCurrentPage(1)
-              }}
-              className="flex items-center gap-1 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              onClick={() => setActiveTab('overview')}
+              className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'overview'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
             >
-              <X className="w-4 h-4" />
-              Clear
+              Overview
             </button>
-          )}
-        </div>
-
-        {/* Active filters tags */}
-        {(methodFilter || dateFromFilter || dateToFilter || monthFilter) && (
-          <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-100">
-            {methodFilter && (
-              <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
-                {PAYMENT_METHODS[methodFilter]}
-                <button onClick={() => { setMethodFilter(''); setCurrentPage(1) }}><X className="w-3 h-3" /></button>
-              </span>
-            )}
-            {monthFilter && (
-              <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
-                {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][parseInt(monthFilter) - 1]} {yearFilter}
-                <button onClick={() => { setMonthFilter(''); setCurrentPage(1) }}><X className="w-3 h-3" /></button>
-              </span>
-            )}
-            {dateFromFilter && (
-              <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
-                From: {dateFromFilter}
-                <button onClick={() => { setDateFromFilter(''); setCurrentPage(1) }}><X className="w-3 h-3" /></button>
-              </span>
-            )}
-            {dateToFilter && (
-              <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
-                To: {dateToFilter}
-                <button onClick={() => { setDateToFilter(''); setCurrentPage(1) }}><X className="w-3 h-3" /></button>
-              </span>
-            )}
+            <button
+              onClick={() => setActiveTab('transactions')}
+              className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'transactions'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Transactions
+            </button>
           </div>
-        )}
+        </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        {isLoading ? (
-          <div className="p-8 text-center">
-            <div className="animate-pulse space-y-4">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-12 bg-gray-100 rounded"></div>
-              ))}
-            </div>
-          </div>
-        ) : payments.length === 0 ? (
-          <div className="p-12 text-center">
-            <CreditCard className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No payments found</h3>
-            <p className="text-gray-500 mb-4">
-              {searchQuery || methodFilter || dateFromFilter || dateToFilter || monthFilter
-                ? 'Try adjusting your filters'
-                : 'Get started by recording your first payment'}
-            </p>
-            {!searchQuery && !methodFilter && !dateFromFilter && !dateToFilter && !monthFilter && (
-              <Link href="/dashboard/payments/new">
-                <Button leftIcon={<Plus className="w-4 h-4" />}>
-                  Record Payment
-                </Button>
-              </Link>
-            )}
-          </div>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-100">
-                  <tr>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date
-                    </th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Student
-                    </th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Amount
-                    </th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Method
-                    </th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Reference
-                    </th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Recorded By
-                    </th>
-                    <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {payments.map((payment) => (
-                    <tr key={payment.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-gray-400" />
-                          <span className="text-gray-900">
-                            {formatDate(payment.payment_date)}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div>
-                          <p className="font-medium text-gray-900">
-                            {payment.student?.full_name || 'Unknown'}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {payment.student?.student_number || '-'}
-                          </p>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="font-semibold text-green-600">
-                          {formatCurrency(payment.amount)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700">
-                          {PAYMENT_METHODS[payment.payment_method || ''] || payment.payment_method || '-'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-gray-900">
-                        {payment.reference_number || '-'}
-                      </td>
-                      <td className="px-6 py-4 text-gray-500">
-                        {payment.recorded_by_user?.full_name || '-'}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-end gap-2">
-                          <Link href={`/dashboard/payments/${payment.id}`}>
-                            <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                              <Eye className="w-4 h-4" />
-                            </button>
-                          </Link>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      <div className="px-8 py-6">
+        {activeTab === 'overview' ? (
+          /* Overview Tab */
+          <div className="space-y-6">
+            {/* Quick Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Total Fees Due</p>
+                    <p className="mt-2 text-2xl font-semibold text-gray-900">
+                      {isLoadingSummary ? '...' : formatCurrency(feeSummary?.totalDue || 0)}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-gray-100 rounded-xl">
+                    <DollarSign className="w-6 h-6 text-gray-600" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Collected</p>
+                    <p className="mt-2 text-2xl font-semibold text-green-600">
+                      {isLoadingSummary ? '...' : formatCurrency(feeSummary?.totalPaid || 0)}
+                    </p>
+                    <p className="mt-1 text-xs text-gray-500">
+                      {collectionRate}% collection rate
+                    </p>
+                  </div>
+                  <div className="p-3 bg-green-100 rounded-xl">
+                    <CheckCircle className="w-6 h-6 text-green-600" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Outstanding</p>
+                    <p className="mt-2 text-2xl font-semibold text-red-600">
+                      {isLoadingSummary ? '...' : formatCurrency(feeSummary?.totalOutstanding || 0)}
+                    </p>
+                    <p className="mt-1 text-xs text-gray-500">
+                      {feeSummary?.byStatus.unpaid || 0} unpaid records
+                    </p>
+                  </div>
+                  <div className="p-3 bg-red-100 rounded-xl">
+                    <AlertCircle className="w-6 h-6 text-red-600" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Credit Balance</p>
+                    <p className="mt-2 text-2xl font-semibold text-blue-600">
+                      {isLoadingSummary ? '...' : formatCurrency(feeSummary?.totalCredit || 0)}
+                    </p>
+                    <p className="mt-1 text-xs text-gray-500">
+                      Available for allocation
+                    </p>
+                  </div>
+                  <div className="p-3 bg-blue-100 rounded-xl">
+                    <TrendingUp className="w-6 h-6 text-blue-600" />
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
-                <p className="text-sm text-gray-500">
-                  Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to{' '}
-                  {Math.min(currentPage * ITEMS_PER_PAGE, totalCount)} of {totalCount} payments
-                </p>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
+            {/* Quick Actions */}
+            {isCenterAdmin() && (
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <Link href="/dashboard/payments/outstanding" className="group">
+                    <div className="bg-white rounded-xl border border-gray-200 p-5 hover:border-red-300 hover:shadow-md transition-all">
+                      <div className="flex items-start justify-between">
+                        <div className="p-2.5 bg-red-100 rounded-lg group-hover:bg-red-200 transition-colors">
+                          <AlertCircle className="w-5 h-5 text-red-600" />
+                        </div>
+                        <ArrowUpRight className="w-4 h-4 text-gray-400 group-hover:text-red-600 transition-colors" />
+                      </div>
+                      <h3 className="mt-4 font-semibold text-gray-900">Outstanding Fees</h3>
+                      <p className="mt-1 text-sm text-gray-500">View students who owe & send statements</p>
+                      {feeSummary && feeSummary.totalOutstanding > 0 && (
+                        <p className="mt-3 text-lg font-semibold text-red-600">
+                          {formatCurrency(feeSummary.totalOutstanding)}
+                        </p>
+                      )}
+                    </div>
+                  </Link>
+
+                  <button onClick={() => setBulkGenerateModalOpen(true)} className="group text-left">
+                    <div className="bg-white rounded-xl border border-gray-200 p-5 hover:border-blue-300 hover:shadow-md transition-all h-full">
+                      <div className="flex items-start justify-between">
+                        <div className="p-2.5 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
+                          <CalendarPlus className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <ArrowUpRight className="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-colors" />
+                      </div>
+                      <h3 className="mt-4 font-semibold text-gray-900">Generate Fees</h3>
+                      <p className="mt-1 text-sm text-gray-500">Create monthly fees for all students</p>
+                    </div>
                   </button>
-                  <span className="text-sm text-gray-600">
-                    Page {currentPage} of {totalPages}
-                  </span>
-                  <button
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
-                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <ChevronRight className="w-5 h-5" />
+
+                  <Link href="/dashboard/payments/refunds" className="group">
+                    <div className="bg-white rounded-xl border border-gray-200 p-5 hover:border-purple-300 hover:shadow-md transition-all h-full">
+                      <div className="flex items-start justify-between">
+                        <div className="p-2.5 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors">
+                          <FileText className="w-5 h-5 text-purple-600" />
+                        </div>
+                        <ArrowUpRight className="w-4 h-4 text-gray-400 group-hover:text-purple-600 transition-colors" />
+                      </div>
+                      <h3 className="mt-4 font-semibold text-gray-900">View Refunds</h3>
+                      <p className="mt-1 text-sm text-gray-500">Track all processed refunds</p>
+                    </div>
+                  </Link>
+
+                  <button onClick={() => setRefundModalOpen(true)} className="group text-left">
+                    <div className="bg-white rounded-xl border border-gray-200 p-5 hover:border-amber-300 hover:shadow-md transition-all h-full">
+                      <div className="flex items-start justify-between">
+                        <div className="p-2.5 bg-amber-100 rounded-lg group-hover:bg-amber-200 transition-colors">
+                          <RotateCcw className="w-5 h-5 text-amber-600" />
+                        </div>
+                        <ArrowUpRight className="w-4 h-4 text-gray-400 group-hover:text-amber-600 transition-colors" />
+                      </div>
+                      <h3 className="mt-4 font-semibold text-gray-900">Process Refund</h3>
+                      <p className="mt-1 text-sm text-gray-500">Issue a refund to a student</p>
+                    </div>
                   </button>
                 </div>
               </div>
             )}
-          </>
+
+            {/* Fee Breakdown */}
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <h3 className="font-semibold text-gray-900 mb-4">By Fee Type</h3>
+                {isLoadingSummary ? (
+                  <div className="space-y-3">
+                    <div className="h-16 bg-gray-100 rounded-lg animate-pulse"></div>
+                    <div className="h-16 bg-gray-100 rounded-lg animate-pulse"></div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div>
+                        <p className="font-medium text-gray-900">Registration Fees</p>
+                        <p className="text-sm text-gray-500">
+                          {formatCurrency(feeSummary?.byType.registration.paid || 0)} of {formatCurrency(feeSummary?.byType.registration.due || 0)}
+                        </p>
+                      </div>
+                      <span className={`text-lg font-semibold ${(feeSummary?.byType.registration.outstanding || 0) > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                        {(feeSummary?.byType.registration.outstanding || 0) > 0
+                          ? formatCurrency(feeSummary?.byType.registration.outstanding || 0)
+                          : 'Paid'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div>
+                        <p className="font-medium text-gray-900">Tuition Fees</p>
+                        <p className="text-sm text-gray-500">
+                          {formatCurrency(feeSummary?.byType.tuition.paid || 0)} of {formatCurrency(feeSummary?.byType.tuition.due || 0)}
+                        </p>
+                      </div>
+                      <span className={`text-lg font-semibold ${(feeSummary?.byType.tuition.outstanding || 0) > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                        {(feeSummary?.byType.tuition.outstanding || 0) > 0
+                          ? formatCurrency(feeSummary?.byType.tuition.outstanding || 0)
+                          : 'Paid'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <h3 className="font-semibold text-gray-900 mb-4">Fee Status Distribution</h3>
+                {isLoadingSummary ? (
+                  <div className="space-y-3">
+                    <div className="h-12 bg-gray-100 rounded-lg animate-pulse"></div>
+                    <div className="h-12 bg-gray-100 rounded-lg animate-pulse"></div>
+                    <div className="h-12 bg-gray-100 rounded-lg animate-pulse"></div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-green-50">
+                      <div className="flex items-center gap-3">
+                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                        <span className="font-medium text-gray-900">Fully Paid</span>
+                      </div>
+                      <span className="text-lg font-semibold text-gray-900">{feeSummary?.byStatus.paid || 0}</span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-amber-50">
+                      <div className="flex items-center gap-3">
+                        <div className="w-3 h-3 rounded-full bg-amber-500"></div>
+                        <span className="font-medium text-gray-900">Partially Paid</span>
+                      </div>
+                      <span className="text-lg font-semibold text-gray-900">{feeSummary?.byStatus.partial || 0}</span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-red-50">
+                      <div className="flex items-center gap-3">
+                        <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                        <span className="font-medium text-gray-900">Unpaid</span>
+                      </div>
+                      <span className="text-lg font-semibold text-gray-900">{feeSummary?.byStatus.unpaid || 0}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Recent Transactions Preview */}
+            <div className="bg-white rounded-xl border border-gray-200">
+              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h3 className="font-semibold text-gray-900">Recent Transactions</h3>
+                <button
+                  onClick={() => setActiveTab('transactions')}
+                  className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                >
+                  View all
+                </button>
+              </div>
+              {isLoading ? (
+                <div className="p-6">
+                  <div className="space-y-3">
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="h-16 bg-gray-100 rounded-lg animate-pulse"></div>
+                    ))}
+                  </div>
+                </div>
+              ) : payments.length === 0 ? (
+                <div className="p-12 text-center">
+                  <Receipt className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500">No payments recorded yet</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-100">
+                  {payments.slice(0, 5).map((payment) => (
+                    <Link
+                      key={payment.id}
+                      href={`/dashboard/payments/${payment.id}`}
+                      className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                          <CreditCard className="w-5 h-5 text-green-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{payment.student?.full_name || 'Unknown'}</p>
+                          <p className="text-sm text-gray-500">{formatDate(payment.payment_date)} at {formatTime(payment.payment_date)}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-green-600">{formatCurrency(payment.amount)}</p>
+                        <p className="text-sm text-gray-500">{PAYMENT_METHODS[payment.payment_method || ''] || '-'}</p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          /* Transactions Tab */
+          <div className="space-y-6">
+            {/* Filters */}
+            <div className="bg-white rounded-xl border border-gray-200 p-4">
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="relative flex-1 min-w-[250px]">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search by student name, ID, or reference..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none text-sm"
+                  />
+                </div>
+
+                <Select
+                  options={[
+                    { value: 'cash', label: 'Cash' },
+                    { value: 'bank_transfer', label: 'Bank Transfer' },
+                    { value: 'card', label: 'Card' },
+                    { value: 'mobile_money', label: 'Mobile Money' },
+                  ]}
+                  placeholder="Payment Method"
+                  value={methodFilter}
+                  onChange={(e) => { setMethodFilter(e.target.value); setCurrentPage(1) }}
+                  className="w-40"
+                />
+
+                <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-1.5 border border-gray-200">
+                  <Calendar className="w-4 h-4 text-gray-400" />
+                  <Select
+                    options={[
+                      { value: '1', label: 'January' }, { value: '2', label: 'February' }, { value: '3', label: 'March' },
+                      { value: '4', label: 'April' }, { value: '5', label: 'May' }, { value: '6', label: 'June' },
+                      { value: '7', label: 'July' }, { value: '8', label: 'August' }, { value: '9', label: 'September' },
+                      { value: '10', label: 'October' }, { value: '11', label: 'November' }, { value: '12', label: 'December' },
+                    ]}
+                    placeholder="Month"
+                    value={monthFilter}
+                    onChange={(e) => { setMonthFilter(e.target.value); setCurrentPage(1) }}
+                    className="w-28 border-0 bg-transparent"
+                  />
+                  <Select
+                    options={[
+                      { value: (new Date().getFullYear() - 1).toString(), label: (new Date().getFullYear() - 1).toString() },
+                      { value: new Date().getFullYear().toString(), label: new Date().getFullYear().toString() },
+                      { value: (new Date().getFullYear() + 1).toString(), label: (new Date().getFullYear() + 1).toString() },
+                    ]}
+                    value={yearFilter}
+                    onChange={(e) => { setYearFilter(e.target.value); setCurrentPage(1) }}
+                    className="w-20 border-0 bg-transparent"
+                  />
+                </div>
+
+                {(methodFilter || monthFilter) && (
+                  <button
+                    onClick={() => { setMethodFilter(''); setMonthFilter(''); setCurrentPage(1) }}
+                    className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                    Clear filters
+                  </button>
+                )}
+              </div>
+
+              {/* Active Filters */}
+              {(methodFilter || monthFilter) && (
+                <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-100">
+                  {methodFilter && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 text-sm rounded-full">
+                      {PAYMENT_METHODS[methodFilter]}
+                      <button onClick={() => { setMethodFilter(''); setCurrentPage(1) }} className="hover:text-blue-900">
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </span>
+                  )}
+                  {monthFilter && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-50 text-purple-700 text-sm rounded-full">
+                      {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][parseInt(monthFilter) - 1]} {yearFilter}
+                      <button onClick={() => { setMonthFilter(''); setCurrentPage(1) }} className="hover:text-purple-900">
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Summary Bar */}
+            <div className="flex items-center justify-between bg-white rounded-xl border border-gray-200 px-6 py-4">
+              <div className="flex items-center gap-6">
+                <div>
+                  <p className="text-sm text-gray-500">Total Amount</p>
+                  <p className="text-xl font-semibold text-green-600">{formatCurrency(totalAmount)}</p>
+                </div>
+                <div className="w-px h-10 bg-gray-200"></div>
+                <div>
+                  <p className="text-sm text-gray-500">Transactions</p>
+                  <p className="text-xl font-semibold text-gray-900">{totalCount}</p>
+                </div>
+              </div>
+              <div className="text-sm text-gray-500">
+                {monthFilter
+                  ? `Showing ${['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][parseInt(monthFilter) - 1]} ${yearFilter}`
+                  : 'All time'}
+              </div>
+            </div>
+
+            {/* Transactions Table */}
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              {isLoading ? (
+                <div className="p-8 text-center">
+                  <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto" />
+                  <p className="mt-2 text-sm text-gray-500">Loading transactions...</p>
+                </div>
+              ) : payments.length === 0 ? (
+                <div className="p-12 text-center">
+                  <CreditCard className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No payments found</h3>
+                  <p className="text-gray-500 mb-6">
+                    {searchQuery || methodFilter || monthFilter
+                      ? 'Try adjusting your filters'
+                      : 'Get started by recording your first payment'}
+                  </p>
+                  {!searchQuery && !methodFilter && !monthFilter && (
+                    <Link href="/dashboard/payments/new">
+                      <Button leftIcon={<Plus className="w-4 h-4" />}>
+                        Record Payment
+                      </Button>
+                    </Link>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-gray-50 border-b border-gray-200">
+                        <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
+                        <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Student</th>
+                        <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Amount</th>
+                        <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Method</th>
+                        <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Reference</th>
+                        <th className="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {payments.map((payment) => (
+                        <tr key={payment.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-6 py-4">
+                            <div>
+                              <p className="font-medium text-gray-900">{formatDate(payment.payment_date)}</p>
+                              <p className="text-sm text-gray-500">{formatTime(payment.payment_date)}</p>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div>
+                              <p className="font-medium text-gray-900">{payment.student?.full_name || 'Unknown'}</p>
+                              <p className="text-sm text-gray-500">{payment.student?.student_number || '-'}</p>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="text-lg font-semibold text-green-600">
+                              {formatCurrency(payment.amount)}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="inline-flex px-2.5 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">
+                              {PAYMENT_METHODS[payment.payment_method || ''] || '-'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-gray-600">
+                            {payment.reference_number || '-'}
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <Link href={`/dashboard/payments/${payment.id}`}>
+                              <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                                <Eye className="w-4 h-4" />
+                              </button>
+                            </Link>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50">
+                      <p className="text-sm text-gray-600">
+                        Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, totalCount)} of {totalCount}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                          disabled={currentPage === 1}
+                          className="p-2 text-gray-500 hover:text-gray-700 hover:bg-white rounded-lg border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <span className="px-3 py-1 text-sm font-medium text-gray-700">
+                          {currentPage} / {totalPages}
+                        </span>
+                        <button
+                          onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                          disabled={currentPage === totalPages}
+                          className="p-2 text-gray-500 hover:text-gray-700 hover:bg-white rounded-lg border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
         )}
       </div>
 
-      {/* Refund Modal */}
+      {/* Modals */}
       <ProcessRefundModal
         isOpen={refundModalOpen}
         onClose={() => setRefundModalOpen(false)}
-        onSuccess={() => {
-          fetchPayments()
-        }}
+        onSuccess={() => fetchPayments()}
       />
 
-      {/* Bulk Generate Fees Modal */}
       <BulkGenerateFeesModal
         isOpen={bulkGenerateModalOpen}
         onClose={() => setBulkGenerateModalOpen(false)}
-        onSuccess={() => {
-          // Optionally refresh something here
-        }}
+        onSuccess={() => fetchFeeSummary()}
       />
     </div>
   )
