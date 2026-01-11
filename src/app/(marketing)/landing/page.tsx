@@ -761,35 +761,28 @@ export default function LandingPage() {
               <span className="text-sm text-gray-600">Powered by</span>
               <span className="text-xl font-bold" style={{ color: '#635BFF' }}>stripe</span>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               {/* Mastercard */}
-              <svg className="h-8" viewBox="0 0 40 25" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12.5" r="10" fill="#EB001B"/>
-                <circle cx="28" cy="12.5" r="10" fill="#F79E1B"/>
-                <path d="M20 5.3a10 10 0 010 14.4 10 10 0 000-14.4z" fill="#FF5F00"/>
-              </svg>
-              {/* Visa */}
-              <svg className="h-8" viewBox="0 0 50 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M21.5 1l-3.3 14h-2.7l3.3-14h2.7zm13.9 9l1.4-4 .8 4h-2.2zm3 5h2.5l-2.2-14h-2.3c-.5 0-1 .3-1.2.8l-4.2 13.2h2.9l.6-1.6h3.6l.3 1.6zm-7.2-4.6c0-3.7-5.1-3.9-5.1-5.5 0-.5.5-1 1.6-1.1.5 0 2 0 3.6.9l.6-3c-.9-.3-2-.6-3.4-.6-3.6 0-6.1 1.9-6.1 4.6 0 2 1.8 3.1 3.2 3.8 1.4.7 1.9 1.1 1.9 1.7 0 .9-1.1 1.3-2.2 1.4-1.8 0-2.9-.5-3.7-.9l-.7 3c.8.4 2.4.7 4 .7 3.8 0 6.3-1.9 6.3-4.8zm-15-9.4l-5.6 14h-3l-2.8-11.2c-.2-.6-.3-.9-.8-1.1-.9-.5-2.3-.9-3.5-1.2l.1-.5h4.8c.6 0 1.2.4 1.3 1.1l1.2 6.3 3-7.4h2.9z" fill="#1A1F71"/>
-              </svg>
-              {/* Apple Pay */}
-              <div className="h-8 px-2 bg-black rounded flex items-center justify-center">
-                <svg className="h-5" viewBox="0 0 43 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M7.8 2.4c-.5.6-1.3 1-2 1-.1-.8.3-1.6.7-2.2.5-.6 1.3-1 2-1.1.1.8-.2 1.6-.7 2.3zm.7 1.2c-1.1-.1-2.1.6-2.6.6s-1.4-.6-2.3-.6c-1.2 0-2.3.7-2.9 1.8-1.2 2.1-.3 5.3.9 7 .6.9 1.3 1.8 2.2 1.8.9 0 1.2-.6 2.3-.6 1.1 0 1.4.6 2.3.6.9 0 1.5-.9 2.1-1.8.7-1 .9-1.9.9-2 0 0-1.8-.7-1.8-2.7 0-1.7 1.4-2.5 1.5-2.6-.8-1.2-2.1-1.4-2.6-1.5z" fill="white"/>
-                  <path d="M18.3 1.1c2.7 0 4.6 1.9 4.6 4.6 0 2.7-1.9 4.6-4.7 4.6h-3v4.8h-2.2V1.1h5.3zm-3.1 7.4h2.5c1.9 0 3-1 3-2.8 0-1.8-1.1-2.8-3-2.8h-2.5v5.6zm9 4.3c0-1.8 1.4-2.9 3.8-3l2.8-.2v-.8c0-1.1-.7-1.8-2-1.8-1.1 0-1.8.6-2 1.4h-2c.1-1.8 1.7-3.2 4.1-3.2 2.4 0 4 1.3 4 3.4v7.1h-2v-1.7h-.1c-.6 1.1-1.8 1.8-3.1 1.8-2 0-3.4-1.2-3.4-3zm6.6-.9v-.8l-2.5.2c-1.3.1-2 .6-2 1.5 0 .9.8 1.5 1.9 1.5 1.5 0 2.6-1 2.6-2.4zm4.2 5.7v-1.7c.2 0 .5.1.9.1 1.3 0 2-.5 2.4-1.9l.3-.8-3.9-10.8h2.3l2.7 8.7h.1l2.7-8.7h2.3l-4.1 11.5c-.9 2.6-2 3.5-4.3 3.5-.3 0-.9 0-1.3-.1z" fill="white"/>
+              <div className="h-8 w-12 flex items-center justify-center">
+                <svg viewBox="0 0 48 30" className="h-7 w-auto" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="15" cy="15" r="13" fill="#EB001B"/>
+                  <circle cx="33" cy="15" r="13" fill="#F79E1B"/>
+                  <path d="M24 5.5a13 13 0 010 19 13 13 0 000-19z" fill="#FF5F00"/>
                 </svg>
               </div>
-              {/* Google Pay */}
-              <div className="h-8 px-2 bg-white border border-gray-200 rounded flex items-center justify-center">
-                <svg className="h-5" viewBox="0 0 42 17" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M19.5 8.3v5h-1.6V1.5h4.2c1 0 1.9.4 2.6 1 .7.7 1.1 1.5 1.1 2.5s-.4 1.8-1.1 2.5c-.7.7-1.6 1-2.6 1h-2.6v-.2zm0-5.3v3.9h2.6c.6 0 1.2-.2 1.6-.7.4-.4.7-1 .7-1.6 0-.6-.2-1.1-.7-1.6-.4-.5-1-.7-1.6-.7h-2.6z" fill="#5F6368"/>
-                  <path d="M30.5 5.1c1.2 0 2.1.3 2.8 1 .7.7 1 1.6 1 2.8v4.4h-1.5v-1h-.1c-.6 1-.5 1.2-2 1.2-.7 0-1.4-.2-1.9-.6-.5-.4-.8-1-.8-1.7 0-.7.3-1.3.8-1.7.6-.4 1.3-.6 2.2-.6.8 0 1.4.1 1.9.4v-.3c0-.5-.2-1-.6-1.3-.4-.4-.9-.5-1.4-.5-.8 0-1.5.3-1.9 1l-1.4-.9c.6-.9 1.6-1.3 2.9-1.3v.1zm-1.7 6c0 .4.2.7.5.9.3.2.7.4 1.1.4.6 0 1.1-.2 1.6-.7.4-.4.7-.9.7-1.5-.4-.3-.9-.5-1.7-.5-.6 0-1.1.1-1.5.4-.5.3-.7.6-.7 1z" fill="#5F6368"/>
-                  <path d="M42.1 5.4l-5.3 12.1h-1.6l2-4.3-3.5-7.8h1.7l2.5 6h.1l2.5-6h1.6z" fill="#5F6368"/>
-                  <path d="M13.5 7.2c0-.5 0-.9-.1-1.4H6.9v2.6h3.7c-.2.9-.7 1.7-1.4 2.2v1.8h2.3c1.3-1.2 2.1-3 2.1-5.2z" fill="#4285F4"/>
-                  <path d="M6.9 14.1c1.9 0 3.5-.6 4.7-1.7l-2.3-1.8c-.6.4-1.4.7-2.4.7-1.8 0-3.4-1.2-3.9-2.9H.6v1.9c1.2 2.3 3.5 3.8 6.3 3.8z" fill="#34A853"/>
-                  <path d="M3 8.4c-.1-.4-.2-.9-.2-1.4 0-.5.1-.9.2-1.4V3.8H.6C.2 4.6 0 5.5 0 6.5s.2 1.9.6 2.8L3 7.5v.9z" fill="#FBBC04"/>
-                  <path d="M6.9 2.6c1 0 1.9.4 2.7 1.1l2-2C10.4.7 8.8 0 6.9 0 4.1 0 1.8 1.5.6 3.8l2.4 1.9c.5-1.7 2.1-3 3.9-3z" fill="#EA4335"/>
+              {/* Visa */}
+              <div className="h-8 w-12 flex items-center justify-center">
+                <svg viewBox="0 0 48 16" className="h-5 w-auto" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M19.5.5L16 15.5h-3.5L16 .5h3.5zm15 10l1.5-4.5 1 4.5h-2.5zm3.5 5h3l-2.5-15h-3c-.6 0-1.1.3-1.3.8L29.5 15.5h3.5l.7-2h4.3v2zm-8-5c0-4-5.5-4.2-5.5-6 0-.5.5-1 1.7-1.2.6 0 2.1 0 3.9 1l.7-3.3c-1-.4-2.2-.7-3.7-.7-4 0-6.7 2.1-6.7 5 0 2.2 2 3.4 3.5 4.2 1.5.7 2 1.2 2 1.8 0 1-1.2 1.4-2.3 1.5-2 0-3.2-.5-4-.9l-.8 3.3c.9.4 2.6.8 4.4.8 4.2 0 6.9-2.1 6.9-5.2v-.4zM13.5.5L7 15.5H3.3L.1 3.3c-.2-.6-.3-1-.9-1.2-1-.5-2.5-1-3.8-1.3l.1-.3h5.3c.7 0 1.3.5 1.4 1.2l1.3 7 3.5-8.2h3.5z" fill="#1A1F71"/>
                 </svg>
+              </div>
+              {/* Apple Pay */}
+              <div className="h-8 px-3 bg-black rounded-md flex items-center justify-center">
+                <span className="text-white text-sm font-medium">Apple Pay</span>
+              </div>
+              {/* Google Pay */}
+              <div className="h-8 px-3 bg-white border border-gray-300 rounded-md flex items-center justify-center">
+                <span className="text-gray-700 text-sm font-medium">Google Pay</span>
               </div>
             </div>
           </div>
