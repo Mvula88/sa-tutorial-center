@@ -489,7 +489,7 @@ export default function ReportCardsPage() {
         }
 
         // Create report card
-        const { data: newCard, error: cardError } = await supabase
+        const { data: newCardData, error: cardError } = await supabase
           .from('student_report_cards')
           .insert({
             center_id: user.center_id,
@@ -508,13 +508,15 @@ export default function ReportCardsPage() {
           .select('id')
           .single()
 
-        if (cardError) {
+        if (cardError || !newCardData) {
           console.error('Error creating report card:', cardError)
           continue
         }
 
+        const newCard = newCardData as { id: string }
+
         // Create subject entries
-        if (newCard && subjects) {
+        if (subjects) {
           for (const subject of subjects as { id: string }[]) {
             const subjectTotal = subjectTotals[subject.id]
             if (subjectTotal) {
