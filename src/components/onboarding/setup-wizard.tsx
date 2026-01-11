@@ -5,17 +5,16 @@ import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/auth-store'
 import { useOnboardingStore } from '@/stores/onboarding-store'
 import {
-  Calendar,
-  BookOpen,
-  CheckCircle,
+  Check,
   ChevronRight,
   ChevronLeft,
   Loader2,
   Pencil,
   Plus,
   Trash2,
-  GraduationCap,
-  Sparkles,
+  Settings,
+  BookOpen,
+  ArrowRight,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -27,18 +26,18 @@ interface Subject {
 }
 
 const MONTHS = [
-  { value: 0, label: 'January', short: 'Jan' },
-  { value: 1, label: 'February', short: 'Feb' },
-  { value: 2, label: 'March', short: 'Mar' },
-  { value: 3, label: 'April', short: 'Apr' },
-  { value: 4, label: 'May', short: 'May' },
-  { value: 5, label: 'June', short: 'Jun' },
-  { value: 6, label: 'July', short: 'Jul' },
-  { value: 7, label: 'August', short: 'Aug' },
-  { value: 8, label: 'September', short: 'Sep' },
-  { value: 9, label: 'October', short: 'Oct' },
-  { value: 10, label: 'November', short: 'Nov' },
-  { value: 11, label: 'December', short: 'Dec' },
+  { value: 0, short: 'Jan' },
+  { value: 1, short: 'Feb' },
+  { value: 2, short: 'Mar' },
+  { value: 3, short: 'Apr' },
+  { value: 4, short: 'May' },
+  { value: 5, short: 'Jun' },
+  { value: 6, short: 'Jul' },
+  { value: 7, short: 'Aug' },
+  { value: 8, short: 'Sep' },
+  { value: 9, short: 'Oct' },
+  { value: 10, short: 'Nov' },
+  { value: 11, short: 'Dec' },
 ]
 
 const DEFAULT_SUBJECTS = [
@@ -80,25 +79,21 @@ export function SetupWizard() {
       }
 
       try {
-        // Check if center has payment_months set (null = not configured)
         const { data: center } = await supabase
           .from('tutorial_centers')
           .select('payment_months, default_registration_fee, initial_setup_completed')
           .eq('id', user.center_id)
           .single<{ payment_months: number[] | null; default_registration_fee: number | null; initial_setup_completed: boolean | null }>()
 
-        // Check if there are any subjects
         const { count: subjectCount } = await supabase
           .from('subjects')
           .select('*', { count: 'exact', head: true })
           .eq('center_id', user.center_id)
 
-        // Show wizard if initial setup not completed
         if (center && !center.initial_setup_completed) {
           setPaymentMonths(center.payment_months || [1, 2, 3, 4, 5, 6, 7, 8, 9])
           setRegistrationFee(center.default_registration_fee || 0)
 
-          // Load existing subjects or prepare defaults
           if (subjectCount && subjectCount > 0) {
             await loadSubjects()
           }
@@ -158,9 +153,8 @@ export function SetupWizard() {
 
       if (error) throw error
 
-      toast.success('Academic year settings saved!')
-      setCurrentStep(1) // Move to subjects step
-      // Scroll content to top
+      toast.success('Settings saved')
+      setCurrentStep(1)
       setTimeout(() => {
         contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
       }, 100)
@@ -189,7 +183,7 @@ export function SetupWizard() {
       if (error) throw error
 
       await loadSubjects()
-      toast.success('Default subjects created!')
+      toast.success('Subjects created')
     } catch (error) {
       console.error('Error creating subjects:', error)
       toast.error('Failed to create subjects')
@@ -215,7 +209,7 @@ export function SetupWizard() {
       await loadSubjects()
       setNewSubject({ name: '', monthly_fee: 300 })
       setShowAddSubject(false)
-      toast.success('Subject added!')
+      toast.success('Subject added')
     } catch (error) {
       console.error('Error adding subject:', error)
       toast.error('Failed to add subject')
@@ -242,7 +236,7 @@ export function SetupWizard() {
 
       await loadSubjects()
       setEditingSubject(null)
-      toast.success('Subject updated!')
+      toast.success('Subject updated')
     } catch (error) {
       console.error('Error updating subject:', error)
       toast.error('Failed to update subject')
@@ -252,7 +246,7 @@ export function SetupWizard() {
   }
 
   async function handleDeleteSubject(id: string) {
-    if (!confirm('Are you sure you want to delete this subject?')) return
+    if (!confirm('Delete this subject?')) return
 
     setIsLoading(true)
     try {
@@ -261,7 +255,7 @@ export function SetupWizard() {
       if (error) throw error
 
       await loadSubjects()
-      toast.success('Subject deleted!')
+      toast.success('Subject deleted')
     } catch (error) {
       console.error('Error deleting subject:', error)
       toast.error('Failed to delete subject')
@@ -274,7 +268,7 @@ export function SetupWizard() {
     if (!user?.center_id) return
 
     if (subjects.length === 0) {
-      toast.error('Please add at least one subject before continuing')
+      toast.error('Add at least one subject to continue')
       return
     }
 
@@ -290,12 +284,10 @@ export function SetupWizard() {
 
       if (error) throw error
 
-      // Mark checklist items as complete
       completeChecklistItem('add-subject')
-
       await fetchUser()
       setIsOpen(false)
-      toast.success('Setup complete! You can now start adding students.')
+      toast.success('Setup complete')
     } catch (error) {
       console.error('Error completing setup:', error)
       toast.error('Failed to complete setup')
@@ -306,104 +298,72 @@ export function SetupWizard() {
 
   if (isCheckingSetup || !isOpen) return null
 
-  const steps = [
-    { title: 'Academic Year', icon: Calendar },
-    { title: 'Subjects', icon: BookOpen },
-  ]
-
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/80 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white">
+        <div className="px-6 pt-6 pb-4">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-              <GraduationCap className="w-6 h-6" />
+            <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+              {currentStep === 0 ? (
+                <Settings className="w-5 h-5 text-blue-600" />
+              ) : (
+                <BookOpen className="w-5 h-5 text-blue-600" />
+              )}
             </div>
             <div>
-              <h2 className="text-xl font-bold">Welcome to Your Tutorial Centre!</h2>
-              <p className="text-blue-100 text-sm">Let&apos;s set up a few things before you start</p>
+              <h2 className="text-lg font-semibold text-gray-900 tracking-tight">
+                {currentStep === 0 ? 'Configure fees' : 'Add subjects'}
+              </h2>
+              <p className="text-gray-500 text-sm">
+                Step {currentStep + 1} of 2
+              </p>
             </div>
           </div>
 
-          {/* Progress Steps */}
-          <div className="flex items-center gap-2">
-            {steps.map((step, index) => {
-              const Icon = step.icon
-              const isActive = currentStep === index
-              const isComplete = currentStep > index
-
-              return (
-                <div key={index} className="flex items-center">
-                  <div
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-colors ${
-                      isActive
-                        ? 'bg-white text-blue-600'
-                        : isComplete
-                        ? 'bg-white/30 text-white'
-                        : 'bg-white/10 text-white/60'
-                    }`}
-                  >
-                    {isComplete ? (
-                      <CheckCircle className="w-4 h-4" />
-                    ) : (
-                      <Icon className="w-4 h-4" />
-                    )}
-                    <span className="text-sm font-medium">{step.title}</span>
-                  </div>
-                  {index < steps.length - 1 && (
-                    <ChevronRight className="w-4 h-4 mx-2 text-white/40" />
-                  )}
-                </div>
-              )
-            })}
+          {/* Progress */}
+          <div className="flex gap-2">
+            <div className={`h-1 flex-1 rounded-full ${currentStep >= 0 ? 'bg-blue-600' : 'bg-gray-200'}`} />
+            <div className={`h-1 flex-1 rounded-full ${currentStep >= 1 ? 'bg-blue-600' : 'bg-gray-200'}`} />
           </div>
         </div>
 
         {/* Content */}
-        <div ref={contentRef} className="flex-1 overflow-y-auto p-6">
+        <div ref={contentRef} className="flex-1 overflow-y-auto px-6 pb-4">
           {/* Step 1: Academic Year */}
           {currentStep === 0 && (
             <div className="space-y-5">
+              {/* Registration Fee */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                  Academic Year & Fees
-                </h3>
-                <p className="text-gray-500 text-sm">
-                  Set up payment months and registration fee for your centre.
-                </p>
-              </div>
-
-              {/* Two Column Layout for compact view */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Registration Fee - Now First and Prominent */}
-                <div className="sm:col-span-2 bg-gray-50 rounded-xl p-4 border border-gray-200">
-                  <label className="block text-sm font-semibold text-gray-800 mb-2">
-                    Registration Fee
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-500 font-medium">R</span>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Registration fee
+                </label>
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                  <div className="flex items-center gap-3">
+                    <span className="text-gray-400 text-lg">R</span>
                     <input
                       type="number"
                       value={registrationFee}
                       onChange={(e) => setRegistrationFee(parseFloat(e.target.value) || 0)}
-                      className="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg font-medium"
+                      className="flex-1 bg-transparent text-2xl font-semibold text-gray-900 focus:outline-none"
                       placeholder="0"
                     />
                   </div>
                   <p className="text-xs text-gray-500 mt-2">
-                    One-time fee charged when enrolling new students
+                    One-time fee for new students
                   </p>
                 </div>
               </div>
 
               {/* Month Selection */}
               <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-3">
-                  Payment Months
-                  <span className="font-normal text-gray-500 ml-2">({paymentMonths.length} selected)</span>
-                </label>
-                <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="text-sm font-medium text-gray-700">
+                    Payment months
+                  </label>
+                  <span className="text-xs text-gray-500">{paymentMonths.length} selected</span>
+                </div>
+                <div className="grid grid-cols-6 gap-1.5">
                   {MONTHS.map((month) => {
                     const isSelected = paymentMonths.includes(month.value)
                     return (
@@ -411,70 +371,56 @@ export function SetupWizard() {
                         key={month.value}
                         type="button"
                         onClick={() => togglePaymentMonth(month.value)}
-                        className={`relative py-2.5 px-2 rounded-lg border transition-all text-center ${
+                        className={`py-2 rounded-lg text-sm font-medium transition-all ${
                           isSelected
-                            ? 'border-blue-500 bg-blue-600 text-white font-medium shadow-sm'
-                            : 'border-gray-200 hover:border-gray-300 text-gray-600 bg-white'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
                       >
-                        <span className="text-sm">{month.short}</span>
+                        {month.short}
                       </button>
                     )
                   })}
                 </div>
               </div>
 
-              {/* Fee Summary */}
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
-                <div className="flex items-center gap-2 mb-2">
-                  <Sparkles className="w-4 h-4 text-blue-600" />
-                  <span className="text-sm font-semibold text-blue-900">Fee Preview</span>
+              {/* Fee Preview */}
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-sm text-gray-600">Example yearly fee</span>
+                  <div>
+                    <span className="text-xl font-bold text-gray-900">
+                      R{(300 * paymentMonths.length).toLocaleString()}
+                    </span>
+                    <span className="text-gray-500 text-sm">/year</span>
+                  </div>
                 </div>
-                <p className="text-sm text-blue-800">
-                  For a subject at <span className="font-semibold">R300/month</span>:
-                  <span className="font-bold text-blue-900 ml-1">
-                    R{(300 * paymentMonths.length).toLocaleString()}/year
-                  </span>
+                <p className="text-xs text-gray-500 mt-1">
+                  For a subject at R300/month
                 </p>
-                {registrationFee > 0 && (
-                  <p className="text-sm text-blue-800 mt-1">
-                    + Registration fee: <span className="font-bold text-blue-900">R{registrationFee.toLocaleString()}</span>
-                  </p>
-                )}
               </div>
             </div>
           )}
 
           {/* Step 2: Subjects */}
           {currentStep === 1 && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Set Up Your Subjects
-                </h3>
-                <p className="text-gray-600 text-sm">
-                  Add the subjects you offer and set their monthly fees. You can always add more later.
-                </p>
-              </div>
-
-              {/* Quick Start - Create Default Subjects */}
+            <div className="space-y-4">
+              {/* Quick Start */}
               {subjects.length === 0 && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                  <h4 className="font-medium text-amber-900 mb-2">Quick Start</h4>
-                  <p className="text-sm text-amber-700 mb-3">
-                    Click below to create common subjects, then edit their prices to match your rates.
+                <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                  <p className="text-sm text-blue-800 mb-3">
+                    Start with common subjects and adjust prices later.
                   </p>
                   <button
                     onClick={handleCreateDefaultSubjects}
                     disabled={isLoading}
-                    className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                    className="w-full py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {isLoading ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
-                      <Sparkles className="w-4 h-4" />
+                      'Add common subjects'
                     )}
-                    Create Default Subjects
                   </button>
                 </div>
               )}
@@ -485,20 +431,20 @@ export function SetupWizard() {
                   {subjects.map((subject) => (
                     <div
                       key={subject.id}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-xl"
                     >
                       {editingSubject?.id === subject.id ? (
-                        <div className="flex-1 flex items-center gap-3">
+                        <div className="flex-1 flex items-center gap-2">
                           <input
                             type="text"
                             value={editingSubject.name}
                             onChange={(e) =>
                               setEditingSubject({ ...editingSubject, name: e.target.value })
                             }
-                            className="flex-1 px-3 py-2 rounded-lg border border-gray-300 text-sm"
+                            className="flex-1 px-3 py-1.5 rounded-lg border border-gray-300 text-sm"
                           />
-                          <div className="flex items-center gap-1">
-                            <span className="text-gray-500 text-sm">R</span>
+                          <div className="flex items-center">
+                            <span className="text-gray-400 text-sm mr-1">R</span>
                             <input
                               type="number"
                               value={editingSubject.monthly_fee}
@@ -508,44 +454,41 @@ export function SetupWizard() {
                                   monthly_fee: parseFloat(e.target.value) || 0,
                                 })
                               }
-                              className="w-24 px-3 py-2 rounded-lg border border-gray-300 text-sm"
+                              className="w-20 px-2 py-1.5 rounded-lg border border-gray-300 text-sm"
                             />
                           </div>
                           <button
                             onClick={handleUpdateSubject}
                             disabled={isLoading}
-                            className="px-3 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700"
+                            className="p-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                           >
-                            Save
+                            <Check className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => setEditingSubject(null)}
-                            className="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-300"
+                            className="p-1.5 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300"
                           >
-                            Cancel
+                            <ChevronLeft className="w-4 h-4" />
                           </button>
                         </div>
                       ) : (
                         <>
                           <div>
-                            <p className="font-medium text-gray-900">{subject.name}</p>
-                            <p className="text-sm text-gray-500">
-                              R {subject.monthly_fee.toLocaleString()}/month
-                              <span className="text-gray-400 ml-2">
-                                = R {(subject.monthly_fee * paymentMonths.length).toLocaleString()}/year
-                              </span>
+                            <p className="font-medium text-gray-900 text-sm">{subject.name}</p>
+                            <p className="text-xs text-gray-500">
+                              R{subject.monthly_fee}/mo · R{(subject.monthly_fee * paymentMonths.length).toLocaleString()}/yr
                             </p>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1">
                             <button
                               onClick={() => setEditingSubject(subject)}
-                              className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
+                              className="p-2 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-white"
                             >
                               <Pencil className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleDeleteSubject(subject.id)}
-                              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                              className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-white"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -559,30 +502,31 @@ export function SetupWizard() {
 
               {/* Add Subject */}
               {showAddSubject ? (
-                <div className="p-4 border border-dashed border-gray-300 rounded-lg">
-                  <div className="flex items-center gap-3">
+                <div className="p-3 bg-gray-50 rounded-xl">
+                  <div className="flex items-center gap-2">
                     <input
                       type="text"
                       value={newSubject.name}
                       onChange={(e) => setNewSubject({ ...newSubject, name: e.target.value })}
                       placeholder="Subject name"
                       className="flex-1 px-3 py-2 rounded-lg border border-gray-300 text-sm"
+                      autoFocus
                     />
-                    <div className="flex items-center gap-1">
-                      <span className="text-gray-500 text-sm">R</span>
+                    <div className="flex items-center">
+                      <span className="text-gray-400 text-sm mr-1">R</span>
                       <input
                         type="number"
                         value={newSubject.monthly_fee}
                         onChange={(e) =>
                           setNewSubject({ ...newSubject, monthly_fee: parseFloat(e.target.value) || 0 })
                         }
-                        className="w-24 px-3 py-2 rounded-lg border border-gray-300 text-sm"
+                        className="w-20 px-2 py-2 rounded-lg border border-gray-300 text-sm"
                       />
                     </div>
                     <button
                       onClick={handleAddSubject}
                       disabled={isLoading || !newSubject.name.trim()}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50"
+                      className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50"
                     >
                       Add
                     </button>
@@ -591,7 +535,7 @@ export function SetupWizard() {
                         setShowAddSubject(false)
                         setNewSubject({ name: '', monthly_fee: 300 })
                       }}
-                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-300"
+                      className="px-3 py-2 text-gray-600 hover:text-gray-900 text-sm"
                     >
                       Cancel
                     </button>
@@ -600,10 +544,10 @@ export function SetupWizard() {
               ) : (
                 <button
                   onClick={() => setShowAddSubject(true)}
-                  className="w-full p-3 border border-dashed border-gray-300 rounded-lg text-gray-500 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
+                  className="w-full p-3 border border-dashed border-gray-300 rounded-xl text-gray-500 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50/50 transition-colors flex items-center justify-center gap-2 text-sm"
                 >
                   <Plus className="w-4 h-4" />
-                  Add Subject
+                  Add subject
                 </button>
               )}
             </div>
@@ -611,7 +555,7 @@ export function SetupWizard() {
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-gray-200 bg-gray-50">
+        <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50">
           <div className="flex items-center justify-between">
             {currentStep > 0 ? (
               <button
@@ -621,7 +565,7 @@ export function SetupWizard() {
                     contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
                   }, 100)
                 }}
-                className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900"
+                className="flex items-center gap-1 px-3 py-2 text-gray-600 hover:text-gray-900 text-sm"
               >
                 <ChevronLeft className="w-4 h-4" />
                 Back
@@ -634,14 +578,14 @@ export function SetupWizard() {
               <button
                 onClick={handleSaveAcademicYear}
                 disabled={isLoading || paymentMonths.length === 0}
-                className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {isLoading ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
                   <>
                     Continue
-                    <ChevronRight className="w-4 h-4" />
+                    <ArrowRight className="w-4 h-4" />
                   </>
                 )}
               </button>
@@ -649,14 +593,14 @@ export function SetupWizard() {
               <button
                 onClick={handleCompleteSetup}
                 disabled={isLoading || subjects.length === 0}
-                className="flex items-center gap-2 px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {isLoading ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
                   <>
-                    <CheckCircle className="w-4 h-4" />
-                    Complete Setup
+                    Complete setup
+                    <Check className="w-4 h-4" />
                   </>
                 )}
               </button>
