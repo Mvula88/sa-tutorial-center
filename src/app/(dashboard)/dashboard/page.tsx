@@ -20,14 +20,38 @@ import {
   FileText,
   Settings,
   ChevronRight,
+  BarChart3,
 } from 'lucide-react'
 import type { DashboardStats } from '@/types'
 import { formatCurrency } from '@/lib/currency'
 import { OnboardingChecklist } from '@/components/onboarding'
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from 'recharts'
+
+interface MonthlyPayment {
+  month: string
+  amount: number
+  count: number
+}
+
+const COLORS = ['#3B82F6', '#EC4899', '#8B5CF6', '#10B981']
+const FEE_COLORS = ['#22C55E', '#F59E0B', '#EF4444']
 
 export default function DashboardPage() {
   const { user } = useAuthStore()
   const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [monthlyPayments, setMonthlyPayments] = useState<MonthlyPayment[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -109,6 +133,35 @@ export default function DashboardPage() {
           amount: p.amount,
           payment_date: p.payment_date,
         }))
+
+        // Fetch monthly payment totals for the current year
+        const currentYear = new Date().getFullYear()
+        const { data: allPayments } = await supabase
+          .from('payments')
+          .select('amount, payment_date')
+          .eq('center_id', user.center_id)
+          .gte('payment_date', `${currentYear}-01-01`)
+          .lte('payment_date', `${currentYear}-12-31`)
+
+        // Group payments by month
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        const monthlyData: MonthlyPayment[] = monthNames.map((month, index) => ({
+          month,
+          amount: 0,
+          count: 0,
+        }))
+
+        if (allPayments) {
+          allPayments.forEach((payment: { amount: number; payment_date: string }) => {
+            const monthIndex = new Date(payment.payment_date).getMonth()
+            monthlyData[monthIndex].amount += payment.amount
+            monthlyData[monthIndex].count += 1
+          })
+        }
+
+        // Only show months up to current month
+        const currentMonth = new Date().getMonth()
+        setMonthlyPayments(monthlyData.slice(0, currentMonth + 1))
 
         setStats({
           totalStudents: students.length,
@@ -324,6 +377,39 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Payment Trend Chart */}
+      {monthlyPayments.length > 0 && (
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Payment Collection Trend</h2>
+              <p className="text-sm text-gray-500">{new Date().getFullYear()} monthly collection</p>
+            </div>
+            <div className="p-2 bg-blue-50 rounded-lg">
+              <BarChart3 className="w-5 h-5 text-blue-600" />
+            </div>
+          </div>
+          <div className="h-[280px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={monthlyPayments} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="#9CA3AF" />
+                <YAxis
+                  tickFormatter={(value) => `R${(value / 1000).toFixed(0)}k`}
+                  tick={{ fontSize: 12 }}
+                  stroke="#9CA3AF"
+                />
+                <Tooltip
+                  formatter={(value) => [formatCurrency(Number(value) || 0), 'Amount']}
+                  contentStyle={{ borderRadius: '8px', border: '1px solid #E5E7EB' }}
+                />
+                <Bar dataKey="amount" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Payments */}
@@ -364,66 +450,109 @@ export default function DashboardPage() {
 
         {/* Right Column */}
         <div className="space-y-6">
-          {/* Student Demographics */}
+          {/* Student Demographics Chart */}
           <div className="bg-white rounded-xl border border-gray-200 p-5">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Student Demographics</h2>
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between mb-1.5">
-                  <span className="text-sm font-medium text-gray-600">Male</span>
-                  <span className="text-sm font-semibold text-gray-900">{stats?.studentsByGender.male || 0}</span>
-                </div>
-                <div className="w-full bg-gray-100 rounded-full h-2">
-                  <div
-                    className="bg-blue-500 h-2 rounded-full transition-all"
-                    style={{ width: `${stats?.totalStudents ? (stats.studentsByGender.male / stats.totalStudents) * 100 : 0}%` }}
-                  />
-                </div>
+            {stats?.totalStudents && stats.totalStudents > 0 ? (
+              <div className="h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: 'Male', value: stats.studentsByGender.male },
+                        { name: 'Female', value: stats.studentsByGender.female },
+                        { name: 'Other', value: stats.studentsByGender.other },
+                      ].filter(d => d.value > 0)}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={80}
+                      paddingAngle={2}
+                      dataKey="value"
+                    >
+                      {[
+                        { name: 'Male', value: stats.studentsByGender.male },
+                        { name: 'Female', value: stats.studentsByGender.female },
+                        { name: 'Other', value: stats.studentsByGender.other },
+                      ].filter(d => d.value > 0).map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value) => [Number(value) || 0, 'Students']}
+                      contentStyle={{ borderRadius: '8px', border: '1px solid #E5E7EB' }}
+                    />
+                    <Legend
+                      verticalAlign="bottom"
+                      height={36}
+                      formatter={(value) => <span className="text-sm text-gray-600">{value}</span>}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
               </div>
-              <div>
-                <div className="flex justify-between mb-1.5">
-                  <span className="text-sm font-medium text-gray-600">Female</span>
-                  <span className="text-sm font-semibold text-gray-900">{stats?.studentsByGender.female || 0}</span>
-                </div>
-                <div className="w-full bg-gray-100 rounded-full h-2">
-                  <div
-                    className="bg-pink-500 h-2 rounded-full transition-all"
-                    style={{ width: `${stats?.totalStudents ? (stats.studentsByGender.female / stats.totalStudents) * 100 : 0}%` }}
-                  />
-                </div>
+            ) : (
+              <div className="h-[200px] flex items-center justify-center text-gray-400">
+                <p>No student data</p>
               </div>
-              <div>
-                <div className="flex justify-between mb-1.5">
-                  <span className="text-sm font-medium text-gray-600">Other</span>
-                  <span className="text-sm font-semibold text-gray-900">{stats?.studentsByGender.other || 0}</span>
-                </div>
-                <div className="w-full bg-gray-100 rounded-full h-2">
-                  <div
-                    className="bg-purple-500 h-2 rounded-full transition-all"
-                    style={{ width: `${stats?.totalStudents ? (stats.studentsByGender.other / stats.totalStudents) * 100 : 0}%` }}
-                  />
-                </div>
-              </div>
-            </div>
+            )}
           </div>
 
-          {/* Payment Status */}
+          {/* Fee Status Chart */}
           <div className="bg-white rounded-xl border border-gray-200 p-5">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Fee Status Overview</h2>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="bg-green-50 rounded-xl p-3 text-center">
-                <p className="text-2xl font-bold text-green-600">{stats?.paymentStatusBreakdown.paid || 0}</p>
-                <p className="text-xs font-medium text-green-700 mt-1">Paid</p>
+            {(stats?.paymentStatusBreakdown.paid || 0) + (stats?.paymentStatusBreakdown.partial || 0) + (stats?.paymentStatusBreakdown.unpaid || 0) > 0 ? (
+              <>
+                <div className="h-[180px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Paid', value: stats?.paymentStatusBreakdown.paid || 0 },
+                          { name: 'Partial', value: stats?.paymentStatusBreakdown.partial || 0 },
+                          { name: 'Unpaid', value: stats?.paymentStatusBreakdown.unpaid || 0 },
+                        ].filter(d => d.value > 0)}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={45}
+                        outerRadius={70}
+                        paddingAngle={2}
+                        dataKey="value"
+                      >
+                        {[
+                          { name: 'Paid', value: stats?.paymentStatusBreakdown.paid || 0 },
+                          { name: 'Partial', value: stats?.paymentStatusBreakdown.partial || 0 },
+                          { name: 'Unpaid', value: stats?.paymentStatusBreakdown.unpaid || 0 },
+                        ].filter(d => d.value > 0).map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={FEE_COLORS[index % FEE_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(value) => [Number(value) || 0, 'Fees']}
+                        contentStyle={{ borderRadius: '8px', border: '1px solid #E5E7EB' }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex justify-center gap-4 mt-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                    <span className="text-xs text-gray-600">Paid ({stats?.paymentStatusBreakdown.paid || 0})</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-amber-500"></div>
+                    <span className="text-xs text-gray-600">Partial ({stats?.paymentStatusBreakdown.partial || 0})</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                    <span className="text-xs text-gray-600">Unpaid ({stats?.paymentStatusBreakdown.unpaid || 0})</span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="h-[200px] flex items-center justify-center text-gray-400">
+                <p>No fee data</p>
               </div>
-              <div className="bg-amber-50 rounded-xl p-3 text-center">
-                <p className="text-2xl font-bold text-amber-600">{stats?.paymentStatusBreakdown.partial || 0}</p>
-                <p className="text-xs font-medium text-amber-700 mt-1">Partial</p>
-              </div>
-              <div className="bg-red-50 rounded-xl p-3 text-center">
-                <p className="text-2xl font-bold text-red-600">{stats?.paymentStatusBreakdown.unpaid || 0}</p>
-                <p className="text-xs font-medium text-red-700 mt-1">Unpaid</p>
-              </div>
-            </div>
+            )}
             <Link href="/dashboard/payments/outstanding" className="mt-4 flex items-center justify-center text-sm text-blue-600 font-medium hover:text-blue-700">
               View outstanding fees <ArrowRight className="w-4 h-4 ml-1" />
             </Link>

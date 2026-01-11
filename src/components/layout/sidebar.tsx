@@ -23,6 +23,10 @@ import {
   Lock,
   Gift,
   UserCog,
+  ClipboardCheck,
+  Award,
+  School,
+  MessageSquare,
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
@@ -43,7 +47,11 @@ const centerNavItems: NavItem[] = [
   { label: 'Teachers', href: '/dashboard/teachers', icon: <Users className="w-5 h-5" />, adminOnly: true },
   { label: 'Staff', href: '/dashboard/staff', icon: <UserCog className="w-5 h-5" />, adminOnly: true },
   { label: 'Subjects', href: '/dashboard/subjects', icon: <BookOpen className="w-5 h-5" />, tourId: 'sidebar-subjects' },
+  { label: 'Attendance', href: '/dashboard/attendance', icon: <ClipboardCheck className="w-5 h-5" /> },
+  { label: 'Grades', href: '/dashboard/grades', icon: <Award className="w-5 h-5" /> },
+  { label: 'Classes', href: '/dashboard/classes', icon: <School className="w-5 h-5" /> },
   { label: 'Payments', href: '/dashboard/payments', icon: <CreditCard className="w-5 h-5" />, tourId: 'sidebar-payments' },
+  { label: 'SMS Campaigns', href: '/dashboard/sms', icon: <MessageSquare className="w-5 h-5" />, module: 'sms', requiresTier: 'standard' },
   { label: 'Hostel', href: '/dashboard/hostel', icon: <Home className="w-5 h-5" />, module: 'hostel', requiresTier: 'premium' },
   { label: 'Transport', href: '/dashboard/transport', icon: <Bus className="w-5 h-5" />, module: 'transport', requiresTier: 'premium' },
   { label: 'Library', href: '/dashboard/library', icon: <Library className="w-5 h-5" />, module: 'library', requiresTier: 'standard' },
