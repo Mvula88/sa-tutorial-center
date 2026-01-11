@@ -58,6 +58,7 @@ interface Student {
   registration_fee_amount: number
   terms_accepted: boolean
   terms_accepted_date: string | null
+  credit_balance: number
   status: string
   registration_date: string
   created_at: string
@@ -85,6 +86,7 @@ interface Center {
   late_payment_penalty: number
   payment_due_day: number
   payment_months: number[] | null
+  academic_year_start_month: number | null
 }
 
 interface StudentFee {
@@ -167,6 +169,70 @@ export default function StudentDetailPage() {
     setSelectedMonths([])
   }
 
+  // Calculate expected fees based on academic year settings
+  const getExpectedFeeMonths = () => {
+    if (!center || !student) return { expected: [], missing: [], totalExpectedAmount: 0 }
+
+    const currentDate = new Date()
+    const currentYear = currentDate.getFullYear()
+    const currentMonth = currentDate.getMonth() // 0-11
+
+    // Get the academic year start month (default to January = 0 if not set)
+    const academicStartMonth = center.academic_year_start_month ?? 0
+
+    // Get the payment months array (default to Feb-Oct if not set)
+    const paymentMonths = center.payment_months || [1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+    // Calculate the monthly tuition based on enrolled subjects
+    const monthlyTuition = subjects.reduce((sum, s) => sum + s.monthly_fee, 0)
+
+    // Determine which academic year we're in
+    // If current month is before academic year start, we're still in previous academic year
+    const academicYear = currentMonth >= academicStartMonth ? currentYear : currentYear - 1
+
+    // Get all months from academic year start until current month (inclusive)
+    const expectedMonths: { month: number; year: number; monthLabel: string; feeMonth: string }[] = []
+
+    for (const monthNum of paymentMonths) {
+      // Determine the year for this month
+      let year = academicYear
+      // If this payment month is before the academic start month, it belongs to next calendar year
+      if (monthNum < academicStartMonth) {
+        year = academicYear + 1
+      }
+
+      const feeMonth = `${year}-${String(monthNum + 1).padStart(2, '0')}-01`
+      const feeDate = new Date(year, monthNum, 1)
+
+      // Only include months up to the current month
+      if (feeDate <= currentDate) {
+        expectedMonths.push({
+          month: monthNum,
+          year,
+          monthLabel: `${monthNames[monthNum]} ${year}`,
+          feeMonth,
+        })
+      }
+    }
+
+    // Find which expected months don't have fees generated
+    const existingFeeMonths = new Set(
+      studentFees
+        .filter(f => f.fee_type === 'tuition')
+        .map(f => f.fee_month)
+    )
+
+    const missingMonths = expectedMonths.filter(m => !existingFeeMonths.has(m.feeMonth))
+
+    return {
+      expected: expectedMonths,
+      missing: missingMonths,
+      totalExpectedAmount: missingMonths.length * monthlyTuition,
+    }
+  }
+
+  const expectedFees = getExpectedFeeMonths()
+
   useEffect(() => {
     if (studentId && user?.center_id) {
       fetchStudent()
@@ -220,7 +286,7 @@ export default function StudentDetailPage() {
     const supabase = createClient()
     const { data } = await supabase
       .from('tutorial_centers')
-      .select('name, email, phone, address, logo_url, primary_color, secondary_color, bank_name, account_number, branch_code, registration_fee, late_payment_penalty, payment_due_day, payment_months')
+      .select('name, email, phone, address, logo_url, primary_color, secondary_color, bank_name, account_number, branch_code, registration_fee, late_payment_penalty, payment_due_day, payment_months, academic_year_start_month')
       .eq('id', user.center_id)
       .single()
 
@@ -783,6 +849,18 @@ export default function StudentDetailPage() {
             <span>Outstanding Balance</span>
             <span class="${totalBalance > 0 ? 'balance-due' : ''}">R ${totalBalance.toFixed(2)}</span>
           </div>
+          ${(student.credit_balance || 0) > 0 ? `
+          <div class="summary-row" style="background: #dcfce7; padding: 10px; margin-top: 10px; border-radius: 4px;">
+            <span style="color: #166534; font-weight: bold;">Credit Balance Available</span>
+            <span style="color: #166534; font-weight: bold;">R ${(student.credit_balance || 0).toFixed(2)}</span>
+          </div>
+          <div class="summary-row" style="font-size: 14px; font-weight: bold;">
+            <span>Net Amount Due</span>
+            <span class="${Math.max(0, totalBalance - (student.credit_balance || 0)) > 0 ? 'balance-due' : ''}" style="font-weight: bold;">
+              R ${Math.max(0, totalBalance - (student.credit_balance || 0)).toFixed(2)}
+            </span>
+          </div>
+          ` : ''}
         </div>
 
         ${payments.length > 0 ? `
@@ -1205,8 +1283,54 @@ export default function StudentDetailPage() {
           </div>
         </div>
 
+        {/* Missing Expected Fees Warning */}
+        {expectedFees.missing.length > 0 && subjects.length > 0 && (
+          <div className="bg-amber-50 rounded-xl border border-amber-200 p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <h3 className="font-medium text-amber-800">
+                  Expected Fees Not Generated
+                </h3>
+                <p className="text-sm text-amber-700 mt-1">
+                  Based on the academic year settings, the following months should have fees but don&apos;t have fee records yet:
+                </p>
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {expectedFees.missing.map(m => (
+                    <span
+                      key={m.feeMonth}
+                      className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800"
+                    >
+                      {m.monthLabel}
+                    </span>
+                  ))}
+                </div>
+                <div className="flex items-center justify-between mt-4 pt-3 border-t border-amber-200">
+                  <div className="text-sm text-amber-800">
+                    <strong>Total missing fees:</strong> R {expectedFees.totalExpectedAmount.toFixed(2)}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      // Pre-select the missing months in the generate fees modal
+                      const missingMonthIndices = expectedFees.missing.map(m => m.month)
+                      setSelectedMonths(missingMonthIndices)
+                      setSelectedYear(expectedFees.missing[0]?.year || new Date().getFullYear())
+                      setShowGenerateFeesModal(true)
+                    }}
+                    leftIcon={<CalendarPlus className="w-4 h-4" />}
+                  >
+                    Generate Missing Fees
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Balance Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <p className="text-sm text-gray-500 mb-1">Total Due</p>
             <p className="text-2xl font-bold text-gray-900">
@@ -1225,7 +1349,35 @@ export default function StudentDetailPage() {
               R {studentFees.reduce((sum, f) => sum + f.balance, 0).toFixed(2)}
             </p>
           </div>
+          <div className={`rounded-xl shadow-sm border p-6 ${
+            (student.credit_balance || 0) > 0
+              ? 'bg-green-50 border-green-200'
+              : 'bg-white border-gray-100'
+          }`}>
+            <p className="text-sm text-gray-500 mb-1">Credit Balance</p>
+            <p className={`text-2xl font-bold ${(student.credit_balance || 0) > 0 ? 'text-green-600' : 'text-gray-400'}`}>
+              R {(student.credit_balance || 0).toFixed(2)}
+            </p>
+            {(student.credit_balance || 0) > 0 && (
+              <p className="text-xs text-green-600 mt-1">Available for future fees</p>
+            )}
+          </div>
         </div>
+
+        {/* Net Balance Summary - shows when there's credit */}
+        {(student.credit_balance || 0) > 0 && studentFees.reduce((sum, f) => sum + f.balance, 0) > 0 && (
+          <div className="bg-blue-50 rounded-xl border border-blue-200 p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-blue-800">Net Amount Due</p>
+                <p className="text-xs text-blue-600">Outstanding balance minus available credit</p>
+              </div>
+              <p className="text-xl font-bold text-blue-800">
+                R {Math.max(0, studentFees.reduce((sum, f) => sum + f.balance, 0) - (student.credit_balance || 0)).toFixed(2)}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Fee Records */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">

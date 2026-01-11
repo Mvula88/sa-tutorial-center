@@ -144,6 +144,7 @@ export async function generateMonthlyFees(
 
 /**
  * Allocate a payment across outstanding fees (oldest first - FIFO)
+ * Also uses any existing credit balance and saves remaining credit back to student
  * @param centerId - The center ID
  * @param studentId - The student ID
  * @param paymentAmount - The total payment amount
@@ -159,11 +160,23 @@ export async function allocatePayment(
   success: boolean
   allocations: Array<{ feeId: string; month: string; amountAllocated: number }>
   remainingCredit: number
+  previousCredit: number
   error?: string
 }> {
   const supabase = createClient()
 
   try {
+    // First, get the student's existing credit balance
+    const { data: studentData, error: studentError } = await supabase
+      .from('students')
+      .select('credit_balance')
+      .eq('id', studentId)
+      .single()
+
+    if (studentError) throw studentError
+
+    const existingCredit = (studentData as { credit_balance: number | null })?.credit_balance || 0
+
     // Get all unpaid/partial fees for the student, ordered by month (oldest first)
     const { data: outstandingFees, error: fetchError } = await supabase
       .from('student_fees')
@@ -174,7 +187,8 @@ export async function allocatePayment(
 
     if (fetchError) throw fetchError
 
-    let remainingPayment = paymentAmount
+    // Total available = new payment + existing credit
+    let remainingPayment = paymentAmount + existingCredit
     const allocations: Array<{ feeId: string; month: string; amountAllocated: number }> = []
 
     // Allocate payment to each fee until payment is exhausted
@@ -225,10 +239,24 @@ export async function allocatePayment(
       }
     }
 
+    // Save any remaining credit back to the student record
+    const { error: creditUpdateError } = await supabase
+      .from('students')
+      .update({
+        credit_balance: remainingPayment,
+      } as never)
+      .eq('id', studentId)
+
+    if (creditUpdateError) {
+      console.error('Error updating credit balance:', creditUpdateError)
+      // Don't throw - payment was successful, just log the credit update failure
+    }
+
     return {
       success: true,
       allocations,
       remainingCredit: remainingPayment,
+      previousCredit: existingCredit,
     }
   } catch (error) {
     console.error('Error allocating payment:', error)
@@ -236,6 +264,7 @@ export async function allocatePayment(
       success: false,
       allocations: [],
       remainingCredit: paymentAmount,
+      previousCredit: 0,
       error: error instanceof Error ? error.message : 'Failed to allocate payment',
     }
   }

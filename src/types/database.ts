@@ -297,6 +297,8 @@ export interface Database {
           // Terms
           terms_accepted: boolean
           terms_accepted_date: string | null
+          // Credit balance for overpayments
+          credit_balance: number
           status: StudentStatus
           registration_date: string
           created_at: string
@@ -333,6 +335,7 @@ export interface Database {
           registration_fee_paid_date?: string | null
           terms_accepted?: boolean
           terms_accepted_date?: string | null
+          credit_balance?: number
           status?: StudentStatus
           registration_date?: string
           created_at?: string
@@ -369,6 +372,7 @@ export interface Database {
           registration_fee_paid_date?: string | null
           terms_accepted?: boolean
           terms_accepted_date?: string | null
+          credit_balance?: number
           status?: StudentStatus
           registration_date?: string
           created_at?: string

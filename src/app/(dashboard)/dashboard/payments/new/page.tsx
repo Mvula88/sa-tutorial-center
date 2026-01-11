@@ -182,15 +182,26 @@ export default function RecordPaymentPage() {
 
         if (allocationResult.success) {
           const allocatedCount = allocationResult.allocations.length
+
+          // Show message about previous credit being used
+          if (allocationResult.previousCredit > 0) {
+            toast.success(
+              `Previous credit of ${formatCurrency(allocationResult.previousCredit)} applied`,
+              { duration: 3000 }
+            )
+          }
+
           if (allocatedCount > 0) {
             toast.success(
               `Payment allocated to ${allocatedCount} fee${allocatedCount > 1 ? 's' : ''} (oldest first)`
             )
           }
+
+          // Show remaining credit that was saved
           if (allocationResult.remainingCredit > 0) {
             toast.success(
-              `${formatCurrency(allocationResult.remainingCredit)} credit remaining`,
-              { duration: 4000 }
+              `${formatCurrency(allocationResult.remainingCredit)} credit saved to student account`,
+              { duration: 5000, icon: '💰' }
             )
           }
         } else {
