@@ -389,7 +389,7 @@ export default function LandingPage() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
-              href="/login"
+              href="/signup"
               className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold text-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-300 flex items-center justify-center gap-2 shadow-xl hover:shadow-blue-500/30 hover:scale-105 group animate-pulse-glow"
             >
               Start Free Trial
@@ -734,7 +734,7 @@ export default function LandingPage() {
                   ))}
                 </ul>
                 <Link
-                  href="/login"
+                  href="/signup"
                   className={`block w-full py-3 px-4 text-center rounded-xl font-semibold transition-all duration-300 ${
                     plan.highlighted
                       ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-blue-500/30 hover:scale-105'
@@ -856,13 +856,13 @@ export default function LandingPage() {
           <p className="text-xl text-blue-100 mb-8">
             Sign up takes 2 minutes. No credit card required. See if it works for you.
           </p>
-          <a
-            href="#pricing"
+          <Link
+            href="/signup"
             className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-600 rounded-xl font-semibold text-lg hover:bg-blue-50 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105 group"
           >
             Try it free
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-          </a>
+          </Link>
         </div>
       </section>
 
