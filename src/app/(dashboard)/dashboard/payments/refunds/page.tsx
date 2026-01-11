@@ -2,62 +2,79 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/auth-store'
 import { Button } from '@/components/ui/button'
-import { Input, Select } from '@/components/ui/input'
+import { Select } from '@/components/ui/input'
 import {
-  Plus,
+  ArrowLeft,
   Search,
-  Eye,
   ChevronLeft,
   ChevronRight,
-  CreditCard,
-  Calendar,
-  Download,
-  X,
-  TrendingUp,
   RotateCcw,
+  Calendar,
+  User,
+  Receipt,
+  X,
   FileText,
+  AlertCircle,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { formatCurrency, CURRENCY_CONFIG } from '@/lib/currency'
+import { formatCurrency } from '@/lib/currency'
 import { ProcessRefundModal } from '@/components/refunds/process-refund-modal'
+import { RefundReason } from '@/types/database'
 
-interface Payment {
+interface Refund {
   id: string
   amount: number
-  payment_method: string | null
-  reference_number: string | null
-  payment_date: string
-  notes: string | null
+  reason: RefundReason
+  reason_notes: string | null
+  student_status_updated: boolean
+  refund_date: string
+  created_at: string
   student: {
     id: string
     full_name: string
     student_number: string | null
   } | null
-  recorded_by_user: {
+  payment: {
+    id: string
+    amount: number
+    payment_date: string
+    payment_method: string | null
+    reference_number: string | null
+  } | null
+  processor: {
+    id: string
     full_name: string
   } | null
 }
 
 const ITEMS_PER_PAGE = 10
 
-const PAYMENT_METHODS: Record<string, string> = {
-  cash: 'Cash',
-  bank_transfer: 'Bank Transfer',
-  card: 'Card',
-  mobile_money: 'Mobile Money',
+const REFUND_REASONS: Record<RefundReason, string> = {
+  relocation: 'Relocation',
+  medical: 'Medical/Health',
+  financial_hardship: 'Financial Hardship',
+  schedule_conflicts: 'Schedule Conflicts',
+  dissatisfaction: 'Dissatisfaction',
+  other: 'Other',
 }
 
-export default function PaymentsPage() {
+const REASON_COLORS: Record<RefundReason, string> = {
+  relocation: 'bg-blue-100 text-blue-700',
+  medical: 'bg-red-100 text-red-700',
+  financial_hardship: 'bg-amber-100 text-amber-700',
+  schedule_conflicts: 'bg-purple-100 text-purple-700',
+  dissatisfaction: 'bg-orange-100 text-orange-700',
+  other: 'bg-gray-100 text-gray-700',
+}
+
+export default function RefundsPage() {
   const { user, isCenterAdmin } = useAuthStore()
-  const [payments, setPayments] = useState<Payment[]>([])
+  const [refunds, setRefunds] = useState<Refund[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [methodFilter, setMethodFilter] = useState('')
-  const [dateFromFilter, setDateFromFilter] = useState('')
-  const [dateToFilter, setDateToFilter] = useState('')
+  const [reasonFilter, setReasonFilter] = useState('')
   const [monthFilter, setMonthFilter] = useState('')
   const [yearFilter, setYearFilter] = useState(new Date().getFullYear().toString())
   const [currentPage, setCurrentPage] = useState(1)
@@ -66,82 +83,60 @@ export default function PaymentsPage() {
   const [refundModalOpen, setRefundModalOpen] = useState(false)
 
   useEffect(() => {
-    fetchPayments()
-  }, [user?.center_id, currentPage, methodFilter, dateFromFilter, dateToFilter, monthFilter, yearFilter])
+    fetchRefunds()
+  }, [user?.center_id, currentPage, reasonFilter, monthFilter, yearFilter])
 
-  async function fetchPayments() {
+  async function fetchRefunds() {
     if (!user?.center_id) return
 
     setIsLoading(true)
-    const supabase = createClient()
-
     try {
-      let query = supabase
-        .from('payments')
-        .select(`
-          id,
-          amount,
-          payment_method,
-          reference_number,
-          payment_date,
-          notes,
-          student:students(id, full_name, student_number),
-          recorded_by_user:users!recorded_by(full_name)
-        `, { count: 'exact' })
-        .eq('center_id', user.center_id)
-        .order('payment_date', { ascending: false })
+      const params = new URLSearchParams({
+        center_id: user.center_id,
+        page: currentPage.toString(),
+        limit: ITEMS_PER_PAGE.toString(),
+      })
 
-      // Apply filters
-      if (methodFilter) {
-        query = query.eq('payment_method', methodFilter)
+      const response = await fetch(`/api/refunds?${params}`)
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch refunds')
       }
 
-      // Date range filter
-      if (dateFromFilter) {
-        query = query.gte('payment_date', `${dateFromFilter}T00:00:00`)
-      }
-      if (dateToFilter) {
-        query = query.lte('payment_date', `${dateToFilter}T23:59:59`)
+      let filteredRefunds = data.refunds || []
+
+      // Apply client-side filters
+      if (reasonFilter) {
+        filteredRefunds = filteredRefunds.filter((r: Refund) => r.reason === reasonFilter)
       }
 
-      // Month/Year filter
       if (monthFilter && yearFilter) {
-        const startOfMonth = `${yearFilter}-${monthFilter.padStart(2, '0')}-01T00:00:00`
-        const lastDay = new Date(parseInt(yearFilter), parseInt(monthFilter), 0).getDate()
-        const endOfMonth = `${yearFilter}-${monthFilter.padStart(2, '0')}-${lastDay}T23:59:59`
-        query = query.gte('payment_date', startOfMonth).lte('payment_date', endOfMonth)
+        filteredRefunds = filteredRefunds.filter((r: Refund) => {
+          const date = new Date(r.refund_date)
+          return date.getMonth() + 1 === parseInt(monthFilter) &&
+                 date.getFullYear() === parseInt(yearFilter)
+        })
       }
 
-      // Pagination
-      const from = (currentPage - 1) * ITEMS_PER_PAGE
-      const to = from + ITEMS_PER_PAGE - 1
-      query = query.range(from, to)
-
-      const { data, count, error } = await query
-
-      if (error) throw error
-
-      // Filter by search query on client side (student name/number)
-      let filteredPayments = (data || []) as Payment[]
       if (searchQuery) {
         const search = searchQuery.toLowerCase()
-        filteredPayments = filteredPayments.filter(
-          (p) =>
-            p.student?.full_name.toLowerCase().includes(search) ||
-            p.student?.student_number?.toLowerCase().includes(search) ||
-            p.reference_number?.toLowerCase().includes(search)
+        filteredRefunds = filteredRefunds.filter((r: Refund) =>
+          r.student?.full_name.toLowerCase().includes(search) ||
+          r.student?.student_number?.toLowerCase().includes(search) ||
+          r.payment?.reference_number?.toLowerCase().includes(search)
         )
       }
 
-      setPayments(filteredPayments)
-      setTotalCount(count || 0)
+      setRefunds(filteredRefunds)
+      setTotalCount(data.total || 0)
 
-      // Calculate total amount for filtered results
-      const total = filteredPayments.reduce((sum, p) => sum + p.amount, 0)
+      // Calculate total refunded amount
+      const total = filteredRefunds.reduce((sum: number, r: Refund) => sum + r.amount, 0)
       setTotalAmount(total)
     } catch (error) {
-      console.error('Error fetching payments:', error)
-      toast.error('Failed to fetch payments')
+      console.error('Error fetching refunds:', error)
+      toast.error('Failed to fetch refunds')
     } finally {
       setIsLoading(false)
     }
@@ -151,7 +146,7 @@ export default function PaymentsPage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setCurrentPage(1)
-      fetchPayments()
+      fetchRefunds()
     }, 300)
 
     return () => clearTimeout(timer)
@@ -164,6 +159,14 @@ export default function PaymentsPage() {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
+    })
+  }
+
+  const formatDateTime = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-ZA', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
     })
@@ -172,56 +175,51 @@ export default function PaymentsPage() {
   return (
     <div className="p-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Payments</h1>
-          <p className="text-gray-500 mt-1">View and record student payments</p>
-        </div>
-        <div className="flex items-center gap-3">
+      <div className="mb-8">
+        <Link
+          href="/dashboard/payments"
+          className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 mb-4"
+        >
+          <ArrowLeft className="w-4 h-4 mr-1" />
+          Back to Payments
+        </Link>
+
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Refunds</h1>
+            <p className="text-gray-500 mt-1">Track and manage student refunds</p>
+          </div>
           {isCenterAdmin() && (
-            <>
-              <Link href="/dashboard/payments/refunds">
-                <Button variant="outline" leftIcon={<FileText className="w-4 h-4" />}>
-                  View Refunds
-                </Button>
-              </Link>
-              <Button
-                variant="outline"
-                leftIcon={<RotateCcw className="w-4 h-4" />}
-                onClick={() => setRefundModalOpen(true)}
-              >
-                Process Refund
-              </Button>
-            </>
-          )}
-          <Link href="/dashboard/payments/new">
-            <Button leftIcon={<Plus className="w-4 h-4" />}>
-              Record Payment
+            <Button
+              leftIcon={<RotateCcw className="w-4 h-4" />}
+              onClick={() => setRefundModalOpen(true)}
+            >
+              Process Refund
             </Button>
-          </Link>
+          )}
         </div>
       </div>
 
-      {/* Summary Card */}
+      {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-green-100">
-              <TrendingUp className="w-5 h-5 text-green-600" />
+            <div className="p-2 rounded-lg bg-red-100">
+              <RotateCcw className="w-5 h-5 text-red-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Total (This View)</p>
-              <p className="text-xl font-bold text-green-600">{formatCurrency(totalAmount)}</p>
+              <p className="text-sm text-gray-500">Total Refunded</p>
+              <p className="text-xl font-bold text-red-600">{formatCurrency(totalAmount)}</p>
             </div>
           </div>
         </div>
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-blue-100">
-              <CreditCard className="w-5 h-5 text-blue-600" />
+              <FileText className="w-5 h-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Transactions</p>
+              <p className="text-sm text-gray-500">Total Refunds</p>
               <p className="text-xl font-bold text-gray-900">{totalCount}</p>
             </div>
           </div>
@@ -236,9 +234,7 @@ export default function PaymentsPage() {
               <p className="text-xl font-bold text-gray-900">
                 {monthFilter
                   ? `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][parseInt(monthFilter) - 1]} ${yearFilter}`
-                  : dateFromFilter || dateToFilter
-                    ? 'Custom Range'
-                    : 'All Time'}
+                  : 'All Time'}
               </p>
             </div>
           </div>
@@ -260,21 +256,23 @@ export default function PaymentsPage() {
             />
           </div>
 
-          {/* Method Filter */}
+          {/* Reason Filter */}
           <Select
             options={[
-              { value: 'cash', label: 'Cash' },
-              { value: 'bank_transfer', label: 'Bank Transfer' },
-              { value: 'card', label: 'Card' },
-              { value: 'mobile_money', label: 'Mobile Money' },
+              { value: 'relocation', label: 'Relocation' },
+              { value: 'medical', label: 'Medical' },
+              { value: 'financial_hardship', label: 'Financial Hardship' },
+              { value: 'schedule_conflicts', label: 'Schedule Conflicts' },
+              { value: 'dissatisfaction', label: 'Dissatisfaction' },
+              { value: 'other', label: 'Other' },
             ]}
-            placeholder="Method"
-            value={methodFilter}
-            onChange={(e) => { setMethodFilter(e.target.value); setCurrentPage(1) }}
-            className="w-32"
+            placeholder="Reason"
+            value={reasonFilter}
+            onChange={(e) => { setReasonFilter(e.target.value); setCurrentPage(1) }}
+            className="w-40"
           />
 
-          {/* Month/Year Quick Filter */}
+          {/* Month/Year Filter */}
           <div className="flex items-center gap-1 px-2 py-1 bg-purple-50 rounded-lg border border-purple-200">
             <span className="text-xs text-purple-700 font-medium px-1">Month:</span>
             <Select
@@ -286,7 +284,7 @@ export default function PaymentsPage() {
               ]}
               placeholder="All"
               value={monthFilter}
-              onChange={(e) => { setMonthFilter(e.target.value); setDateFromFilter(''); setDateToFilter(''); setCurrentPage(1) }}
+              onChange={(e) => { setMonthFilter(e.target.value); setCurrentPage(1) }}
               className="w-20"
             />
             <Select
@@ -301,29 +299,12 @@ export default function PaymentsPage() {
             />
           </div>
 
-          {/* Date Range Filter */}
-          <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 rounded-lg border border-blue-200">
-            <span className="text-xs text-blue-700 font-medium px-1">From:</span>
-            <input
-              type="date"
-              value={dateFromFilter}
-              onChange={(e) => { setDateFromFilter(e.target.value); setMonthFilter(''); setCurrentPage(1) }}
-              className="px-2 py-1 border border-gray-300 rounded text-sm w-32"
-            />
-            <span className="text-xs text-blue-700 font-medium px-1">To:</span>
-            <input
-              type="date"
-              value={dateToFilter}
-              onChange={(e) => { setDateToFilter(e.target.value); setMonthFilter(''); setCurrentPage(1) }}
-              className="px-2 py-1 border border-gray-300 rounded text-sm w-32"
-            />
-          </div>
-
           {/* Clear All */}
-          {(methodFilter || dateFromFilter || dateToFilter || monthFilter) && (
+          {(reasonFilter || monthFilter) && (
             <button
               onClick={() => {
-                setMethodFilter(''); setDateFromFilter(''); setDateToFilter(''); setMonthFilter('')
+                setReasonFilter('')
+                setMonthFilter('')
                 setCurrentPage(1)
               }}
               className="flex items-center gap-1 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -334,31 +315,19 @@ export default function PaymentsPage() {
           )}
         </div>
 
-        {/* Active filters tags */}
-        {(methodFilter || dateFromFilter || dateToFilter || monthFilter) && (
+        {/* Active filters */}
+        {(reasonFilter || monthFilter) && (
           <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-100">
-            {methodFilter && (
+            {reasonFilter && (
               <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
-                {PAYMENT_METHODS[methodFilter]}
-                <button onClick={() => { setMethodFilter(''); setCurrentPage(1) }}><X className="w-3 h-3" /></button>
+                {REFUND_REASONS[reasonFilter as RefundReason]}
+                <button onClick={() => { setReasonFilter(''); setCurrentPage(1) }}><X className="w-3 h-3" /></button>
               </span>
             )}
             {monthFilter && (
               <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
                 {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][parseInt(monthFilter) - 1]} {yearFilter}
                 <button onClick={() => { setMonthFilter(''); setCurrentPage(1) }}><X className="w-3 h-3" /></button>
-              </span>
-            )}
-            {dateFromFilter && (
-              <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
-                From: {dateFromFilter}
-                <button onClick={() => { setDateFromFilter(''); setCurrentPage(1) }}><X className="w-3 h-3" /></button>
-              </span>
-            )}
-            {dateToFilter && (
-              <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
-                To: {dateToFilter}
-                <button onClick={() => { setDateToFilter(''); setCurrentPage(1) }}><X className="w-3 h-3" /></button>
               </span>
             )}
           </div>
@@ -371,25 +340,26 @@ export default function PaymentsPage() {
           <div className="p-8 text-center">
             <div className="animate-pulse space-y-4">
               {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-12 bg-gray-100 rounded"></div>
+                <div key={i} className="h-16 bg-gray-100 rounded"></div>
               ))}
             </div>
           </div>
-        ) : payments.length === 0 ? (
+        ) : refunds.length === 0 ? (
           <div className="p-12 text-center">
-            <CreditCard className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No payments found</h3>
+            <RotateCcw className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No refunds found</h3>
             <p className="text-gray-500 mb-4">
-              {searchQuery || methodFilter || dateFromFilter || dateToFilter || monthFilter
+              {searchQuery || reasonFilter || monthFilter
                 ? 'Try adjusting your filters'
-                : 'Get started by recording your first payment'}
+                : 'No refunds have been processed yet'}
             </p>
-            {!searchQuery && !methodFilter && !dateFromFilter && !dateToFilter && !monthFilter && (
-              <Link href="/dashboard/payments/new">
-                <Button leftIcon={<Plus className="w-4 h-4" />}>
-                  Record Payment
-                </Button>
-              </Link>
+            {isCenterAdmin() && !searchQuery && !reasonFilter && !monthFilter && (
+              <Button
+                leftIcon={<RotateCcw className="w-4 h-4" />}
+                onClick={() => setRefundModalOpen(true)}
+              >
+                Process Refund
+              </Button>
             )}
           </div>
         ) : (
@@ -405,16 +375,16 @@ export default function PaymentsPage() {
                       Student
                     </th>
                     <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Amount
+                      Refund Amount
                     </th>
                     <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Method
+                      Original Payment
                     </th>
                     <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Reference
+                      Reason
                     </th>
                     <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Recorded By
+                      Processed By
                     </th>
                     <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
@@ -422,49 +392,84 @@ export default function PaymentsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {payments.map((payment) => (
-                    <tr key={payment.id} className="hover:bg-gray-50">
+                  {refunds.map((refund) => (
+                    <tr key={refund.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <Calendar className="w-4 h-4 text-gray-400" />
                           <span className="text-gray-900">
-                            {formatDate(payment.payment_date)}
+                            {formatDateTime(refund.refund_date)}
                           </span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div>
-                          <p className="font-medium text-gray-900">
-                            {payment.student?.full_name || 'Unknown'}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {payment.student?.student_number || '-'}
-                          </p>
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                            <User className="w-4 h-4 text-gray-500" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">
+                              {refund.student?.full_name || 'Unknown'}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              {refund.student?.student_number || '-'}
+                            </p>
+                          </div>
+                          {refund.student_status_updated && (
+                            <span className="px-2 py-0.5 text-xs font-medium rounded bg-amber-100 text-amber-700">
+                              Withdrawn
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="font-semibold text-green-600">
-                          {formatCurrency(payment.amount)}
+                        <span className="font-semibold text-red-600">
+                          -{formatCurrency(refund.amount)}
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700">
-                          {PAYMENT_METHODS[payment.payment_method || ''] || payment.payment_method || '-'}
-                        </span>
+                        {refund.payment ? (
+                          <div>
+                            <p className="text-gray-900">{formatCurrency(refund.payment.amount)}</p>
+                            <p className="text-sm text-gray-500">
+                              {formatDate(refund.payment.payment_date)}
+                            </p>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
                       </td>
-                      <td className="px-6 py-4 text-gray-900">
-                        {payment.reference_number || '-'}
+                      <td className="px-6 py-4">
+                        <div>
+                          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${REASON_COLORS[refund.reason]}`}>
+                            {REFUND_REASONS[refund.reason]}
+                          </span>
+                          {refund.reason_notes && (
+                            <p className="text-xs text-gray-500 mt-1 max-w-[150px] truncate" title={refund.reason_notes}>
+                              {refund.reason_notes}
+                            </p>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-gray-500">
-                        {payment.recorded_by_user?.full_name || '-'}
+                        {refund.processor?.full_name || '-'}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-2">
-                          <Link href={`/dashboard/payments/${payment.id}`}>
-                            <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                              <Eye className="w-4 h-4" />
-                            </button>
-                          </Link>
+                          {refund.payment && (
+                            <Link href={`/dashboard/payments/${refund.payment.id}`}>
+                              <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="View original payment">
+                                <Receipt className="w-4 h-4" />
+                              </button>
+                            </Link>
+                          )}
+                          {refund.student && (
+                            <Link href={`/dashboard/students/${refund.student.id}`}>
+                              <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="View student">
+                                <User className="w-4 h-4" />
+                              </button>
+                            </Link>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -478,7 +483,7 @@ export default function PaymentsPage() {
               <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
                 <p className="text-sm text-gray-500">
                   Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to{' '}
-                  {Math.min(currentPage * ITEMS_PER_PAGE, totalCount)} of {totalCount} payments
+                  {Math.min(currentPage * ITEMS_PER_PAGE, totalCount)} of {totalCount} refunds
                 </p>
                 <div className="flex items-center gap-2">
                   <button
@@ -510,7 +515,7 @@ export default function PaymentsPage() {
         isOpen={refundModalOpen}
         onClose={() => setRefundModalOpen(false)}
         onSuccess={() => {
-          fetchPayments()
+          fetchRefunds()
         }}
       />
     </div>

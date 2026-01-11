@@ -22,6 +22,7 @@ export type AuditEntityType =
   | 'book'
   | 'book_borrowing'
   | 'center'
+  | 'refund'
 
 export interface AuditLogEntry {
   action: AuditAction
@@ -264,6 +265,7 @@ export function formatEntityType(entityType: AuditEntityType): string {
     book: 'Book',
     book_borrowing: 'Book Borrowing',
     center: 'Center',
+    refund: 'Refund',
   }
   return entityLabels[entityType] || entityType
 }

@@ -16,8 +16,10 @@ import {
   CreditCard,
   Receipt,
   Building,
+  RotateCcw,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { ProcessRefundModal } from '@/components/refunds/process-refund-modal'
 
 interface Payment {
   id: string
@@ -69,12 +71,13 @@ export default function PaymentDetailPage() {
   const params = useParams()
   const paymentId = params.id as string
   const router = useRouter()
-  const { user } = useAuthStore()
+  const { user, isCenterAdmin } = useAuthStore()
   const [payment, setPayment] = useState<Payment | null>(null)
   const [center, setCenter] = useState<Center | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [refundModalOpen, setRefundModalOpen] = useState(false)
 
   useEffect(() => {
     if (paymentId && user?.center_id) {
@@ -421,6 +424,16 @@ export default function PaymentDetailPage() {
             >
               Print Receipt
             </Button>
+            {isCenterAdmin() && (
+              <Button
+                variant="outline"
+                leftIcon={<RotateCcw className="w-4 h-4" />}
+                onClick={() => setRefundModalOpen(true)}
+                className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+              >
+                Refund
+              </Button>
+            )}
             <Button
               variant="outline"
               onClick={() => setDeleteModalOpen(true)}
@@ -594,6 +607,28 @@ export default function PaymentDetailPage() {
         message="Are you sure you want to delete this payment? This action cannot be undone and will update the student's outstanding balance."
         confirmText="Delete"
         isLoading={isDeleting}
+      />
+
+      {/* Refund Modal */}
+      <ProcessRefundModal
+        isOpen={refundModalOpen}
+        onClose={() => setRefundModalOpen(false)}
+        onSuccess={() => {
+          setRefundModalOpen(false)
+          fetchPayment()
+        }}
+        preselectedPayment={payment ? {
+          id: payment.id,
+          amount: payment.amount,
+          payment_date: payment.payment_date,
+          payment_method: payment.payment_method,
+          reference_number: payment.reference_number,
+          student: payment.student ? {
+            id: payment.student.id,
+            full_name: payment.student.full_name,
+            student_number: payment.student.student_number,
+          } : { id: '', full_name: 'Unknown', student_number: null },
+        } : null}
       />
     </div>
   )

@@ -15,6 +15,7 @@ export type PaymentStatus = 'paid' | 'partial' | 'unpaid'
 export type Gender = 'male' | 'female' | 'other'
 export type RoomType = 'single' | 'shared'
 export type HostelStudentStatus = 'checked_in' | 'checked_out'
+export type RefundReason = 'relocation' | 'medical' | 'financial_hardship' | 'schedule_conflicts' | 'dissatisfaction' | 'other'
 
 export interface Database {
   public: {
@@ -655,6 +656,47 @@ export interface Database {
           created_at?: string
         }
       }
+      refunds: {
+        Row: {
+          id: string
+          center_id: string
+          student_id: string
+          original_payment_id: string
+          amount: number
+          reason: RefundReason
+          reason_notes: string | null
+          student_status_updated: boolean
+          processed_by: string
+          refund_date: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          center_id: string
+          student_id: string
+          original_payment_id: string
+          amount: number
+          reason: RefundReason
+          reason_notes?: string | null
+          student_status_updated?: boolean
+          processed_by: string
+          refund_date?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          center_id?: string
+          student_id?: string
+          original_payment_id?: string
+          amount?: number
+          reason?: RefundReason
+          reason_notes?: string | null
+          student_status_updated?: boolean
+          processed_by?: string
+          refund_date?: string
+          created_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -718,3 +760,7 @@ export type HostelRoomUpdate = Database['public']['Tables']['hostel_rooms']['Upd
 export type HostelAllocation = Database['public']['Tables']['hostel_allocations']['Row']
 export type HostelAllocationInsert = Database['public']['Tables']['hostel_allocations']['Insert']
 export type HostelAllocationUpdate = Database['public']['Tables']['hostel_allocations']['Update']
+
+export type Refund = Database['public']['Tables']['refunds']['Row']
+export type RefundInsert = Database['public']['Tables']['refunds']['Insert']
+export type RefundUpdate = Database['public']['Tables']['refunds']['Update']
