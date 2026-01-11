@@ -46,19 +46,21 @@ export default function StudentTimetablePage() {
     const supabase = createClient()
 
     // Get student's class
-    const { data: student } = await supabase
+    const { data: studentData } = await supabase
       .from('students')
       .select('class_id, center_id, class:classes(name), center:tutorial_centers(name)')
       .eq('id', token)
       .single()
+
+    const student = studentData as { class_id: string | null; center_id: string; class?: { name: string }; center?: { name: string } } | null
 
     if (!student?.class_id) {
       setIsLoading(false)
       return
     }
 
-    setClassName((student.class as { name: string })?.name || '')
-    setCenterName((student.center as { name: string })?.name || '')
+    setClassName(student.class?.name || '')
+    setCenterName(student.center?.name || '')
 
     // Get periods
     const { data: periodsData } = await supabase
