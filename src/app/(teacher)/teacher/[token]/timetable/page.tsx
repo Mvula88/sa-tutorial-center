@@ -46,11 +46,13 @@ export default function TeacherTimetablePage() {
     const supabase = createClient()
 
     // Get teacher data
-    const { data: teacher } = await supabase
+    const { data: teacherData } = await supabase
       .from('teachers')
       .select('full_name, center_id, center:tutorial_centers(name)')
       .eq('id', token)
       .single()
+
+    const teacher = teacherData as { full_name: string; center_id: string; center?: { name: string } } | null
 
     if (!teacher) {
       setIsLoading(false)
@@ -58,7 +60,7 @@ export default function TeacherTimetablePage() {
     }
 
     setTeacherName(teacher.full_name)
-    setCenterName((teacher.center as { name: string })?.name || '')
+    setCenterName(teacher.center?.name || '')
 
     // Get periods
     const { data: periodsData } = await supabase
