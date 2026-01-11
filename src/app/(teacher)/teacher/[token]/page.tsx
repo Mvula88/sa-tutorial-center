@@ -55,11 +55,13 @@ export default function TeacherDashboard() {
     const supabase = createClient()
 
     // Get teacher data
-    const { data: teacherData } = await supabase
+    const { data: teacherDataRaw } = await supabase
       .from('teachers')
       .select('id, full_name, email, subject_specialty, center_id, center:tutorial_centers(name)')
       .eq('id', token)
       .single()
+
+    const teacherData = teacherDataRaw as { id: string; full_name: string; email: string | null; subject_specialty: string | null; center_id: string; center?: { name: string } } | null
 
     if (teacherData) {
       setTeacher(teacherData as unknown as TeacherData)
