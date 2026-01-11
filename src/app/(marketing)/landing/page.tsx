@@ -601,6 +601,28 @@ export default function LandingPage() {
         {/* Dark overlay for text readability */}
         <div className="absolute inset-0 bg-gray-900/85"></div>
 
+        {/* Educational silhouettes - subtle decorative elements */}
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
+          {/* Stacked books - bottom left */}
+          <svg className="absolute bottom-0 left-0 w-64 h-64 text-white" viewBox="0 0 100 100" fill="currentColor">
+            <rect x="10" y="60" width="25" height="35" rx="2" />
+            <rect x="20" y="55" width="25" height="40" rx="2" />
+            <rect x="30" y="50" width="25" height="45" rx="2" />
+          </svg>
+          {/* Star - top right */}
+          <svg className="absolute top-10 right-10 w-32 h-32 text-white transform rotate-12" viewBox="0 0 100 100" fill="currentColor">
+            <polygon points="50,5 55,35 85,35 60,55 70,85 50,65 30,85 40,55 15,35 45,35" />
+          </svg>
+          {/* Open book with text - bottom right */}
+          <svg className="absolute bottom-10 right-10 w-56 h-56 text-white" viewBox="0 0 100 100" fill="currentColor">
+            <path d="M20,80 L20,30 L80,30 L80,80 Z M25,35 L25,75 L75,75 L75,35 Z" />
+            <rect x="30" y="42" width="40" height="3" />
+            <rect x="30" y="50" width="35" height="3" />
+            <rect x="30" y="58" width="40" height="3" />
+            <rect x="30" y="66" width="25" height="3" />
+          </svg>
+        </div>
+
         {/* Subtle SA flag accent at bottom */}
         <div className="absolute bottom-0 left-0 w-full h-1.5 bg-gradient-to-r from-green-600 via-yellow-500 to-red-600"></div>
 
