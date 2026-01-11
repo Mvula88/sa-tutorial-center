@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import type { DashboardStats } from '@/types'
 import { formatCurrency } from '@/lib/currency'
+import { OnboardingChecklist } from '@/components/onboarding'
 
 interface StatCardProps {
   title: string
@@ -190,8 +191,13 @@ export default function DashboardPage() {
         <p className="text-gray-500 mt-1 text-sm md:text-base">Welcome back, {user?.full_name}</p>
       </div>
 
+      {/* Onboarding Checklist - shown for new users */}
+      <div className="mb-6 md:mb-8">
+        <OnboardingChecklist />
+      </div>
+
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
+      <div data-tour="dashboard-stats" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
         <StatCard
           title="Total Students"
           value={stats?.totalStudents || 0}

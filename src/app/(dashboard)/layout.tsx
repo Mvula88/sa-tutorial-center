@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/stores/auth-store'
 import { Sidebar } from '@/components/layout/sidebar'
 import { Loader2 } from 'lucide-react'
+import { ProductTour } from '@/components/onboarding'
+import { dashboardTourSteps } from '@/config/tour-steps'
 
 export default function DashboardLayout({
   children,
@@ -54,6 +56,9 @@ export default function DashboardLayout({
           &copy; {new Date().getFullYear()} Digital Wave Technologies School Management System. All rights reserved.
         </footer>
       </main>
+
+      {/* Onboarding Product Tour */}
+      <ProductTour steps={dashboardTourSteps} />
     </div>
   )
 }

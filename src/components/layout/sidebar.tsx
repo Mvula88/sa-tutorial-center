@@ -34,23 +34,24 @@ interface NavItem {
   module?: 'hostel' | 'transport' | 'library' | 'sms'
   adminOnly?: boolean
   requiresTier?: 'standard' | 'premium'
+  tourId?: string
 }
 
 const centerNavItems: NavItem[] = [
-  { label: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
-  { label: 'Students', href: '/dashboard/students', icon: <GraduationCap className="w-5 h-5" /> },
+  { label: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard className="w-5 h-5" />, tourId: 'sidebar-dashboard' },
+  { label: 'Students', href: '/dashboard/students', icon: <GraduationCap className="w-5 h-5" />, tourId: 'sidebar-students' },
   { label: 'Teachers', href: '/dashboard/teachers', icon: <Users className="w-5 h-5" />, adminOnly: true },
   { label: 'Staff', href: '/dashboard/staff', icon: <UserCog className="w-5 h-5" />, adminOnly: true },
-  { label: 'Subjects', href: '/dashboard/subjects', icon: <BookOpen className="w-5 h-5" /> },
-  { label: 'Payments', href: '/dashboard/payments', icon: <CreditCard className="w-5 h-5" /> },
+  { label: 'Subjects', href: '/dashboard/subjects', icon: <BookOpen className="w-5 h-5" />, tourId: 'sidebar-subjects' },
+  { label: 'Payments', href: '/dashboard/payments', icon: <CreditCard className="w-5 h-5" />, tourId: 'sidebar-payments' },
   { label: 'Hostel', href: '/dashboard/hostel', icon: <Home className="w-5 h-5" />, module: 'hostel', requiresTier: 'premium' },
   { label: 'Transport', href: '/dashboard/transport', icon: <Bus className="w-5 h-5" />, module: 'transport', requiresTier: 'premium' },
   { label: 'Library', href: '/dashboard/library', icon: <Library className="w-5 h-5" />, module: 'library', requiresTier: 'standard' },
   { label: 'Subscription', href: '/dashboard/subscription', icon: <Sparkles className="w-5 h-5" />, adminOnly: true },
   { label: 'Audit Logs', href: '/dashboard/audit-logs', icon: <History className="w-5 h-5" />, adminOnly: true },
-  { label: 'Reports', href: '/dashboard/reports', icon: <FileText className="w-5 h-5" />, adminOnly: true },
+  { label: 'Reports', href: '/dashboard/reports', icon: <FileText className="w-5 h-5" />, adminOnly: true, tourId: 'sidebar-reports' },
   { label: 'Referrals', href: '/dashboard/referrals', icon: <Gift className="w-5 h-5" />, adminOnly: true },
-  { label: 'Settings', href: '/dashboard/settings', icon: <Settings className="w-5 h-5" />, adminOnly: true },
+  { label: 'Settings', href: '/dashboard/settings', icon: <Settings className="w-5 h-5" />, adminOnly: true, tourId: 'sidebar-settings' },
 ]
 
 // Mobile Header Component
@@ -209,6 +210,7 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
+              data-tour={item.tourId}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
                 isActive
                   ? 'text-white'
