@@ -31,33 +31,33 @@ import {
 const features = [
   {
     icon: Users,
-    title: 'Student Management',
-    description: 'Track student registrations, attendance, grades, and parent information all in one place.',
+    title: 'Student Records',
+    description: 'Keep all your student info in one place. Contact details, grades, parent info - no more digging through folders or WhatsApp messages.',
   },
   {
     icon: CreditCard,
-    title: 'Fee & Payment Tracking',
-    description: 'Manage monthly fees, track payments, generate receipts, and identify outstanding balances.',
+    title: 'Fee Collection',
+    description: 'Know exactly who has paid, who owes, and how much. Print receipts on the spot. No more awkward "did you pay?" conversations.',
   },
   {
     icon: BarChart3,
-    title: 'Reports & Analytics',
-    description: 'Get insights into your centre performance with detailed financial and student reports.',
+    title: 'Monthly Reports',
+    description: 'See how your centre is doing at a glance. Which subjects are popular, monthly revenue, outstanding fees - all in plain numbers.',
   },
   {
     icon: GraduationCap,
-    title: 'Subject Management',
-    description: 'Organize subjects, assign teachers, and manage curriculum with ease.',
+    title: 'Class Organisation',
+    description: 'Manage your subjects, assign teachers, and keep track of who teaches what. Works for one teacher or twenty.',
   },
   {
     icon: Shield,
-    title: 'POPIA Compliant',
-    description: 'Your data is protected with industry-standard security and POPIA compliance.',
+    title: 'Your Data Stays Safe',
+    description: 'We take POPIA seriously. Student information is protected and you control who sees what.',
   },
   {
     icon: Clock,
-    title: 'Save Hours Weekly',
-    description: 'Automate administrative tasks and focus on what matters most - teaching.',
+    title: 'Less Admin Work',
+    description: 'Stop spending evenings on spreadsheets. The boring stuff gets done faster so you can focus on actual teaching.',
   },
 ]
 
@@ -141,42 +141,6 @@ const testimonials = [
   },
 ]
 
-// Animated counter hook
-function useCountUp(end: number, duration: number = 2000, start: number = 0) {
-  const [count, setCount] = useState(start)
-  const [isVisible, setIsVisible] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !isVisible) {
-          setIsVisible(true)
-        }
-      },
-      { threshold: 0.5 }
-    )
-
-    if (ref.current) observer.observe(ref.current)
-    return () => observer.disconnect()
-  }, [isVisible])
-
-  useEffect(() => {
-    if (!isVisible) return
-
-    let startTime: number
-    const animate = (currentTime: number) => {
-      if (!startTime) startTime = currentTime
-      const progress = Math.min((currentTime - startTime) / duration, 1)
-      setCount(Math.floor(progress * (end - start) + start))
-      if (progress < 1) requestAnimationFrame(animate)
-    }
-    requestAnimationFrame(animate)
-  }, [isVisible, end, duration, start])
-
-  return { count, ref }
-}
-
 // Intersection Observer hook for animations
 function useInView(threshold = 0.1) {
   const ref = useRef<HTMLDivElement>(null)
@@ -207,10 +171,6 @@ export default function LandingPage() {
   const testimonialsRef = useInView(0.1)
   const ctaRef = useInView(0.3)
 
-  const stat1 = useCountUp(60, 2000)
-  const stat2 = useCountUp(10, 1500)
-  const stat3 = useCountUp(99, 1800)
-  const stat4 = useCountUp(100, 2200)
 
   return (
     <div className="min-h-screen bg-white overflow-x-hidden">
@@ -628,46 +588,21 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-16 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 relative overflow-hidden">
-        {/* Animated grid background */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute inset-0" style={{
-            backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
-            backgroundSize: '50px 50px'
-          }}></div>
-        </div>
-
-        {/* Glowing orbs */}
-        <div className="absolute top-0 left-1/4 w-64 h-64 bg-blue-500 rounded-full filter blur-3xl opacity-10 animate-float"></div>
-        <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-purple-500 rounded-full filter blur-3xl opacity-10 animate-float-delayed"></div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            <div ref={stat1.ref} className="group">
-              <div className="text-3xl md:text-5xl font-bold text-white mb-2 group-hover:text-gradient transition-all">
-                {stat1.count}<span className="text-blue-400">%</span>
-              </div>
-              <div className="text-gray-400 group-hover:text-gray-300 transition-colors">of centres still use Excel</div>
-            </div>
-            <div ref={stat2.ref} className="group">
-              <div className="text-3xl md:text-5xl font-bold text-white mb-2 group-hover:text-gradient transition-all">
-                {stat2.count}<span className="text-blue-400">+</span>
-              </div>
-              <div className="text-gray-400 group-hover:text-gray-300 transition-colors">hours saved per week</div>
-            </div>
-            <div ref={stat3.ref} className="group">
-              <div className="text-3xl md:text-5xl font-bold text-white mb-2 group-hover:text-gradient transition-all">
-                <span className="text-blue-400">R</span>{stat3.count}
-              </div>
-              <div className="text-gray-400 group-hover:text-gray-300 transition-colors">starting price per month</div>
-            </div>
-            <div ref={stat4.ref} className="group">
-              <div className="text-3xl md:text-5xl font-bold text-white mb-2 group-hover:text-gradient transition-all">
-                {stat4.count}<span className="text-blue-400">%</span>
-              </div>
-              <div className="text-gray-400 group-hover:text-gray-300 transition-colors">POPIA compliant</div>
-            </div>
+      {/* Problem Statement Section */}
+      <section className="py-16 bg-gray-900 relative overflow-hidden">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">
+            Running a tutorial centre is hard enough
+          </h2>
+          <p className="text-gray-400 text-lg leading-relaxed">
+            You shouldn&apos;t have to spend your evenings chasing payments, updating spreadsheets, or trying to remember which parent you need to call back. We built this because we saw too many dedicated educators drowning in admin work instead of doing what they do best - teaching.
+          </p>
+          <div className="mt-8 flex flex-wrap justify-center gap-6 text-sm text-gray-500">
+            <span>From R99/month</span>
+            <span className="text-gray-600">•</span>
+            <span>No setup fees</span>
+            <span className="text-gray-600">•</span>
+            <span>Cancel anytime</span>
           </div>
         </div>
       </section>
@@ -680,10 +615,10 @@ export default function LandingPage() {
         <div ref={featuresRef.ref} className="max-w-7xl mx-auto relative z-10">
           <div className={`text-center mb-16 ${featuresRef.isInView ? 'animate-fade-in-up' : 'opacity-0'}`}>
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Everything You Need to Run Your Centre
+              What you can do with it
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Purpose-built features for tutorial centres, not bloated enterprise software.
+              The basics, done properly. Nothing fancy, just the tools you actually need.
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
