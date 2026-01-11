@@ -79,31 +79,34 @@ export default function AuditLogsPage() {
   const hasActiveFilters = actionFilter || entityTypeFilter || startDate || endDate
 
   return (
-    <div className="p-4 md:p-8 max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <History className="w-6 h-6" />
-            Audit Logs
-          </h1>
-          <p className="text-gray-500 mt-1">Track all changes made to your center&apos;s data</p>
+    <div className="min-h-screen bg-gray-50/50">
+      {/* Header Section */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="px-4 md:px-8 py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-semibold text-gray-900">Audit Logs</h1>
+              <p className="mt-1 text-sm text-gray-500">Track all changes made to your center&apos;s data</p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => setShowFilters(!showFilters)}
+              leftIcon={<Filter className="w-4 h-4" />}
+            >
+              Filters
+              {hasActiveFilters && (
+                <span className="ml-2 w-2 h-2 rounded-full bg-blue-600" />
+              )}
+            </Button>
+          </div>
         </div>
-        <Button
-          variant="outline"
-          onClick={() => setShowFilters(!showFilters)}
-          leftIcon={<Filter className="w-4 h-4" />}
-        >
-          Filters
-          {hasActiveFilters && (
-            <span className="ml-2 w-2 h-2 rounded-full bg-blue-600" />
-          )}
-        </Button>
       </div>
+
+      <div className="px-4 md:px-8 py-6 space-y-6">
 
       {/* Filters */}
       {showFilters && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Action</label>
@@ -180,12 +183,12 @@ export default function AuditLogsPage() {
       )}
 
       {/* Results Summary */}
-      <div className="mb-4 text-sm text-gray-500">
+      <div className="text-sm text-gray-500">
         Showing {logs.length} of {total} entries
       </div>
 
       {/* Logs Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         {isLoading ? (
           <div className="p-8">
             <div className="animate-pulse space-y-4">
@@ -278,7 +281,7 @@ export default function AuditLogsPage() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between mt-6">
+        <div className="flex items-center justify-between">
           <p className="text-sm text-gray-500">
             Page {page} of {totalPages}
           </p>
@@ -304,6 +307,7 @@ export default function AuditLogsPage() {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }

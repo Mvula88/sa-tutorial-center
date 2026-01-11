@@ -19,8 +19,11 @@ import {
   Loader2,
   Check,
   Sparkles,
+  CheckCircle,
+  XCircle,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { formatCurrency } from '@/lib/currency'
 
 // Default subjects that all centers start with
 const DEFAULT_SUBJECTS = [
@@ -55,7 +58,7 @@ interface Subject {
 
 export default function SubjectsPage() {
   const { user, isCenterAdmin } = useAuthStore()
-  const canEdit = isCenterAdmin() // Only center admin can edit subjects and fees
+  const canEdit = isCenterAdmin()
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isInitializing, setIsInitializing] = useState(false)
@@ -87,7 +90,6 @@ export default function SubjectsPage() {
     initializeAndFetchSubjects()
   }, [user?.center_id])
 
-  // Initialize default subjects if they don't exist, then fetch all
   async function initializeAndFetchSubjects() {
     if (!user?.center_id) return
 
@@ -95,7 +97,6 @@ export default function SubjectsPage() {
     const supabase = createClient()
 
     try {
-      // First, check if center has any subjects
       const { data: existingSubjects, error: checkError } = await supabase
         .from('subjects')
         .select('name')
@@ -103,7 +104,6 @@ export default function SubjectsPage() {
 
       if (checkError) throw checkError
 
-      // If no subjects exist, create all default subjects
       if (!existingSubjects || existingSubjects.length === 0) {
         setIsInitializing(true)
         const defaultSubjectsToInsert = DEFAULT_SUBJECTS.map((s) => ({
@@ -111,8 +111,8 @@ export default function SubjectsPage() {
           name: s.name,
           code: s.code,
           description: s.description,
-          monthly_fee: 0, // Centers will set their own fees
-          is_active: true, // All active by default
+          monthly_fee: 0,
+          is_active: true,
         }))
 
         const { error: insertError } = await supabase
@@ -123,7 +123,6 @@ export default function SubjectsPage() {
         setIsInitializing(false)
       }
 
-      // Now fetch all subjects
       await fetchSubjects()
     } catch (error) {
       console.error('Error initializing subjects:', error)
@@ -148,7 +147,6 @@ export default function SubjectsPage() {
 
       if (error) throw error
 
-      // Get counts for each subject
       interface SubjectData {
         id: string
         name: string
@@ -192,7 +190,6 @@ export default function SubjectsPage() {
     }
   }
 
-  // Quick toggle for active/inactive status
   async function handleToggleActive(subject: Subject) {
     setTogglingId(subject.id)
     const supabase = createClient()
@@ -208,7 +205,6 @@ export default function SubjectsPage() {
 
       if (error) throw error
 
-      // Update local state immediately
       setSubjects((prev) =>
         prev.map((s) =>
           s.id === subject.id ? { ...s, is_active: !s.is_active } : s
@@ -323,7 +319,6 @@ export default function SubjectsPage() {
     setShowModal(true)
   }
 
-  // Check if a subject is a default one
   function isDefaultSubject(name: string): boolean {
     return DEFAULT_SUBJECTS.some(
       (ds) => ds.name.toLowerCase() === name.toLowerCase()
@@ -336,15 +331,15 @@ export default function SubjectsPage() {
       s.code?.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  // Separate into standard and custom subjects
   const standardSubjects = filteredSubjects.filter((s) => isDefaultSubject(s.name))
   const customSubjects = filteredSubjects.filter((s) => !isDefaultSubject(s.name))
 
   const activeCount = subjects.filter((s) => s.is_active).length
+  const totalFeeRevenue = subjects.filter(s => s.is_active).reduce((sum, s) => sum + s.monthly_fee, 0)
 
   if (isInitializing) {
     return (
-      <div className="p-8 flex flex-col items-center justify-center min-h-[400px]">
+      <div className="min-h-screen bg-gray-50/50 flex flex-col items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-4" />
         <p className="text-gray-600">Setting up default subjects...</p>
       </div>
@@ -352,156 +347,133 @@ export default function SubjectsPage() {
   }
 
   return (
-    <div className="p-8">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Subjects</h1>
-          <p className="text-gray-500 mt-1">
-            {activeCount} of {subjects.length} subjects active
-          </p>
-        </div>
-        {canEdit && (
-          <Button
-            leftIcon={<Plus className="w-4 h-4" />}
-            onClick={() => {
-              resetForm()
-              setShowModal(true)
-            }}
-          >
-            Add Custom Subject
-          </Button>
-        )}
-      </div>
-
-      {/* Search */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search subjects..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none"
-          />
-        </div>
-      </div>
-
-      {isLoading ? (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
-          <div className="animate-pulse grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-24 bg-gray-100 rounded-lg"></div>
-            ))}
+    <div className="min-h-screen bg-gray-50/50">
+      {/* Header Section */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="px-4 md:px-8 py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-semibold text-gray-900">Subjects</h1>
+              <p className="mt-1 text-sm text-gray-500">Manage subjects and their monthly fees</p>
+            </div>
+            {canEdit && (
+              <Button
+                size="lg"
+                leftIcon={<Plus className="w-5 h-5" />}
+                onClick={() => {
+                  resetForm()
+                  setShowModal(true)
+                }}
+              >
+                Add Custom Subject
+              </Button>
+            )}
           </div>
         </div>
-      ) : (
-        <>
-          {/* Standard Subjects */}
-          <div className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <Sparkles className="w-5 h-5 text-amber-500" />
-              <h2 className="text-lg font-semibold text-gray-900">Standard Subjects</h2>
-              <span className="text-sm text-gray-500">
-                ({standardSubjects.filter((s) => s.is_active).length} active)
-              </span>
-            </div>
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-gray-100">
-                {standardSubjects.map((subject) => (
-                  <div
-                    key={subject.id}
-                    className={`bg-white p-4 flex items-center justify-between transition-colors ${
-                      subject.is_active ? '' : 'opacity-60'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      {canEdit ? (
-                        <button
-                          onClick={() => handleToggleActive(subject)}
-                          disabled={togglingId === subject.id}
-                          className={`flex-shrink-0 w-10 h-6 rounded-full transition-colors relative ${
-                            subject.is_active ? 'bg-green-500' : 'bg-gray-300'
-                          }`}
-                        >
-                          <span
-                            className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                              subject.is_active ? 'left-5' : 'left-1'
-                            }`}
-                          />
-                          {togglingId === subject.id && (
-                            <Loader2 className="w-4 h-4 animate-spin absolute top-1 left-3 text-gray-400" />
-                          )}
-                        </button>
-                      ) : (
-                        <span
-                          className={`flex-shrink-0 w-3 h-3 rounded-full ${
-                            subject.is_active ? 'bg-green-500' : 'bg-gray-300'
-                          }`}
-                        />
-                      )}
-                      <div className="min-w-0">
-                        <p className="font-medium text-gray-900 truncate">
-                          {subject.name}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {subject.code} • R {subject.monthly_fee.toFixed(2)}/mo
-                        </p>
-                      </div>
-                    </div>
-                    {canEdit && (
-                      <div className="flex items-center gap-1 ml-2">
-                        <button
-                          onClick={() => openEdit(subject)}
-                          className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                          title="Edit fee and details"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))}
+      </div>
+
+      <div className="px-4 md:px-8 py-6 space-y-6">
+        {/* Quick Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Total Subjects</p>
+                <p className="mt-2 text-2xl font-semibold text-gray-900">
+                  {subjects.length}
+                </p>
+              </div>
+              <div className="p-3 bg-blue-100 rounded-xl">
+                <BookOpen className="w-6 h-6 text-blue-600" />
               </div>
             </div>
           </div>
 
-          {/* Custom Subjects */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-blue-500" />
-                <h2 className="text-lg font-semibold text-gray-900">Custom Subjects</h2>
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Active</p>
+                <p className="mt-2 text-2xl font-semibold text-green-600">
+                  {activeCount}
+                </p>
+                <p className="mt-1 text-xs text-gray-500">
+                  Available for enrollment
+                </p>
+              </div>
+              <div className="p-3 bg-green-100 rounded-xl">
+                <CheckCircle className="w-6 h-6 text-green-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Inactive</p>
+                <p className="mt-2 text-2xl font-semibold text-gray-600">
+                  {subjects.length - activeCount}
+                </p>
+                <p className="mt-1 text-xs text-gray-500">
+                  Not available
+                </p>
+              </div>
+              <div className="p-3 bg-gray-100 rounded-xl">
+                <XCircle className="w-6 h-6 text-gray-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Total Monthly Fee</p>
+                <p className="mt-2 text-2xl font-semibold text-emerald-600">
+                  {formatCurrency(totalFeeRevenue)}
+                </p>
+                <p className="mt-1 text-xs text-gray-500">
+                  Per student (all subjects)
+                </p>
+              </div>
+              <div className="p-3 bg-emerald-100 rounded-xl">
+                <DollarSign className="w-6 h-6 text-emerald-600" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Search */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search subjects by name or code..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none text-sm"
+            />
+          </div>
+        </div>
+
+        {isLoading ? (
+          <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto" />
+            <p className="mt-2 text-sm text-gray-500">Loading subjects...</p>
+          </div>
+        ) : (
+          <>
+            {/* Standard Subjects */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <Sparkles className="w-5 h-5 text-amber-500" />
+                <h2 className="text-lg font-semibold text-gray-900">Standard Subjects</h2>
                 <span className="text-sm text-gray-500">
-                  ({customSubjects.length} subjects)
+                  ({standardSubjects.filter((s) => s.is_active).length} active)
                 </span>
               </div>
-            </div>
-
-            {customSubjects.length === 0 ? (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
-                <BookOpen className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500 mb-4">
-                  No custom subjects yet.{canEdit && ' Add subjects specific to your center.'}
-                </p>
-                {canEdit && (
-                  <Button
-                    variant="secondary"
-                    leftIcon={<Plus className="w-4 h-4" />}
-                    onClick={() => {
-                      resetForm()
-                      setShowModal(true)
-                    }}
-                  >
-                    Add Custom Subject
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-gray-100">
-                  {customSubjects.map((subject) => (
+                  {standardSubjects.map((subject) => (
                     <div
                       key={subject.id}
                       className={`bg-white p-4 flex items-center justify-between transition-colors ${
@@ -513,17 +485,17 @@ export default function SubjectsPage() {
                           <button
                             onClick={() => handleToggleActive(subject)}
                             disabled={togglingId === subject.id}
-                            className={`flex-shrink-0 w-10 h-6 rounded-full transition-colors relative ${
+                            className={`flex-shrink-0 w-11 h-6 rounded-full transition-colors relative ${
                               subject.is_active ? 'bg-green-500' : 'bg-gray-300'
                             }`}
                           >
                             <span
                               className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                                subject.is_active ? 'left-5' : 'left-1'
+                                subject.is_active ? 'left-6' : 'left-1'
                               }`}
                             />
                             {togglingId === subject.id && (
-                              <Loader2 className="w-4 h-4 animate-spin absolute top-1 left-3 text-gray-400" />
+                              <Loader2 className="w-4 h-4 animate-spin absolute top-1 left-3.5 text-gray-400" />
                             )}
                           </button>
                         ) : (
@@ -538,49 +510,140 @@ export default function SubjectsPage() {
                             {subject.name}
                           </p>
                           <p className="text-xs text-gray-500">
-                            {subject.code || 'No code'} • R {subject.monthly_fee.toFixed(2)}/mo
+                            {subject.code} • {formatCurrency(subject.monthly_fee)}/mo
                           </p>
                         </div>
                       </div>
                       {canEdit && (
-                        <div className="flex items-center gap-1 ml-2">
-                          <button
-                            onClick={() => openEdit(subject)}
-                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              setSubjectToDelete(subject)
-                              setDeleteModalOpen(true)
-                            }}
-                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => openEdit(subject)}
+                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors ml-2"
+                          title="Edit fee and details"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
                       )}
                     </div>
                   ))}
                 </div>
               </div>
-            )}
-          </div>
-        </>
-      )}
+            </div>
+
+            {/* Custom Subjects */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-blue-500" />
+                  <h2 className="text-lg font-semibold text-gray-900">Custom Subjects</h2>
+                  <span className="text-sm text-gray-500">
+                    ({customSubjects.length} subjects)
+                  </span>
+                </div>
+              </div>
+
+              {customSubjects.length === 0 ? (
+                <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+                  <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No custom subjects</h3>
+                  <p className="text-gray-500 mb-6">
+                    {canEdit ? 'Add subjects specific to your center.' : 'No custom subjects have been added.'}
+                  </p>
+                  {canEdit && (
+                    <Button
+                      leftIcon={<Plus className="w-4 h-4" />}
+                      onClick={() => {
+                        resetForm()
+                        setShowModal(true)
+                      }}
+                    >
+                      Add Custom Subject
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-gray-100">
+                    {customSubjects.map((subject) => (
+                      <div
+                        key={subject.id}
+                        className={`bg-white p-4 flex items-center justify-between transition-colors ${
+                          subject.is_active ? '' : 'opacity-60'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          {canEdit ? (
+                            <button
+                              onClick={() => handleToggleActive(subject)}
+                              disabled={togglingId === subject.id}
+                              className={`flex-shrink-0 w-11 h-6 rounded-full transition-colors relative ${
+                                subject.is_active ? 'bg-green-500' : 'bg-gray-300'
+                              }`}
+                            >
+                              <span
+                                className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                                  subject.is_active ? 'left-6' : 'left-1'
+                                }`}
+                              />
+                              {togglingId === subject.id && (
+                                <Loader2 className="w-4 h-4 animate-spin absolute top-1 left-3.5 text-gray-400" />
+                              )}
+                            </button>
+                          ) : (
+                            <span
+                              className={`flex-shrink-0 w-3 h-3 rounded-full ${
+                                subject.is_active ? 'bg-green-500' : 'bg-gray-300'
+                              }`}
+                            />
+                          )}
+                          <div className="min-w-0">
+                            <p className="font-medium text-gray-900 truncate">
+                              {subject.name}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {subject.code || 'No code'} • {formatCurrency(subject.monthly_fee)}/mo
+                            </p>
+                          </div>
+                        </div>
+                        {canEdit && (
+                          <div className="flex items-center gap-1 ml-2">
+                            <button
+                              onClick={() => openEdit(subject)}
+                              className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSubjectToDelete(subject)
+                                setDeleteModalOpen(true)
+                              }}
+                              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
 
       {/* Add/Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900">
                 {editingSubject ? 'Edit Subject' : 'Add Custom Subject'}
               </h2>
               <button
                 onClick={() => setShowModal(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -614,7 +677,7 @@ export default function SubjectsPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none resize-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none resize-none text-sm"
                   rows={2}
                   placeholder="Brief description..."
                 />

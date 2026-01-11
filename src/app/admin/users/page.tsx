@@ -189,22 +189,27 @@ export default function UsersListPage() {
   }
 
   return (
-    <div className="p-8">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
-          <p className="text-gray-500 mt-1">Manage all platform users and their access</p>
+    <div className="min-h-screen bg-gray-50/50">
+      {/* Header Section */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="px-4 md:px-8 py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-semibold text-gray-900">User Management</h1>
+              <p className="mt-1 text-sm text-gray-500">Manage all platform users and their access</p>
+            </div>
+            <Link href="/admin/users/new">
+              <Button leftIcon={<Plus className="w-4 h-4" />}>
+                Add User
+              </Button>
+            </Link>
+          </div>
         </div>
-        <Link href="/admin/users/new">
-          <Button leftIcon={<Plus className="w-4 h-4" />}>
-            Add User
-          </Button>
-        </Link>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+      <div className="px-4 md:px-8 py-6 space-y-6">
+        {/* Filters */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1">
             <div className="relative">
@@ -256,12 +261,12 @@ export default function UsersListPage() {
               }}
               className="w-32"
             />
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        {/* Table */}
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         {isLoading ? (
           <div className="p-8 text-center">
             <div className="animate-pulse space-y-4">
@@ -427,6 +432,7 @@ export default function UsersListPage() {
             )}
           </>
         )}
+        </div>
       </div>
 
       {/* Delete Confirmation Modal */}

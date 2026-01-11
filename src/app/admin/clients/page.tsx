@@ -164,28 +164,31 @@ export default function ClientsPage() {
   }
 
   return (
-    <div className="p-4 md:p-8">
-      {/* Header */}
-      <div className="mb-6 md:mb-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-xl md:text-2xl font-bold text-gray-900">Client Contracts</h1>
-            <p className="text-gray-500 mt-1 text-sm md:text-base">Manage your tutorial center clients and payments</p>
+    <div className="min-h-screen bg-gray-50/50">
+      {/* Header Section */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="px-4 md:px-8 py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-semibold text-gray-900">Client Contracts</h1>
+              <p className="mt-1 text-sm text-gray-500">Manage your tutorial center clients and payments</p>
+            </div>
+            <Link href="/admin/clients/new">
+              <Button leftIcon={<Plus className="w-4 h-4" />}>
+                Add Client
+              </Button>
+            </Link>
           </div>
-          <Link href="/admin/clients/new">
-            <Button leftIcon={<Plus className="w-4 h-4" />} className="w-full sm:w-auto">
-              Add Client
-            </Button>
-          </Link>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4 mb-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-blue-100">
-              <Building2 className="w-5 h-5 text-blue-600" />
+      <div className="px-4 md:px-8 py-6 space-y-6">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-blue-100">
+                <Building2 className="w-5 h-5 text-blue-600" />
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900">{stats?.totalClients || 0}</p>
@@ -194,84 +197,84 @@ export default function ClientsPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-green-100">
-              <CheckCircle className="w-5 h-5 text-green-600" />
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-green-100">
+                <CheckCircle className="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">{stats?.activeClients || 0}</p>
+                <p className="text-xs text-gray-500">Active</p>
+              </div>
             </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">{stats?.activeClients || 0}</p>
-              <p className="text-xs text-gray-500">Active</p>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-emerald-100">
+                <DollarSign className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-xl font-bold text-gray-900">{formatCurrency(stats?.totalMonthlyRevenue || 0)}</p>
+                <p className="text-xs text-gray-500">Monthly Revenue</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-red-100">
+                <AlertCircle className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">{stats?.overduePayments || 0}</p>
+                <p className="text-xs text-gray-500">Overdue</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-amber-100">
+                <Calendar className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">{stats?.upcomingRenewals || 0}</p>
+                <p className="text-xs text-gray-500">Renewals Due</p>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-emerald-100">
-              <DollarSign className="w-5 h-5 text-emerald-600" />
+        {/* Search and Filter */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search by business name, contact, or phone..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none"
+              />
             </div>
-            <div>
-              <p className="text-xl font-bold text-gray-900">{formatCurrency(stats?.totalMonthlyRevenue || 0)}</p>
-              <p className="text-xs text-gray-500">Monthly Revenue</p>
-            </div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none"
+            >
+              <option value="">All Status</option>
+              <option value="active">Active</option>
+              <option value="pending">Pending</option>
+              <option value="suspended">Suspended</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-red-100">
-              <AlertCircle className="w-5 h-5 text-red-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">{stats?.overduePayments || 0}</p>
-              <p className="text-xs text-gray-500">Overdue</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-amber-100">
-              <Calendar className="w-5 h-5 text-amber-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">{stats?.upcomingRenewals || 0}</p>
-              <p className="text-xs text-gray-500">Renewals Due</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Search and Filter */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search by business name, contact, or phone..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none"
-            />
-          </div>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none"
-          >
-            <option value="">All Status</option>
-            <option value="active">Active</option>
-            <option value="pending">Pending</option>
-            <option value="suspended">Suspended</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Clients List */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        {/* Clients List */}
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         {isLoading ? (
           <div className="p-8">
             <div className="animate-pulse space-y-4">
@@ -430,6 +433,7 @@ export default function ClientsPage() {
             </div>
           </>
         )}
+        </div>
       </div>
     </div>
   )

@@ -544,103 +544,126 @@ export default function ReportsPage() {
 
   if (isLoading) {
     return (
-      <div className="p-4 md:p-8">
-        <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-gray-200 rounded w-48"></div>
+      <div className="min-h-screen bg-gray-50/50">
+        <div className="bg-white border-b border-gray-200">
+          <div className="px-4 md:px-8 py-6">
+            <div className="animate-pulse h-8 bg-gray-200 rounded w-48"></div>
+          </div>
+        </div>
+        <div className="px-4 md:px-8 py-6 space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-32 bg-gray-200 rounded-xl"></div>
+              <div key={i} className="h-32 bg-gray-200 rounded-xl animate-pulse"></div>
             ))}
           </div>
-          <div className="h-64 bg-gray-200 rounded-xl"></div>
+          <div className="h-64 bg-gray-200 rounded-xl animate-pulse"></div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="p-4 md:p-8">
-      {/* Header */}
-      <div className="mb-6 md:mb-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-xl md:text-2xl font-bold text-gray-900">Reports & Analytics</h1>
-            <p className="text-gray-500 mt-1 text-sm md:text-base">View performance metrics and generate reports</p>
-          </div>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
-            <Select
-              value={dateRange}
-              onChange={(e) => setDateRange(e.target.value)}
-              options={[
-                { value: 'this_month', label: 'This Month' },
-                { value: 'last_month', label: 'Last Month' },
-                { value: 'this_year', label: 'This Year' },
-                { value: 'all_time', label: 'All Time' },
-              ]}
-              className="w-full sm:w-40"
-            />
-            <Button leftIcon={<Download className="w-4 h-4" />} variant="secondary" onClick={handleExportOverview} className="w-full sm:w-auto">
-              Export Overview
-            </Button>
+    <div className="min-h-screen bg-gray-50/50">
+      {/* Header Section */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="px-4 md:px-8 py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-semibold text-gray-900">Reports & Analytics</h1>
+              <p className="mt-1 text-sm text-gray-500">View performance metrics and generate reports</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Select
+                value={dateRange}
+                onChange={(e) => setDateRange(e.target.value)}
+                options={[
+                  { value: 'this_month', label: 'This Month' },
+                  { value: 'last_month', label: 'Last Month' },
+                  { value: 'this_year', label: 'This Year' },
+                  { value: 'all_time', label: 'All Time' },
+                ]}
+                className="w-40"
+              />
+              <Button size="lg" leftIcon={<Download className="w-4 h-4" />} variant="outline" onClick={handleExportOverview}>
+                Export Overview
+              </Button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 md:mb-8">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <GraduationCap className="w-5 h-5 text-blue-600" />
-            </div>
-            <span className="text-sm text-green-600 flex items-center gap-1">
-              <TrendingUp className="w-3 h-3" />
-              +{stats?.newStudentsThisMonth || 0}
-            </span>
-          </div>
-          <p className="text-2xl font-bold text-gray-900">{stats?.activeStudents || 0}</p>
-          <p className="text-sm text-gray-500">Active Students</p>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <DollarSign className="w-5 h-5 text-green-600" />
-            </div>
-            <span className="text-sm text-green-600">{stats?.collectionRate.toFixed(0)}%</span>
-          </div>
-          <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats?.totalFeesCollected || 0)}</p>
-          <p className="text-sm text-gray-500">Fees Collected</p>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-2 bg-red-100 rounded-lg">
-              <TrendingDown className="w-5 h-5 text-red-600" />
+      <div className="px-4 md:px-8 py-6 space-y-6">
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Active Students</p>
+                <p className="mt-2 text-2xl font-semibold text-gray-900">{stats?.activeStudents || 0}</p>
+                <p className="mt-1 text-xs text-green-600 flex items-center gap-1">
+                  <TrendingUp className="w-3 h-3" />
+                  +{stats?.newStudentsThisMonth || 0} this month
+                </p>
+              </div>
+              <div className="p-3 bg-blue-100 rounded-xl">
+                <GraduationCap className="w-6 h-6 text-blue-600" />
+              </div>
             </div>
           </div>
-          <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats?.totalOutstanding || 0)}</p>
-          <p className="text-sm text-gray-500">Outstanding</p>
-        </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Users className="w-5 h-5 text-purple-600" />
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Fees Collected</p>
+                <p className="mt-2 text-2xl font-semibold text-green-600">{formatCurrency(stats?.totalFeesCollected || 0)}</p>
+                <p className="mt-1 text-xs text-gray-500">
+                  {stats?.collectionRate.toFixed(0)}% collection rate
+                </p>
+              </div>
+              <div className="p-3 bg-green-100 rounded-xl">
+                <DollarSign className="w-6 h-6 text-green-600" />
+              </div>
             </div>
           </div>
-          <p className="text-2xl font-bold text-gray-900">{stats?.totalTeachers || 0}</p>
-          <p className="text-sm text-gray-500">Teachers</p>
-        </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Fee Status Breakdown */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <PieChart className="w-5 h-5 text-gray-500" />
-            <h2 className="text-lg font-semibold text-gray-900">Fee Status Breakdown</h2>
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Outstanding</p>
+                <p className="mt-2 text-2xl font-semibold text-red-600">{formatCurrency(stats?.totalOutstanding || 0)}</p>
+                <p className="mt-1 text-xs text-gray-500">
+                  Pending payments
+                </p>
+              </div>
+              <div className="p-3 bg-red-100 rounded-xl">
+                <TrendingDown className="w-6 h-6 text-red-600" />
+              </div>
+            </div>
           </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Teachers</p>
+                <p className="mt-2 text-2xl font-semibold text-purple-600">{stats?.totalTeachers || 0}</p>
+                <p className="mt-1 text-xs text-gray-500">
+                  Active staff
+                </p>
+              </div>
+              <div className="p-3 bg-purple-100 rounded-xl">
+                <Users className="w-6 h-6 text-purple-600" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Fee Status Breakdown */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <PieChart className="w-5 h-5 text-gray-500" />
+              <h2 className="text-lg font-semibold text-gray-900">Fee Status Breakdown</h2>
+            </div>
           <div className="space-y-4">
             <div>
               <div className="flex items-center justify-between mb-1">
@@ -687,12 +710,12 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        {/* Payments by Method */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <CreditCard className="w-5 h-5 text-gray-500" />
-            <h2 className="text-lg font-semibold text-gray-900">Payments by Method</h2>
-          </div>
+          {/* Payments by Method */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <CreditCard className="w-5 h-5 text-gray-500" />
+              <h2 className="text-lg font-semibold text-gray-900">Payments by Method</h2>
+            </div>
           <div className="space-y-4">
             {[
               { label: 'Cash', value: stats?.paymentsByMethod.cash || 0, color: 'bg-green-500' },
@@ -719,28 +742,28 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      {/* Students by Grade */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
-        <div className="flex items-center gap-3 mb-6">
-          <BarChart3 className="w-5 h-5 text-gray-500" />
-          <h2 className="text-lg font-semibold text-gray-900">Students by Grade</h2>
+        {/* Students by Grade */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <BarChart3 className="w-5 h-5 text-gray-500" />
+            <h2 className="text-lg font-semibold text-gray-900">Students by Grade</h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {stats?.studentsByGrade.map((item) => (
+              <div key={item.grade} className="bg-gray-50 rounded-lg p-4 text-center">
+                <p className="text-2xl font-semibold text-gray-900">{item.count}</p>
+                <p className="text-sm text-gray-500">{item.grade}</p>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {stats?.studentsByGrade.map((item) => (
-            <div key={item.grade} className="bg-gray-50 rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold text-gray-900">{item.count}</p>
-              <p className="text-sm text-gray-500">{item.grade}</p>
-            </div>
-          ))}
-        </div>
-      </div>
 
-      {/* Available Reports */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <FileText className="w-5 h-5 text-gray-500" />
-          <h2 className="text-lg font-semibold text-gray-900">Available Reports</h2>
-        </div>
+        {/* Available Reports */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <FileText className="w-5 h-5 text-gray-500" />
+            <h2 className="text-lg font-semibold text-gray-900">Available Reports</h2>
+          </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[
             { title: 'Fee Collection Report', description: 'Detailed breakdown of all fees collected', icon: <DollarSign className="w-5 h-5" />, type: 'fee_collection' },
@@ -765,8 +788,9 @@ export default function ReportsPage() {
                 </div>
                 <Download className="w-4 h-4 text-gray-400 group-hover:text-blue-600" />
               </div>
-            </button>
-          ))}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </div>

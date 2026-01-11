@@ -236,10 +236,15 @@ export default function SubscriptionPage() {
 
   if (isLoading) {
     return (
-      <div className="p-8">
-        <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-          <div className="h-64 bg-gray-200 rounded-xl"></div>
+      <div className="min-h-screen bg-gray-50/50">
+        <div className="bg-white border-b border-gray-200">
+          <div className="px-4 md:px-8 py-6">
+            <div className="animate-pulse h-8 bg-gray-200 rounded w-48"></div>
+          </div>
+        </div>
+        <div className="px-4 md:px-8 py-6 space-y-6">
+          <div className="h-32 bg-gray-200 rounded-xl animate-pulse"></div>
+          <div className="h-64 bg-gray-200 rounded-xl animate-pulse"></div>
         </div>
       </div>
     )
@@ -258,113 +263,120 @@ export default function SubscriptionPage() {
   const currentTierLevel = (isTrialing || currentPlan === 'trial') ? 0 : (tierHierarchy[currentPlan] || 0)
 
   return (
-    <div className="p-4 md:p-8 max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Subscription</h1>
-        <p className="text-gray-500 mt-1">Manage your subscription plan and billing</p>
+    <div className="min-h-screen bg-gray-50/50">
+      {/* Header Section */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="px-4 md:px-8 py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-semibold text-gray-900">Subscription</h1>
+              <p className="mt-1 text-sm text-gray-500">Manage your subscription plan and billing</p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Current Status */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <h2 className="text-lg font-semibold text-gray-900">Current Plan</h2>
-              {isTrialing && (
-                <span className="px-2 py-1 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
-                  Trial
-                </span>
+      <div className="px-4 md:px-8 py-6 space-y-6">
+        {/* Current Status */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <h2 className="text-lg font-semibold text-gray-900">Current Plan</h2>
+                {isTrialing && (
+                  <span className="px-2 py-1 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
+                    Trial
+                  </span>
+                )}
+                {isActive && (
+                  <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                    Active
+                  </span>
+                )}
+                {subscription?.cancel_at_period_end && (
+                  <span className="px-2 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full">
+                    Cancelling
+                  </span>
+                )}
+              </div>
+              <p className="text-2xl font-bold text-gray-900 capitalize">
+                {currentPlan === 'trial' ? 'Free Trial' : `${currentPlan} Plan`}
+              </p>
+              {isTrialing && trialEndsAt && (
+                <div className="flex items-center gap-2 mt-2 text-amber-600">
+                  <Calendar className="w-4 h-4" />
+                  <span className="text-sm">
+                    {daysLeftInTrial} days left in trial (ends {trialEndsAt.toLocaleDateString()})
+                  </span>
+                </div>
               )}
-              {isActive && (
-                <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-                  Active
-                </span>
+              {isActive && subscription?.current_period_end && (
+                <p className="text-sm text-gray-500 mt-1">
+                  {subscription.cancel_at_period_end
+                    ? `Access until ${new Date(subscription.current_period_end).toLocaleDateString()}`
+                    : `Renews on ${new Date(subscription.current_period_end).toLocaleDateString()}`}
+                </p>
               )}
-              {subscription?.cancel_at_period_end && (
-                <span className="px-2 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full">
-                  Cancelling
-                </span>
+              {staffCount > 0 && (
+                <div className="flex items-center gap-2 mt-2 text-gray-600">
+                  <Users className="w-4 h-4" />
+                  <span className="text-sm">
+                    {staffCount} active staff member{staffCount !== 1 ? 's' : ''}
+                  </span>
+                </div>
               )}
             </div>
-            <p className="text-2xl font-bold text-gray-900 capitalize">
-              {currentPlan === 'trial' ? 'Free Trial' : `${currentPlan} Plan`}
-            </p>
-            {isTrialing && trialEndsAt && (
-              <div className="flex items-center gap-2 mt-2 text-amber-600">
-                <Calendar className="w-4 h-4" />
-                <span className="text-sm">
-                  {daysLeftInTrial} days left in trial (ends {trialEndsAt.toLocaleDateString()})
-                </span>
-              </div>
-            )}
-            {isActive && subscription?.current_period_end && (
-              <p className="text-sm text-gray-500 mt-1">
-                {subscription.cancel_at_period_end
-                  ? `Access until ${new Date(subscription.current_period_end).toLocaleDateString()}`
-                  : `Renews on ${new Date(subscription.current_period_end).toLocaleDateString()}`}
-              </p>
-            )}
-            {staffCount > 0 && (
-              <div className="flex items-center gap-2 mt-2 text-gray-600">
-                <Users className="w-4 h-4" />
-                <span className="text-sm">
-                  {staffCount} active staff member{staffCount !== 1 ? 's' : ''}
-                </span>
-              </div>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={handleSyncSubscription}
-              isLoading={syncLoading}
-              leftIcon={<RefreshCw className="w-4 h-4" />}
-            >
-              Sync from Stripe
-            </Button>
-            {subscription?.stripe_customer_id && (
+            <div className="flex items-center gap-2">
               <Button
                 variant="outline"
-                onClick={handleManageBilling}
-                isLoading={portalLoading}
-                rightIcon={<ExternalLink className="w-4 h-4" />}
+                onClick={handleSyncSubscription}
+                isLoading={syncLoading}
+                leftIcon={<RefreshCw className="w-4 h-4" />}
               >
-                Manage Billing
+                Sync from Stripe
               </Button>
-            )}
+              {subscription?.stripe_customer_id && (
+                <Button
+                  variant="outline"
+                  onClick={handleManageBilling}
+                  isLoading={portalLoading}
+                  rightIcon={<ExternalLink className="w-4 h-4" />}
+                >
+                  Manage Billing
+                </Button>
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Trial Warning */}
-      {isTrialExpired && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-8 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="font-medium text-red-800">Your trial has expired!</p>
-            <p className="text-sm text-red-700 mt-1">
-              Choose a plan below to continue using all features. Your data is safe.
-            </p>
+        {/* Trial Warning */}
+        {isTrialExpired && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-medium text-red-800">Your trial has expired!</p>
+              <p className="text-sm text-red-700 mt-1">
+                Choose a plan below to continue using all features. Your data is safe.
+              </p>
+            </div>
           </div>
-        </div>
-      )}
-      {isTrialing && !isTrialExpired && daysLeftInTrial <= 3 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-8 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="font-medium text-amber-800">Your trial is ending soon!</p>
-            <p className="text-sm text-amber-700 mt-1">
-              Choose a plan below to continue using all features after your trial ends.
-            </p>
+        )}
+        {isTrialing && !isTrialExpired && daysLeftInTrial <= 3 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-medium text-amber-800">Your trial is ending soon!</p>
+              <p className="text-sm text-amber-700 mt-1">
+                Choose a plan below to continue using all features after your trial ends.
+              </p>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Plans */}
-      <div className="mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Available Plans</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Plans */}
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Available Plans</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {plans.map((plan) => {
             // When on trial, no plan is "current" - user needs to pick one
             const isCurrent = !isTrialing && currentPlan === plan.id
@@ -473,19 +485,20 @@ export default function SubscriptionPage() {
               </div>
             )
           })}
+          </div>
         </div>
-      </div>
 
-      {/* FAQ or Help */}
-      <div className="bg-gray-50 rounded-xl p-6">
-        <h3 className="font-semibold text-gray-900 mb-2">Need help choosing?</h3>
-        <p className="text-sm text-gray-600">
-          Contact us at{' '}
-          <a href="mailto:support@satutorialcentres.co.za" className="text-blue-600 hover:underline">
-            support@satutorialcentres.co.za
-          </a>{' '}
-          and we&apos;ll help you find the right plan for your tutorial centre.
-        </p>
+        {/* FAQ or Help */}
+        <div className="bg-gray-50 rounded-xl p-6">
+          <h3 className="font-semibold text-gray-900 mb-2">Need help choosing?</h3>
+          <p className="text-sm text-gray-600">
+            Contact us at{' '}
+            <a href="mailto:support@satutorialcentres.co.za" className="text-blue-600 hover:underline">
+              support@satutorialcentres.co.za
+            </a>{' '}
+            and we&apos;ll help you find the right plan for your tutorial centre.
+          </p>
+        </div>
       </div>
     </div>
   )

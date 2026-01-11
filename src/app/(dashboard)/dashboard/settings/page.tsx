@@ -413,14 +413,21 @@ export default function CenterSettingsPage() {
   ]
 
   return (
-    <div className="p-4 md:p-8">
-      {/* Header */}
-      <div className="mb-6 md:mb-8">
-        <h1 className="text-xl md:text-2xl font-bold text-gray-900">Settings</h1>
-        <p className="text-gray-500 mt-1 text-sm md:text-base">Manage your profile and center settings</p>
+    <div className="min-h-screen bg-gray-50/50">
+      {/* Header Section */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="px-4 md:px-8 py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-semibold text-gray-900">Settings</h1>
+              <p className="mt-1 text-sm text-gray-500">Manage your profile and center settings</p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+      <div className="px-4 md:px-8 py-6">
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
         {/* Mobile Tab Bar */}
         <div className="lg:hidden">
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-2 overflow-x-auto">
@@ -1082,6 +1089,7 @@ export default function CenterSettingsPage() {
             </div>
           )}
         </div>
+      </div>
       </div>
     </div>
   )

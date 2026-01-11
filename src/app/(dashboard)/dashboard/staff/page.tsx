@@ -15,14 +15,13 @@ import {
   UserCheck,
   Mail,
   Phone,
-  Calendar,
   Loader2,
   X,
-  AlertTriangle,
   Crown,
   Lock,
   Eye,
   EyeOff,
+  Shield,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
@@ -101,7 +100,6 @@ export default function StaffPage() {
     if (!user?.center_id) return
     const supabase = createClient()
 
-    // Get center's subscription tier
     const { data: centerData } = await supabase
       .from('tutorial_centers')
       .select('subscription_tier')
@@ -112,7 +110,6 @@ export default function StaffPage() {
     const tier = center?.subscription_tier || 'starter'
     const limit = PLAN_LIMITS[tier as keyof typeof PLAN_LIMITS]?.maxStaff ?? 2
 
-    // Count active staff
     const { count } = await supabase
       .from('users')
       .select('id', { count: 'exact', head: true })
@@ -217,7 +214,6 @@ export default function StaffPage() {
   }
 
   async function handleReactivateStaff(staffMember: StaffMember) {
-    // Check if we can reactivate (within limit)
     if (staffLimit && !staffLimit.canAdd && staffLimit.limit !== -1) {
       toast.error(`Cannot reactivate: You've reached your staff limit of ${staffLimit.limit}`)
       return
@@ -250,273 +246,312 @@ export default function StaffPage() {
 
   const activeStaff = filteredStaff.filter((s) => s.is_active)
   const inactiveStaff = filteredStaff.filter((s) => !s.is_active)
-
-  // Check if on Micro plan (no staff allowed)
   const isMicroPlan = staffLimit?.limit === 0
 
   return (
-    <div className="p-4 md:p-8">
-      {/* Header */}
-      <div className="mb-6 md:mb-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-xl md:text-2xl font-bold text-gray-900">Staff Management</h1>
-            <p className="text-gray-500 mt-1 text-sm md:text-base">
-              Manage your tutorial center staff members
-            </p>
-          </div>
-          {staffLimit && !isMicroPlan && (
-            <Button
-              leftIcon={<Plus className="w-4 h-4" />}
-              onClick={() => {
-                if (!staffLimit.canAdd) {
-                  toast.error(`You've reached your staff limit of ${staffLimit.limit}. Upgrade to add more.`)
-                  return
-                }
-                setAddForm({ full_name: '', email: '', phone: '', password: '' })
-                setFormErrors({})
-                setShowAddModal(true)
-              }}
-              disabled={!staffLimit.canAdd}
-            >
-              Add Staff
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Staff Limit Banner */}
-      {staffLimit && (
-        <div className={`rounded-xl p-4 mb-6 ${
-          isMicroPlan
-            ? 'bg-amber-50 border border-amber-200'
-            : staffLimit.canAdd
-              ? 'bg-blue-50 border border-blue-200'
-              : 'bg-red-50 border border-red-200'
-        }`}>
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-3">
-              {isMicroPlan ? (
-                <Lock className="w-5 h-5 text-amber-600" />
-              ) : (
-                <Users className="w-5 h-5 text-blue-600" />
-              )}
-              <div>
-                {isMicroPlan ? (
-                  <>
-                    <p className="font-medium text-amber-900">Staff Not Available on Micro Plan</p>
-                    <p className="text-sm text-amber-700">
-                      Upgrade to Starter (R199/mo) to add up to 2 staff members
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <p className="font-medium text-gray-900">
-                      Staff: {staffLimit.current} / {staffLimit.limit === -1 ? 'Unlimited' : staffLimit.limit}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      {staffLimit.limit === -1
-                        ? 'Premium plan - unlimited staff'
-                        : staffLimit.canAdd
-                          ? `${staffLimit.limit - staffLimit.current} staff slots remaining`
-                          : 'Staff limit reached'}
-                    </p>
-                  </>
-                )}
-              </div>
+    <div className="min-h-screen bg-gray-50/50">
+      {/* Header Section */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="px-4 md:px-8 py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-semibold text-gray-900">Staff Management</h1>
+              <p className="mt-1 text-sm text-gray-500">Manage your tutorial center staff members</p>
             </div>
-            {(isMicroPlan || !staffLimit.canAdd) && (
-              <Link href="/dashboard/subscription">
-                <Button variant="outline" size="sm" leftIcon={<Crown className="w-4 h-4" />}>
-                  Upgrade Plan
-                </Button>
-              </Link>
+            {staffLimit && !isMicroPlan && (
+              <Button
+                size="lg"
+                leftIcon={<Plus className="w-5 h-5" />}
+                onClick={() => {
+                  if (!staffLimit.canAdd) {
+                    toast.error(`You've reached your staff limit of ${staffLimit.limit}. Upgrade to add more.`)
+                    return
+                  }
+                  setAddForm({ full_name: '', email: '', phone: '', password: '' })
+                  setFormErrors({})
+                  setShowAddModal(true)
+                }}
+                disabled={!staffLimit.canAdd}
+              >
+                Add Staff
+              </Button>
             )}
           </div>
         </div>
-      )}
+      </div>
 
-      {/* Micro Plan - Show upgrade message instead of staff list */}
-      {isMicroPlan ? (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
-          <Lock className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Staff Management Not Available</h3>
-          <p className="text-gray-500 mb-6 max-w-md mx-auto">
-            The Micro plan is designed for solo operators. Upgrade to Starter or higher to add staff members to help manage your tutorial center.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+      <div className="px-4 md:px-8 py-6 space-y-6">
+        {/* Quick Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Total Staff</p>
+                <p className="mt-2 text-2xl font-semibold text-gray-900">
+                  {staff.length}
+                </p>
+              </div>
+              <div className="p-3 bg-blue-100 rounded-xl">
+                <Users className="w-6 h-6 text-blue-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Active</p>
+                <p className="mt-2 text-2xl font-semibold text-green-600">
+                  {activeStaff.length}
+                </p>
+                <p className="mt-1 text-xs text-gray-500">
+                  Can log in
+                </p>
+              </div>
+              <div className="p-3 bg-green-100 rounded-xl">
+                <UserCheck className="w-6 h-6 text-green-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Inactive</p>
+                <p className="mt-2 text-2xl font-semibold text-gray-600">
+                  {inactiveStaff.length}
+                </p>
+                <p className="mt-1 text-xs text-gray-500">
+                  Deactivated
+                </p>
+              </div>
+              <div className="p-3 bg-gray-100 rounded-xl">
+                <UserX className="w-6 h-6 text-gray-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Limit</p>
+                <p className="mt-2 text-2xl font-semibold text-purple-600">
+                  {staffLimit?.limit === -1 ? '∞' : staffLimit?.limit || 0}
+                </p>
+                <p className="mt-1 text-xs text-gray-500">
+                  {staffLimit?.tier} plan
+                </p>
+              </div>
+              <div className="p-3 bg-purple-100 rounded-xl">
+                <Shield className="w-6 h-6 text-purple-600" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Staff Limit Banner */}
+        {staffLimit && !isMicroPlan && !staffLimit.canAdd && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Users className="w-5 h-5 text-amber-600" />
+              <div>
+                <p className="font-medium text-amber-900">Staff limit reached</p>
+                <p className="text-sm text-amber-700">
+                  You have {staffLimit.current} of {staffLimit.limit} staff members. Upgrade to add more.
+                </p>
+              </div>
+            </div>
+            <Link href="/dashboard/subscription">
+              <Button variant="outline" size="sm" leftIcon={<Crown className="w-4 h-4" />}>
+                Upgrade Plan
+              </Button>
+            </Link>
+          </div>
+        )}
+
+        {/* Micro Plan - Show upgrade message */}
+        {isMicroPlan ? (
+          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+            <Lock className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Staff Management Not Available</h3>
+            <p className="text-gray-500 mb-6 max-w-md mx-auto">
+              The Micro plan is designed for solo operators. Upgrade to Starter or higher to add staff members.
+            </p>
             <Link href="/dashboard/subscription">
               <Button leftIcon={<Crown className="w-4 h-4" />}>
                 View Upgrade Options
               </Button>
             </Link>
-          </div>
 
-          {/* Plan comparison */}
-          <div className="mt-8 pt-8 border-t border-gray-100">
-            <p className="text-sm font-medium text-gray-700 mb-4">Staff Limits by Plan</p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto">
-              {[
-                { name: 'Micro', price: 'R99', staff: '0', current: subscriptionTier === 'micro' },
-                { name: 'Starter', price: 'R199', staff: '2', current: subscriptionTier === 'starter' },
-                { name: 'Standard', price: 'R399', staff: '5', current: subscriptionTier === 'standard' },
-                { name: 'Premium', price: 'R599', staff: 'Unlimited', current: subscriptionTier === 'premium' },
-              ].map((plan) => (
-                <div
-                  key={plan.name}
-                  className={`p-3 rounded-lg border ${
-                    plan.current ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
-                  }`}
-                >
-                  <p className="font-medium text-gray-900">{plan.name}</p>
-                  <p className="text-sm text-gray-500">{plan.price}/mo</p>
-                  <p className="text-sm font-medium text-blue-600 mt-1">{plan.staff} staff</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      ) : (
-        <>
-          {/* Search */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search staff by name or email..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none"
-              />
-            </div>
-          </div>
-
-          {/* Staff List */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-            {isLoading ? (
-              <div className="p-8 text-center">
-                <Loader2 className="w-8 h-8 animate-spin text-gray-400 mx-auto" />
-                <p className="text-gray-500 mt-2">Loading staff...</p>
-              </div>
-            ) : staff.length === 0 ? (
-              <div className="p-12 text-center">
-                <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No staff members yet</h3>
-                <p className="text-gray-500 mb-4">Add staff to help manage your tutorial center</p>
-                {staffLimit?.canAdd && (
-                  <Button
-                    leftIcon={<Plus className="w-4 h-4" />}
-                    onClick={() => {
-                      setAddForm({ full_name: '', email: '', phone: '', password: '' })
-                      setFormErrors({})
-                      setShowAddModal(true)
-                    }}
+            {/* Plan comparison */}
+            <div className="mt-8 pt-8 border-t border-gray-200">
+              <p className="text-sm font-medium text-gray-700 mb-4">Staff Limits by Plan</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto">
+                {[
+                  { name: 'Micro', price: 'R99', staff: '0', current: subscriptionTier === 'micro' },
+                  { name: 'Starter', price: 'R199', staff: '2', current: subscriptionTier === 'starter' },
+                  { name: 'Standard', price: 'R399', staff: '5', current: subscriptionTier === 'standard' },
+                  { name: 'Premium', price: 'R599', staff: 'Unlimited', current: subscriptionTier === 'premium' },
+                ].map((plan) => (
+                  <div
+                    key={plan.name}
+                    className={`p-3 rounded-lg border ${
+                      plan.current ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                    }`}
                   >
-                    Add Your First Staff Member
-                  </Button>
-                )}
+                    <p className="font-medium text-gray-900">{plan.name}</p>
+                    <p className="text-sm text-gray-500">{plan.price}/mo</p>
+                    <p className="text-sm font-medium text-blue-600 mt-1">{plan.staff} staff</p>
+                  </div>
+                ))}
               </div>
-            ) : (
-              <div className="divide-y divide-gray-100">
-                {/* Active Staff */}
-                {activeStaff.length > 0 && (
-                  <>
-                    <div className="px-6 py-3 bg-gray-50">
-                      <p className="text-sm font-medium text-gray-600">Active Staff ({activeStaff.length})</p>
-                    </div>
-                    {activeStaff.map((member) => (
-                      <div key={member.id} className="p-4 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-gray-50">
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                            <span className="text-blue-600 font-medium">
-                              {member.full_name.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-900">{member.full_name}</p>
-                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500">
-                              <span className="flex items-center gap-1">
-                                <Mail className="w-3 h-3" />
-                                {member.email}
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Search */}
+            <div className="bg-white rounded-xl border border-gray-200 p-4">
+              <div className="relative max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search staff by name or email..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none text-sm"
+                />
+              </div>
+            </div>
+
+            {/* Staff List */}
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              {isLoading ? (
+                <div className="p-8 text-center">
+                  <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto" />
+                  <p className="mt-2 text-sm text-gray-500">Loading staff...</p>
+                </div>
+              ) : staff.length === 0 ? (
+                <div className="p-12 text-center">
+                  <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No staff members yet</h3>
+                  <p className="text-gray-500 mb-6">Add staff to help manage your tutorial center</p>
+                  {staffLimit?.canAdd && (
+                    <Button
+                      leftIcon={<Plus className="w-4 h-4" />}
+                      onClick={() => {
+                        setAddForm({ full_name: '', email: '', phone: '', password: '' })
+                        setFormErrors({})
+                        setShowAddModal(true)
+                      }}
+                    >
+                      Add Your First Staff Member
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-100">
+                  {/* Active Staff */}
+                  {activeStaff.length > 0 && (
+                    <>
+                      <div className="px-6 py-3 bg-gray-50 border-b border-gray-200">
+                        <p className="text-sm font-semibold text-gray-600">Active Staff ({activeStaff.length})</p>
+                      </div>
+                      {activeStaff.map((member) => (
+                        <div key={member.id} className="p-4 md:px-6 md:py-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-gray-50 transition-colors">
+                          <div className="flex items-center gap-4">
+                            <div className="w-11 h-11 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                              <span className="text-blue-600 font-semibold text-lg">
+                                {member.full_name.charAt(0).toUpperCase()}
                               </span>
-                              {member.phone && (
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900">{member.full_name}</p>
+                              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500">
                                 <span className="flex items-center gap-1">
-                                  <Phone className="w-3 h-3" />
-                                  {member.phone}
+                                  <Mail className="w-3.5 h-3.5" />
+                                  {member.email}
                                 </span>
-                              )}
+                                {member.phone && (
+                                  <span className="flex items-center gap-1">
+                                    <Phone className="w-3.5 h-3.5" />
+                                    {member.phone}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-3 ml-14 md:ml-0">
-                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-                            <UserCheck className="w-3 h-3" />
-                            Active
-                          </span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setDeactivateModal({ open: true, staff: member })}
-                          >
-                            Deactivate
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </>
-                )}
-
-                {/* Inactive Staff */}
-                {inactiveStaff.length > 0 && (
-                  <>
-                    <div className="px-6 py-3 bg-gray-50">
-                      <p className="text-sm font-medium text-gray-600">Inactive Staff ({inactiveStaff.length})</p>
-                    </div>
-                    {inactiveStaff.map((member) => (
-                      <div key={member.id} className="p-4 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-gray-50 opacity-60">
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-                            <span className="text-gray-400 font-medium">
-                              {member.full_name.charAt(0).toUpperCase()}
+                          <div className="flex items-center gap-3 ml-15 md:ml-0">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                              <UserCheck className="w-3.5 h-3.5" />
+                              Active
                             </span>
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-600">{member.full_name}</p>
-                            <p className="text-sm text-gray-400">{member.email}</p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setDeactivateModal({ open: true, staff: member })}
+                            >
+                              Deactivate
+                            </Button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3 ml-14 md:ml-0">
-                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">
-                            <UserX className="w-3 h-3" />
-                            Inactive
-                          </span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleReactivateStaff(member)}
-                            disabled={staffLimit ? !staffLimit.canAdd && staffLimit.limit !== -1 : false}
-                          >
-                            Reactivate
-                          </Button>
-                        </div>
+                      ))}
+                    </>
+                  )}
+
+                  {/* Inactive Staff */}
+                  {inactiveStaff.length > 0 && (
+                    <>
+                      <div className="px-6 py-3 bg-gray-50 border-b border-gray-200">
+                        <p className="text-sm font-semibold text-gray-600">Inactive Staff ({inactiveStaff.length})</p>
                       </div>
-                    ))}
-                  </>
-                )}
-              </div>
-            )}
-          </div>
-        </>
-      )}
+                      {inactiveStaff.map((member) => (
+                        <div key={member.id} className="p-4 md:px-6 md:py-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-gray-50 transition-colors opacity-60">
+                          <div className="flex items-center gap-4">
+                            <div className="w-11 h-11 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                              <span className="text-gray-400 font-semibold text-lg">
+                                {member.full_name.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-600">{member.full_name}</p>
+                              <p className="text-sm text-gray-400">{member.email}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3 ml-15 md:ml-0">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">
+                              <UserX className="w-3.5 h-3.5" />
+                              Inactive
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleReactivateStaff(member)}
+                              disabled={staffLimit ? !staffLimit.canAdd && staffLimit.limit !== -1 : false}
+                            >
+                              Reactivate
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
 
       {/* Add Staff Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900">Add Staff Member</h2>
-              <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-gray-600">
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -552,7 +587,7 @@ export default function StaffPage() {
                     type={showPassword ? 'text' : 'password'}
                     value={addForm.password}
                     onChange={(e) => setAddForm({ ...addForm, password: e.target.value })}
-                    className={`w-full px-3 py-2 pr-10 border rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none ${
+                    className={`w-full px-3 py-2 pr-10 border rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none text-sm ${
                       formErrors.password ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="Minimum 6 characters"
@@ -573,9 +608,9 @@ export default function StaffPage() {
                 </p>
               </div>
 
-              <div className="bg-blue-50 rounded-lg p-3 text-sm">
-                <p className="font-medium text-blue-900 mb-1">Staff Permissions</p>
-                <ul className="text-blue-700 space-y-1">
+              <div className="bg-blue-50 rounded-lg p-4">
+                <p className="font-medium text-blue-900 mb-2 text-sm">Staff Permissions</p>
+                <ul className="text-blue-700 space-y-1 text-sm">
                   <li>• View and manage students</li>
                   <li>• View and manage payments</li>
                   <li>• Access enabled modules (Library, etc.)</li>

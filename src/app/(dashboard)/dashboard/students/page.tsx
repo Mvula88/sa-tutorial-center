@@ -5,12 +5,11 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/auth-store'
 import { Button } from '@/components/ui/button'
-import { Input, Select } from '@/components/ui/input'
+import { Select } from '@/components/ui/input'
 import { ConfirmModal } from '@/components/ui/modal'
 import {
   Plus,
   Search,
-  Filter,
   Eye,
   Pencil,
   Trash2,
@@ -18,10 +17,14 @@ import {
   ChevronRight,
   Users,
   X,
-  SlidersHorizontal,
   AlertTriangle,
   TrendingUp,
   Upload,
+  GraduationCap,
+  UserCheck,
+  UserX,
+  Calendar,
+  Loader2,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { checkStudentLimit, formatLimit, type StudentLimitCheck } from '@/lib/subscription-limits'
@@ -46,6 +49,15 @@ interface Subject {
   code: string | null
 }
 
+interface StudentStats {
+  total: number
+  active: number
+  inactive: number
+  graduated: number
+  withdrawn: number
+  byGender: { male: number; female: number; other: number }
+}
+
 const ITEMS_PER_PAGE = 10
 
 export default function StudentsPage() {
@@ -62,9 +74,12 @@ export default function StudentsPage() {
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('')
   const [paymentMonthFilter, setPaymentMonthFilter] = useState('')
   const [paymentYearFilter, setPaymentYearFilter] = useState(new Date().getFullYear().toString())
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
+
+  // Stats
+  const [stats, setStats] = useState<StudentStats | null>(null)
+  const [isLoadingStats, setIsLoadingStats] = useState(true)
 
   // Delete modal state
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
@@ -78,7 +93,41 @@ export default function StudentsPage() {
     fetchSubjects()
     fetchGrades()
     fetchStudentLimit()
+    fetchStats()
   }, [user?.center_id])
+
+  async function fetchStats() {
+    if (!user?.center_id) return
+
+    setIsLoadingStats(true)
+    const supabase = createClient()
+
+    try {
+      const { data } = await supabase
+        .from('students')
+        .select('status, gender')
+        .eq('center_id', user.center_id)
+
+      const students = (data || []) as { status: string; gender: string | null }[]
+
+      setStats({
+        total: students.length,
+        active: students.filter(s => s.status === 'active').length,
+        inactive: students.filter(s => s.status === 'inactive').length,
+        graduated: students.filter(s => s.status === 'graduated').length,
+        withdrawn: students.filter(s => s.status === 'withdrawn').length,
+        byGender: {
+          male: students.filter(s => s.gender === 'male').length,
+          female: students.filter(s => s.gender === 'female').length,
+          other: students.filter(s => s.gender === 'other' || !s.gender).length,
+        },
+      })
+    } catch (error) {
+      console.error('Error fetching stats:', error)
+    } finally {
+      setIsLoadingStats(false)
+    }
+  }
 
   async function fetchStudentLimit() {
     if (!user?.center_id) return
@@ -296,436 +345,489 @@ export default function StudentsPage() {
   }
 
   return (
-    <div className="p-4 md:p-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8">
-        <div>
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-xl md:text-2xl font-bold text-gray-900">Students</h1>
-            {studentLimit && studentLimit.limit !== -1 && (
-              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-                studentLimit.isAtLimit
-                  ? 'bg-red-100 text-red-700'
-                  : studentLimit.isNearLimit
-                  ? 'bg-amber-100 text-amber-700'
-                  : 'bg-gray-100 text-gray-600'
-              }`}>
-                <Users className="w-3.5 h-3.5" />
-                {studentLimit.current}/{formatLimit(studentLimit.limit)}
-                {studentLimit.isAtLimit && ' (Limit reached)'}
-                {studentLimit.isNearLimit && !studentLimit.isAtLimit && ` (${studentLimit.percentUsed}%)`}
-              </span>
-            )}
-          </div>
-          <p className="text-gray-500 mt-1 text-sm md:text-base">Manage your registered students</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link href="/dashboard/students/import">
-            <Button variant="outline" leftIcon={<Upload className="w-4 h-4" />} className="w-full sm:w-auto">
-              Import CSV
-            </Button>
-          </Link>
-          {studentLimit?.isAtLimit ? (
-            <Link href="/dashboard/subscription">
-              <Button leftIcon={<TrendingUp className="w-4 h-4" />} className="w-full sm:w-auto">
-                Upgrade to Add More
-              </Button>
-            </Link>
-          ) : (
-            <Link href="/dashboard/students/new">
-              <Button leftIcon={<Plus className="w-4 h-4" />} className="w-full sm:w-auto">
-                Add Student
-              </Button>
-            </Link>
-          )}
-        </div>
-      </div>
-
-      {/* Student Limit Warning */}
-      {studentLimit?.isNearLimit && !studentLimit.isAtLimit && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-start gap-3">
-          <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="font-medium text-amber-800">Approaching student limit</p>
-            <p className="text-sm text-amber-700 mt-1">
-              You&apos;re using {studentLimit.percentUsed}% of your {studentLimit.tier} plan limit ({studentLimit.current}/{studentLimit.limit} students).{' '}
-              <Link href="/dashboard/subscription" className="underline font-medium">
-                Upgrade your plan
-              </Link>{' '}
-              to add more students.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {studentLimit?.isAtLimit && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex items-start gap-3">
-          <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="font-medium text-red-800">Student limit reached</p>
-            <p className="text-sm text-red-700 mt-1">
-              You&apos;ve reached your {studentLimit.tier} plan limit of {studentLimit.limit} students.{' '}
-              <Link href="/dashboard/subscription" className="underline font-medium">
-                Upgrade your plan
-              </Link>{' '}
-              to add more students.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
-        {/* Main filters row - all inline */}
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Search */}
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search name, ID, or phone..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none text-sm"
-            />
-          </div>
-
-          {/* Quick filters */}
-          <Select
-            options={[
-              { value: 'active', label: 'Active' },
-              { value: 'inactive', label: 'Inactive' },
-              { value: 'graduated', label: 'Graduated' },
-              { value: 'withdrawn', label: 'Withdrawn' },
-            ]}
-            placeholder="Status"
-            value={statusFilter}
-            onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1) }}
-            className="w-28"
-          />
-          <Select
-            options={[
-              { value: 'male', label: 'Male' },
-              { value: 'female', label: 'Female' },
-            ]}
-            placeholder="Gender"
-            value={genderFilter}
-            onChange={(e) => { setGenderFilter(e.target.value); setCurrentPage(1) }}
-            className="w-28"
-          />
-          <Select
-            options={grades.map(g => ({ value: g, label: `Grade ${g}` }))}
-            placeholder="Grade"
-            value={gradeFilter}
-            onChange={(e) => { setGradeFilter(e.target.value); setCurrentPage(1) }}
-            className="w-28"
-          />
-          <Select
-            options={subjects.map(s => ({ value: s.id, label: s.name }))}
-            placeholder="Subject"
-            value={subjectFilter}
-            onChange={(e) => { setSubjectFilter(e.target.value); setCurrentPage(1) }}
-            className="w-36"
-          />
-
-          {/* Payment filter group */}
-          <div className="flex items-center gap-1 px-2 py-1 bg-amber-50 rounded-lg border border-amber-200">
-            <span className="text-xs text-amber-700 font-medium px-1">Payment:</span>
-            <Select
-              options={[
-                { value: '1', label: 'Jan' }, { value: '2', label: 'Feb' }, { value: '3', label: 'Mar' },
-                { value: '4', label: 'Apr' }, { value: '5', label: 'May' }, { value: '6', label: 'Jun' },
-                { value: '7', label: 'Jul' }, { value: '8', label: 'Aug' }, { value: '9', label: 'Sep' },
-                { value: '10', label: 'Oct' }, { value: '11', label: 'Nov' }, { value: '12', label: 'Dec' },
-              ]}
-              placeholder="Month"
-              value={paymentMonthFilter}
-              onChange={(e) => { setPaymentMonthFilter(e.target.value); setCurrentPage(1) }}
-              className="w-20"
-            />
-            <Select
-              options={[
-                { value: (new Date().getFullYear() - 1).toString(), label: (new Date().getFullYear() - 1).toString() },
-                { value: new Date().getFullYear().toString(), label: new Date().getFullYear().toString() },
-                { value: (new Date().getFullYear() + 1).toString(), label: (new Date().getFullYear() + 1).toString() },
-              ]}
-              value={paymentYearFilter}
-              onChange={(e) => { setPaymentYearFilter(e.target.value); setCurrentPage(1) }}
-              className="w-20"
-            />
-            <Select
-              options={[
-                { value: 'paid', label: 'Paid' },
-                { value: 'partial', label: 'Partial' },
-                { value: 'unpaid', label: 'Unpaid' },
-              ]}
-              placeholder="Status"
-              value={paymentStatusFilter}
-              onChange={(e) => { setPaymentStatusFilter(e.target.value); setCurrentPage(1) }}
-              className="w-24"
-            />
-          </div>
-
-          {/* Clear all button */}
-          {(statusFilter || genderFilter || gradeFilter || subjectFilter || paymentStatusFilter || paymentMonthFilter) && (
-            <button
-              onClick={() => {
-                setStatusFilter(''); setGenderFilter(''); setGradeFilter('')
-                setSubjectFilter(''); setPaymentStatusFilter(''); setPaymentMonthFilter('')
-                setCurrentPage(1)
-              }}
-              className="flex items-center gap-1 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-            >
-              <X className="w-4 h-4" />
-              Clear
-            </button>
-          )}
-        </div>
-
-        {/* Active filters tags */}
-        {(statusFilter || genderFilter || gradeFilter || subjectFilter || paymentStatusFilter || paymentMonthFilter) && (
-          <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-100">
-            {statusFilter && (
-              <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
-                {statusFilter}
-                <button onClick={() => { setStatusFilter(''); setCurrentPage(1) }}><X className="w-3 h-3" /></button>
-              </span>
-            )}
-            {genderFilter && (
-              <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
-                {genderFilter}
-                <button onClick={() => { setGenderFilter(''); setCurrentPage(1) }}><X className="w-3 h-3" /></button>
-              </span>
-            )}
-            {gradeFilter && (
-              <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
-                Grade {gradeFilter}
-                <button onClick={() => { setGradeFilter(''); setCurrentPage(1) }}><X className="w-3 h-3" /></button>
-              </span>
-            )}
-            {subjectFilter && (
-              <span className="inline-flex items-center gap-1 px-2 py-1 bg-cyan-100 text-cyan-700 text-xs rounded-full">
-                {subjects.find(s => s.id === subjectFilter)?.name}
-                <button onClick={() => { setSubjectFilter(''); setCurrentPage(1) }}><X className="w-3 h-3" /></button>
-              </span>
-            )}
-            {paymentMonthFilter && (
-              <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 text-xs rounded-full">
-                {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][parseInt(paymentMonthFilter) - 1]} {paymentYearFilter}
-                <button onClick={() => { setPaymentMonthFilter(''); setCurrentPage(1) }}><X className="w-3 h-3" /></button>
-              </span>
-            )}
-            {paymentStatusFilter && (
-              <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 text-xs rounded-full">
-                {paymentStatusFilter}
-                <button onClick={() => { setPaymentStatusFilter(''); setCurrentPage(1) }}><X className="w-3 h-3" /></button>
-              </span>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        {isLoading ? (
-          <div className="p-8 text-center">
-            <div className="animate-pulse space-y-4">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-12 bg-gray-100 rounded"></div>
-              ))}
+    <div className="min-h-screen bg-gray-50/50">
+      {/* Header Section */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="px-4 md:px-8 py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-3 flex-wrap">
+                <h1 className="text-2xl font-semibold text-gray-900">Students</h1>
+                {studentLimit && studentLimit.limit !== -1 && (
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+                    studentLimit.isAtLimit
+                      ? 'bg-red-100 text-red-700'
+                      : studentLimit.isNearLimit
+                      ? 'bg-amber-100 text-amber-700'
+                      : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    {studentLimit.current}/{formatLimit(studentLimit.limit)}
+                    {studentLimit.isAtLimit && ' (Limit reached)'}
+                  </span>
+                )}
+              </div>
+              <p className="mt-1 text-sm text-gray-500">Manage and track all registered students</p>
             </div>
-          </div>
-        ) : students.length === 0 ? (
-          <div className="p-12 text-center">
-            <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No students found</h3>
-            <p className="text-gray-500 mb-4">
-              {searchQuery || statusFilter || genderFilter
-                ? 'Try adjusting your filters'
-                : 'Get started by adding your first student'}
-            </p>
-            {!searchQuery && !statusFilter && !genderFilter && (
-              <Link href="/dashboard/students/new">
-                <Button leftIcon={<Plus className="w-4 h-4" />}>
-                  Add Student
+            <div className="flex items-center gap-2">
+              <Link href="/dashboard/students/import">
+                <Button variant="outline" size="lg" leftIcon={<Upload className="w-4 h-4" />}>
+                  Import CSV
                 </Button>
               </Link>
+              {studentLimit?.isAtLimit ? (
+                <Link href="/dashboard/subscription">
+                  <Button size="lg" leftIcon={<TrendingUp className="w-5 h-5" />}>
+                    Upgrade Plan
+                  </Button>
+                </Link>
+              ) : (
+                <Link href="/dashboard/students/new">
+                  <Button size="lg" leftIcon={<Plus className="w-5 h-5" />}>
+                    Add Student
+                  </Button>
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-4 md:px-8 py-6 space-y-6">
+        {/* Student Limit Warnings */}
+        {studentLimit?.isNearLimit && !studentLimit.isAtLimit && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-medium text-amber-800">Approaching student limit</p>
+              <p className="text-sm text-amber-700 mt-1">
+                You&apos;re using {studentLimit.percentUsed}% of your {studentLimit.tier} plan limit ({studentLimit.current}/{studentLimit.limit} students).{' '}
+                <Link href="/dashboard/subscription" className="underline font-medium">
+                  Upgrade your plan
+                </Link>{' '}
+                to add more students.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {studentLimit?.isAtLimit && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-medium text-red-800">Student limit reached</p>
+              <p className="text-sm text-red-700 mt-1">
+                You&apos;ve reached your {studentLimit.tier} plan limit of {studentLimit.limit} students.{' '}
+                <Link href="/dashboard/subscription" className="underline font-medium">
+                  Upgrade your plan
+                </Link>{' '}
+                to add more students.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Total Students</p>
+                <p className="mt-2 text-2xl font-semibold text-gray-900">
+                  {isLoadingStats ? '...' : stats?.total || 0}
+                </p>
+              </div>
+              <div className="p-3 bg-blue-100 rounded-xl">
+                <GraduationCap className="w-6 h-6 text-blue-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Active</p>
+                <p className="mt-2 text-2xl font-semibold text-green-600">
+                  {isLoadingStats ? '...' : stats?.active || 0}
+                </p>
+                <p className="mt-1 text-xs text-gray-500">
+                  {stats && stats.total > 0 ? `${Math.round((stats.active / stats.total) * 100)}%` : '0%'} of total
+                </p>
+              </div>
+              <div className="p-3 bg-green-100 rounded-xl">
+                <UserCheck className="w-6 h-6 text-green-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Inactive</p>
+                <p className="mt-2 text-2xl font-semibold text-gray-600">
+                  {isLoadingStats ? '...' : stats?.inactive || 0}
+                </p>
+                <p className="mt-1 text-xs text-gray-500">
+                  Not currently enrolled
+                </p>
+              </div>
+              <div className="p-3 bg-gray-100 rounded-xl">
+                <UserX className="w-6 h-6 text-gray-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Graduated</p>
+                <p className="mt-2 text-2xl font-semibold text-purple-600">
+                  {isLoadingStats ? '...' : stats?.graduated || 0}
+                </p>
+                <p className="mt-1 text-xs text-gray-500">
+                  Completed their studies
+                </p>
+              </div>
+              <div className="p-3 bg-purple-100 rounded-xl">
+                <TrendingUp className="w-6 h-6 text-purple-600" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Search */}
+            <div className="relative flex-1 min-w-[250px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search by name, student ID, or phone..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none text-sm"
+              />
+            </div>
+
+            {/* Quick filters */}
+            <Select
+              options={[
+                { value: 'active', label: 'Active' },
+                { value: 'inactive', label: 'Inactive' },
+                { value: 'graduated', label: 'Graduated' },
+                { value: 'withdrawn', label: 'Withdrawn' },
+              ]}
+              placeholder="Status"
+              value={statusFilter}
+              onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1) }}
+              className="w-32"
+            />
+            <Select
+              options={[
+                { value: 'male', label: 'Male' },
+                { value: 'female', label: 'Female' },
+              ]}
+              placeholder="Gender"
+              value={genderFilter}
+              onChange={(e) => { setGenderFilter(e.target.value); setCurrentPage(1) }}
+              className="w-28"
+            />
+            <Select
+              options={grades.map(g => ({ value: g, label: `Grade ${g}` }))}
+              placeholder="Grade"
+              value={gradeFilter}
+              onChange={(e) => { setGradeFilter(e.target.value); setCurrentPage(1) }}
+              className="w-28"
+            />
+            <Select
+              options={subjects.map(s => ({ value: s.id, label: s.name }))}
+              placeholder="Subject"
+              value={subjectFilter}
+              onChange={(e) => { setSubjectFilter(e.target.value); setCurrentPage(1) }}
+              className="w-36"
+            />
+
+            {/* Payment filter group */}
+            <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-1.5 border border-gray-200">
+              <Calendar className="w-4 h-4 text-gray-400" />
+              <Select
+                options={[
+                  { value: '1', label: 'January' }, { value: '2', label: 'February' }, { value: '3', label: 'March' },
+                  { value: '4', label: 'April' }, { value: '5', label: 'May' }, { value: '6', label: 'June' },
+                  { value: '7', label: 'July' }, { value: '8', label: 'August' }, { value: '9', label: 'September' },
+                  { value: '10', label: 'October' }, { value: '11', label: 'November' }, { value: '12', label: 'December' },
+                ]}
+                placeholder="Month"
+                value={paymentMonthFilter}
+                onChange={(e) => { setPaymentMonthFilter(e.target.value); setCurrentPage(1) }}
+                className="w-28 border-0 bg-transparent"
+              />
+              <Select
+                options={[
+                  { value: (new Date().getFullYear() - 1).toString(), label: (new Date().getFullYear() - 1).toString() },
+                  { value: new Date().getFullYear().toString(), label: new Date().getFullYear().toString() },
+                  { value: (new Date().getFullYear() + 1).toString(), label: (new Date().getFullYear() + 1).toString() },
+                ]}
+                value={paymentYearFilter}
+                onChange={(e) => { setPaymentYearFilter(e.target.value); setCurrentPage(1) }}
+                className="w-20 border-0 bg-transparent"
+              />
+              <Select
+                options={[
+                  { value: 'paid', label: 'Paid' },
+                  { value: 'partial', label: 'Partial' },
+                  { value: 'unpaid', label: 'Unpaid' },
+                ]}
+                placeholder="Status"
+                value={paymentStatusFilter}
+                onChange={(e) => { setPaymentStatusFilter(e.target.value); setCurrentPage(1) }}
+                className="w-24 border-0 bg-transparent"
+              />
+            </div>
+
+            {/* Clear all button */}
+            {(statusFilter || genderFilter || gradeFilter || subjectFilter || paymentStatusFilter || paymentMonthFilter) && (
+              <button
+                onClick={() => {
+                  setStatusFilter(''); setGenderFilter(''); setGradeFilter('')
+                  setSubjectFilter(''); setPaymentStatusFilter(''); setPaymentMonthFilter('')
+                  setCurrentPage(1)
+                }}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              >
+                <X className="w-4 h-4" />
+                Clear filters
+              </button>
             )}
           </div>
-        ) : (
-          <>
-            {/* Mobile Card View */}
-            <div className="md:hidden divide-y divide-gray-100">
-              {students.map((student) => (
-                <div key={student.id} className="p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <p className="font-medium text-gray-900">{student.full_name}</p>
-                      <p className="text-sm text-gray-500">{student.student_number || 'No ID'}</p>
+
+          {/* Active filters tags */}
+          {(statusFilter || genderFilter || gradeFilter || subjectFilter || paymentStatusFilter || paymentMonthFilter) && (
+            <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-100">
+              {statusFilter && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 text-sm rounded-full">
+                  {statusFilter}
+                  <button onClick={() => { setStatusFilter(''); setCurrentPage(1) }} className="hover:text-blue-900">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </span>
+              )}
+              {genderFilter && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-50 text-purple-700 text-sm rounded-full">
+                  {genderFilter}
+                  <button onClick={() => { setGenderFilter(''); setCurrentPage(1) }} className="hover:text-purple-900">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </span>
+              )}
+              {gradeFilter && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-700 text-sm rounded-full">
+                  Grade {gradeFilter}
+                  <button onClick={() => { setGradeFilter(''); setCurrentPage(1) }} className="hover:text-green-900">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </span>
+              )}
+              {subjectFilter && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-cyan-50 text-cyan-700 text-sm rounded-full">
+                  {subjects.find(s => s.id === subjectFilter)?.name}
+                  <button onClick={() => { setSubjectFilter(''); setCurrentPage(1) }} className="hover:text-cyan-900">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </span>
+              )}
+              {paymentMonthFilter && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-700 text-sm rounded-full">
+                  {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][parseInt(paymentMonthFilter) - 1]} {paymentYearFilter}
+                  <button onClick={() => { setPaymentMonthFilter(''); setCurrentPage(1) }} className="hover:text-amber-900">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </span>
+              )}
+              {paymentStatusFilter && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-700 text-sm rounded-full">
+                  Payment: {paymentStatusFilter}
+                  <button onClick={() => { setPaymentStatusFilter(''); setCurrentPage(1) }} className="hover:text-amber-900">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Table */}
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          {isLoading ? (
+            <div className="p-8 text-center">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto" />
+              <p className="mt-2 text-sm text-gray-500">Loading students...</p>
+            </div>
+          ) : students.length === 0 ? (
+            <div className="p-12 text-center">
+              <GraduationCap className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No students found</h3>
+              <p className="text-gray-500 mb-6">
+                {searchQuery || statusFilter || genderFilter
+                  ? 'Try adjusting your filters'
+                  : 'Get started by adding your first student'}
+              </p>
+              {!searchQuery && !statusFilter && !genderFilter && (
+                <Link href="/dashboard/students/new">
+                  <Button leftIcon={<Plus className="w-4 h-4" />}>
+                    Add Student
+                  </Button>
+                </Link>
+              )}
+            </div>
+          ) : (
+            <>
+              {/* Mobile Card View */}
+              <div className="md:hidden divide-y divide-gray-100">
+                {students.map((student) => (
+                  <Link
+                    key={student.id}
+                    href={`/dashboard/students/${student.id}`}
+                    className="block p-4 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <p className="font-medium text-gray-900">{student.full_name}</p>
+                        <p className="text-sm text-gray-500">{student.student_number || 'No ID'}</p>
+                      </div>
+                      <span className={`inline-flex px-2.5 py-1 text-xs font-medium rounded-full ${getStatusBadge(student.status)}`}>
+                        {student.status}
+                      </span>
                     </div>
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusBadge(student.status)}`}>
-                      {student.status}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-sm mb-3">
-                    <div>
-                      <p className="text-gray-500">Grade</p>
-                      <p className="text-gray-900">{student.grade || '-'}</p>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <p className="text-gray-500">Grade</p>
+                        <p className="text-gray-900">{student.grade || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500">Phone</p>
+                        <p className="text-gray-900">{student.phone || '-'}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-gray-500">Phone</p>
-                      <p className="text-gray-900">{student.phone || '-'}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500">Parent</p>
-                      <p className="text-gray-900">{student.parent_name || '-'}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500">Parent Phone</p>
-                      <p className="text-gray-900">{student.parent_phone || '-'}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
-                    <Link href={`/dashboard/students/${student.id}`} className="flex-1">
-                      <button className="w-full py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center justify-center gap-1">
-                        <Eye className="w-4 h-4" />
-                        View
-                      </button>
-                    </Link>
-                    <Link href={`/dashboard/students/${student.id}/edit`} className="flex-1">
-                      <button className="w-full py-2 text-sm text-amber-600 hover:bg-amber-50 rounded-lg transition-colors flex items-center justify-center gap-1">
-                        <Pencil className="w-4 h-4" />
-                        Edit
-                      </button>
-                    </Link>
+                  </Link>
+                ))}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-200">
+                      <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        Student
+                      </th>
+                      <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        Contact
+                      </th>
+                      <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        Grade
+                      </th>
+                      <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        Parent/Guardian
+                      </th>
+                      <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {students.map((student) => (
+                      <tr key={student.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4">
+                          <div>
+                            <p className="font-medium text-gray-900">{student.full_name}</p>
+                            <p className="text-sm text-gray-500">{student.student_number || 'No ID'}</p>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div>
+                            <p className="text-gray-900">{student.phone || '-'}</p>
+                            <p className="text-sm text-gray-500">{student.email || '-'}</p>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-gray-900">
+                          {student.grade || '-'}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div>
+                            <p className="text-gray-900">{student.parent_name || '-'}</p>
+                            <p className="text-sm text-gray-500">{student.parent_phone || '-'}</p>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex px-2.5 py-1 text-xs font-medium rounded-full ${getStatusBadge(student.status)}`}>
+                            {student.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-end gap-1">
+                            <Link href={`/dashboard/students/${student.id}`}>
+                              <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                                <Eye className="w-4 h-4" />
+                              </button>
+                            </Link>
+                            <Link href={`/dashboard/students/${student.id}/edit`}>
+                              <button className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors">
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                            </Link>
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault()
+                                setStudentToDelete(student)
+                                setDeleteModalOpen(true)
+                              }}
+                              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50">
+                  <p className="text-sm text-gray-600">
+                    Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to{' '}
+                    {Math.min(currentPage * ITEMS_PER_PAGE, totalCount)} of {totalCount}
+                  </p>
+                  <div className="flex items-center gap-2">
                     <button
-                      onClick={() => {
-                        setStudentToDelete(student)
-                        setDeleteModalOpen(true)
-                      }}
-                      className="flex-1 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center justify-center gap-1"
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="p-2 text-gray-500 hover:text-gray-700 hover:bg-white rounded-lg border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                      <Trash2 className="w-4 h-4" />
-                      Delete
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <span className="px-3 py-1 text-sm font-medium text-gray-700">
+                      {currentPage} / {totalPages}
+                    </span>
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="p-2 text-gray-500 hover:text-gray-700 hover:bg-white rounded-lg border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronRight className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
-              ))}
-            </div>
-
-            {/* Desktop Table View */}
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-100">
-                  <tr>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Student
-                    </th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Contact
-                    </th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Grade
-                    </th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Parent
-                    </th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {students.map((student) => (
-                    <tr key={student.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4">
-                        <div>
-                          <p className="font-medium text-gray-900">{student.full_name}</p>
-                          <p className="text-sm text-gray-500">{student.student_number || 'No ID'}</p>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div>
-                          <p className="text-gray-900">{student.phone || '-'}</p>
-                          <p className="text-sm text-gray-500">{student.email || '-'}</p>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-gray-900">
-                        {student.grade || '-'}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div>
-                          <p className="text-gray-900">{student.parent_name || '-'}</p>
-                          <p className="text-sm text-gray-500">{student.parent_phone || '-'}</p>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusBadge(student.status)}`}>
-                          {student.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-end gap-2">
-                          <Link href={`/dashboard/students/${student.id}`}>
-                            <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                              <Eye className="w-4 h-4" />
-                            </button>
-                          </Link>
-                          <Link href={`/dashboard/students/${student.id}/edit`}>
-                            <button className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors">
-                              <Pencil className="w-4 h-4" />
-                            </button>
-                          </Link>
-                          <button
-                            onClick={() => {
-                              setStudentToDelete(student)
-                              setDeleteModalOpen(true)
-                            }}
-                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 md:px-6 py-4 border-t border-gray-100">
-                <p className="text-sm text-gray-500 text-center sm:text-left">
-                  Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to{' '}
-                  {Math.min(currentPage * ITEMS_PER_PAGE, totalCount)} of {totalCount} students
-                </p>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-                  <span className="text-sm text-gray-600">
-                    Page {currentPage} of {totalPages}
-                  </span>
-                  <button
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
-                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-            )}
-          </>
-        )}
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       {/* Delete Confirmation Modal */}

@@ -528,51 +528,56 @@ export default function TransportPage() {
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE)
 
   return (
-    <div className="p-8">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Transport Management</h1>
-          <p className="text-gray-500 mt-1">Manage vehicles, routes, and student transport</p>
+    <div className="min-h-screen bg-gray-50/50">
+      {/* Header Section */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="px-4 md:px-8 py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-semibold text-gray-900">Transport Management</h1>
+              <p className="mt-1 text-sm text-gray-500">Manage vehicles, routes, and student transport</p>
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex gap-1 mt-6 bg-gray-100 p-1 rounded-lg w-fit">
+            {[
+              { id: 'vehicles', label: 'Vehicles', icon: <Car className="w-4 h-4" /> },
+              { id: 'routes', label: 'Routes', icon: <Route className="w-4 h-4" /> },
+              { id: 'assignments', label: 'Student Assignments', icon: <Users className="w-4 h-4" /> },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === tab.id
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit mb-6">
-        {[
-          { id: 'vehicles', label: 'Vehicles', icon: <Car className="w-4 h-4" /> },
-          { id: 'routes', label: 'Routes', icon: <Route className="w-4 h-4" /> },
-          { id: 'assignments', label: 'Student Assignments', icon: <Users className="w-4 h-4" /> },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as typeof activeTab)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === tab.id
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Vehicles Tab */}
-      {activeTab === 'vehicles' && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-          <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search vehicles..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none"
-              />
-            </div>
+      <div className="px-4 md:px-8 py-6">
+        {/* Vehicles Tab */}
+        {activeTab === 'vehicles' && (
+          <div className="bg-white rounded-xl border border-gray-200">
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search vehicles..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none text-sm"
+                />
+              </div>
             <Button
               leftIcon={<Plus className="w-4 h-4" />}
               onClick={() => {
@@ -663,11 +668,11 @@ export default function TransportPage() {
         </div>
       )}
 
-      {/* Routes Tab */}
-      {activeTab === 'routes' && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-          <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-            <h2 className="font-semibold text-gray-900">Transport Routes</h2>
+        {/* Routes Tab */}
+        {activeTab === 'routes' && (
+          <div className="bg-white rounded-xl border border-gray-200">
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+              <h2 className="font-semibold text-gray-900">Transport Routes</h2>
             <Button
               leftIcon={<Plus className="w-4 h-4" />}
               onClick={() => {
@@ -755,10 +760,10 @@ export default function TransportPage() {
         </div>
       )}
 
-      {/* Assignments Tab */}
-      {activeTab === 'assignments' && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-          <div className="p-4 border-b border-gray-100">
+        {/* Assignments Tab */}
+        {activeTab === 'assignments' && (
+          <div className="bg-white rounded-xl border border-gray-200">
+            <div className="p-4 border-b border-gray-200">
             <div className="flex flex-col gap-4">
               {/* Primary filters row */}
               <div className="flex flex-col md:flex-row gap-4">
@@ -1262,6 +1267,8 @@ export default function TransportPage() {
           </div>
         </div>
       )}
+
+      </div>
 
       {/* Delete Modal */}
       <ConfirmModal
