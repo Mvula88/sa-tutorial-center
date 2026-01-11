@@ -85,13 +85,14 @@ export default function StudentPortalOverview() {
       const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0]
 
       // Attendance this month
-      const { data: attendance } = await supabase
+      const { data: attendanceData } = await supabase
         .from('attendance')
         .select('status')
         .eq('student_id', token)
         .gte('date', monthStart)
 
-      if (attendance && attendance.length > 0) {
+      const attendance = (attendanceData || []) as { status: string }[]
+      if (attendance.length > 0) {
         const present = attendance.filter(a => a.status === 'present' || a.status === 'late').length
         const rate = Math.round((present / attendance.length) * 100)
         setStats(s => ({ ...s, attendanceRate: rate }))
