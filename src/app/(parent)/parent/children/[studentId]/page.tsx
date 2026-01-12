@@ -134,9 +134,10 @@ export default function ChildDashboardPage() {
       .limit(10)
 
     if (attendance) {
-      setRecentAttendance(attendance)
-      const present = attendance.filter(a => a.status === 'present').length
-      setAttendanceRate(attendance.length > 0 ? Math.round((present / attendance.length) * 100) : 100)
+      const attendanceRecords = attendance as { date: string; status: string }[]
+      setRecentAttendance(attendanceRecords)
+      const present = attendanceRecords.filter(a => a.status === 'present').length
+      setAttendanceRate(attendanceRecords.length > 0 ? Math.round((present / attendanceRecords.length) * 100) : 100)
     }
 
     // Get pending fees
@@ -149,8 +150,9 @@ export default function ChildDashboardPage() {
       .limit(5)
 
     if (fees) {
-      setPendingFees(fees)
-      setTotalPendingFees(fees.reduce((sum, f) => sum + Number(f.amount), 0))
+      const feeRecords = fees as { amount: number; status: string; due_date: string; description: string }[]
+      setPendingFees(feeRecords)
+      setTotalPendingFees(feeRecords.reduce((sum, f) => sum + Number(f.amount), 0))
     }
 
     setIsLoading(false)
