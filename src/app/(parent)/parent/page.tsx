@@ -61,8 +61,11 @@ export default function ParentDashboard() {
     setParentId(parent.id)
 
     // Get linked children
-    const { data: linkedChildren } = await supabase
+    const { data: linkedChildrenData } = await supabase
       .rpc('get_parent_children' as never, { p_parent_id: parent.id } as never)
+
+    type LinkedChild = { student_id: string; student_name: string; student_number: string | null; grade: string | null; class_name: string | null; center_name: string | null; relationship: string; is_verified: boolean }
+    const linkedChildren = linkedChildrenData as unknown as LinkedChild[] | null
 
     if (!linkedChildren || linkedChildren.length === 0) {
       setChildren([])
@@ -72,7 +75,7 @@ export default function ParentDashboard() {
 
     // For each child, get additional stats
     const childrenWithStats: ChildSummary[] = await Promise.all(
-      linkedChildren.map(async (child: { student_id: string; student_name: string; student_number: string | null; grade: string | null; class_name: string | null; center_name: string | null; relationship: string; is_verified: boolean }) => {
+      linkedChildren.map(async (child) => {
         // Get attendance rate for last 30 days
         const thirtyDaysAgo = new Date()
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
