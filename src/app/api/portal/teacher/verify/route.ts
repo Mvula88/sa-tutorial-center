@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     // Search for teacher by name (case-insensitive partial match)
     const { data: teachersData, error: searchError } = await supabase
       .from('teachers')
-      .select('id, full_name, phone, email, auth_user_id, is_active')
+      .select('id, full_name, phone, email, auth_user_id, status')
       .ilike('full_name', `%${fullName.trim()}%`)
       .limit(10)
 
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       }, { status: 500 })
     }
 
-    type TeacherRecord = { id: string; full_name: string; phone: string | null; email: string | null; auth_user_id: string | null; is_active: boolean }
+    type TeacherRecord = { id: string; full_name: string; phone: string | null; email: string | null; auth_user_id: string | null; status: string }
     const teachers = teachersData as TeacherRecord[] | null
 
     // Find a matching teacher (case-insensitive name match and phone match)
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    if (!matchingTeacher.is_active) {
+    if (matchingTeacher.status !== 'active') {
       return NextResponse.json({
         success: false,
         error: 'Your teacher record is not active. Please contact your tutorial center.'
