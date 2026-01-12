@@ -78,11 +78,12 @@ export default function ChildGradesPage() {
       .order('recorded_at', { ascending: false })
 
     if (gradeData) {
-      setGrades(gradeData as unknown as Grade[])
+      const gradeRecords = gradeData as unknown as Grade[]
+      setGrades(gradeRecords)
 
       // Extract unique subjects
       const subjectMap = new Map<string, string>()
-      gradeData.forEach((g) => {
+      gradeRecords.forEach((g) => {
         const assessment = g.assessment as { subject?: { name: string } }
         if (assessment?.subject) {
           subjectMap.set(assessment.subject.name, assessment.subject.name)
@@ -91,11 +92,11 @@ export default function ChildGradesPage() {
       setSubjects(Array.from(subjectMap.values()).map(name => ({ id: name, name })))
 
       // Calculate average
-      if (gradeData.length > 0) {
-        const totalPercentage = gradeData.reduce((sum, g) => {
+      if (gradeRecords.length > 0) {
+        const totalPercentage = gradeRecords.reduce((sum, g) => {
           return sum + (g.score / g.max_score) * 100
         }, 0)
-        setAverageScore(Math.round(totalPercentage / gradeData.length))
+        setAverageScore(Math.round(totalPercentage / gradeRecords.length))
       }
     }
 
