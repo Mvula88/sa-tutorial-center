@@ -50,18 +50,19 @@ export default function ParentDashboard() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    const { data: parent } = await supabase
+    const { data: parentData } = await supabase
       .from('parents')
       .select('id')
       .eq('auth_user_id', user.id)
       .single()
 
+    const parent = parentData as { id: string } | null
     if (!parent) return
     setParentId(parent.id)
 
     // Get linked children
     const { data: linkedChildren } = await supabase
-      .rpc('get_parent_children', { p_parent_id: parent.id })
+      .rpc('get_parent_children' as never, { p_parent_id: parent.id } as never)
 
     if (!linkedChildren || linkedChildren.length === 0) {
       setChildren([])
