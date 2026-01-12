@@ -26,10 +26,27 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Check environment variables
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+      console.error('NEXT_PUBLIC_SUPABASE_URL is not set')
+      return NextResponse.json(
+        { error: 'Server configuration error (URL)' },
+        { status: 500 }
+      )
+    }
+
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('SUPABASE_SERVICE_ROLE_KEY is not set')
+      return NextResponse.json(
+        { error: 'Server configuration error (Service Key). Please contact administrator.' },
+        { status: 500 }
+      )
+    }
+
     // Create admin client to bypass RLS
     const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
       { auth: { autoRefreshToken: false, persistSession: false } }
     )
 
@@ -40,9 +57,17 @@ export async function POST(request: NextRequest) {
       .eq('id', teacherId)
       .single()
 
-    if (teacherError || !teacher) {
+    if (teacherError) {
+      console.error('Teacher lookup error:', teacherError)
       return NextResponse.json(
-        { error: 'Teacher record not found' },
+        { error: `Teacher lookup failed: ${teacherError.message}` },
+        { status: 404 }
+      )
+    }
+
+    if (!teacher) {
+      return NextResponse.json(
+        { error: 'Teacher record not found in database' },
         { status: 404 }
       )
     }
