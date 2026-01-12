@@ -75,25 +75,27 @@ export default function ChildDashboardPage() {
     }
 
     // Get parent
-    const { data: parent } = await supabase
+    const { data: parentData } = await supabase
       .from('parents')
       .select('id')
       .eq('auth_user_id', user.id)
       .single()
 
+    const parent = parentData as { id: string } | null
     if (!parent) {
       router.push('/parent')
       return
     }
 
     // Check if this student is linked to parent
-    const { data: link } = await supabase
+    const { data: linkData } = await supabase
       .from('parent_students')
       .select('verified_at')
       .eq('parent_id', parent.id)
       .eq('student_id', studentId)
       .single()
 
+    const link = linkData as { verified_at: string | null } | null
     if (!link) {
       router.push('/parent')
       return
