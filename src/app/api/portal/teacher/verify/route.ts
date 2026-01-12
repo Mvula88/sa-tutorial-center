@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createAdminClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,8 +12,12 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Use admin client to bypass RLS since user is not authenticated yet
-    const supabase = await createAdminClient()
+    // Create admin client to bypass RLS (same pattern as register routes)
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    )
 
     // Search for teacher by name (case-insensitive partial match)
     const { data: teachersData, error: searchError } = await supabase
