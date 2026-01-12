@@ -23,17 +23,18 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient()
 
     // Check if parent already exists with this email
-    const { data: existingParent } = await supabase
+    const { data: existingParentData } = await supabase
       .from('parents')
       .select('id')
       .eq('email', email)
       .single()
 
+    const existingParent = existingParentData as { id: string } | null
     if (existingParent) {
       // Link the auth user to existing parent account
       await supabase
         .from('parents')
-        .update({ auth_user_id: authUserId })
+        .update({ auth_user_id: authUserId } as never)
         .eq('id', existingParent.id)
 
       return NextResponse.json({
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create new parent record
-    const { data: newParent, error: insertError } = await supabase
+    const { data: newParentData, error: insertError } = await supabase
       .from('parents')
       .insert({
         auth_user_id: authUserId,
@@ -58,11 +59,12 @@ export async function POST(request: NextRequest) {
         notification_email: true,
         is_active: true,
         email_verified: false,
-      })
+      } as never)
       .select('id')
       .single()
 
-    if (insertError) {
+    const newParent = newParentData as { id: string } | null
+    if (insertError || !newParent) {
       console.error('Error creating parent:', insertError)
       return NextResponse.json({
         success: false,

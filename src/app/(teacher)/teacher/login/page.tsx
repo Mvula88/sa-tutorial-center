@@ -41,12 +41,13 @@ export default function TeacherLoginPage() {
       }
 
       // Check if this auth user is linked to a teacher
-      const { data: teacher, error: teacherError } = await supabase
+      const { data: teacherData, error: teacherError } = await supabase
         .from('teachers')
         .select('id, full_name, status')
         .eq('auth_user_id', authData.user.id)
         .single()
 
+      const teacher = teacherData as { id: string; full_name: string; status: string } | null
       if (teacherError || !teacher) {
         // Sign out since they're not a teacher
         await supabase.auth.signOut()

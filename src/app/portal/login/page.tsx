@@ -1,17 +1,17 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Mail, Lock, Loader2, GraduationCap, User, Users } from 'lucide-react'
+import { Loader2, GraduationCap, User, Users } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
 
 type PortalType = 'student' | 'teacher' | 'parent'
 
-export default function PortalLoginPage() {
+function PortalLoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const defaultType = (searchParams.get('type') as PortalType) || 'student'
@@ -145,7 +145,6 @@ export default function PortalLoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email"
-              leftIcon={<Mail className="w-5 h-5" />}
               required
             />
 
@@ -155,7 +154,6 @@ export default function PortalLoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter your password"
-              leftIcon={<Lock className="w-5 h-5" />}
               required
             />
 
@@ -205,5 +203,17 @@ export default function PortalLoginPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function PortalLoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    }>
+      <PortalLoginContent />
+    </Suspense>
   )
 }

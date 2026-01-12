@@ -91,19 +91,20 @@ export default function StudentHomeworkPage() {
     const supabase = createClient()
 
     // Get student's class
-    const { data: student } = await supabase
+    const { data: studentData } = await supabase
       .from('students')
       .select('class_id')
       .eq('id', studentId)
       .single()
 
+    const student = studentData as { class_id: string | null } | null
     if (!student?.class_id) {
       setIsLoading(false)
       return
     }
 
     // Get assignments for student's class
-    const { data: assignmentsData } = await supabase
+    const { data: assignmentsRaw } = await supabase
       .from('assignments')
       .select(`
         id, title, description, instructions, assignment_type, due_date, max_points, is_graded,
@@ -114,6 +115,9 @@ export default function StudentHomeworkPage() {
       .eq('is_active', true)
       .order('due_date', { ascending: true })
 
+    type AssignmentData = { id: string; title: string; description: string | null; instructions: string | null; assignment_type: string; due_date: string; max_points: number | null; is_graded: boolean; subject: { name: string } | null; teacher: { full_name: string } | null }
+    const assignmentsData = assignmentsRaw as AssignmentData[] | null
+
     if (!assignmentsData) {
       setIsLoading(false)
       return
@@ -121,11 +125,14 @@ export default function StudentHomeworkPage() {
 
     // Get student's assignment statuses
     const assignmentIds = assignmentsData.map(a => a.id)
-    const { data: studentAssignments } = await supabase
+    const { data: studentAssignmentsRaw } = await supabase
       .from('student_assignments')
       .select('*')
       .eq('student_id', studentId)
       .in('assignment_id', assignmentIds)
+
+    type StudentAssignmentData = { id: string; assignment_id: string; student_id: string; status: string; completed_at: string | null; points_earned: number | null; teacher_notes: string | null }
+    const studentAssignments = studentAssignmentsRaw as StudentAssignmentData[] | null
 
     // Merge data
     const merged = assignmentsData.map(a => ({
@@ -277,7 +284,7 @@ export default function StudentHomeworkPage() {
                     </div>
                     {assignment.is_graded && assignment.max_points && (
                       <div className="text-sm">
-                        {assignment.student_assignment?.points_earned !== null ? (
+                        {assignment.student_assignment && assignment.student_assignment.points_earned !== null ? (
                           <span className="font-medium text-blue-600">
                             {assignment.student_assignment.points_earned}/{assignment.max_points} pts
                           </span>

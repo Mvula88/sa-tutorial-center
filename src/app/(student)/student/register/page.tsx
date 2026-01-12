@@ -35,7 +35,7 @@ export default function StudentRegisterPage() {
       const supabase = createClient()
 
       // Find the student by name and phone
-      const { data: students, error: searchError } = await supabase
+      const { data: studentsData, error: searchError } = await supabase
         .from('students')
         .select('id, full_name, phone, email, auth_user_id, status')
         .ilike('full_name', `%${fullName.trim()}%`)
@@ -46,6 +46,9 @@ export default function StudentRegisterPage() {
         setIsLoading(false)
         return
       }
+
+      type StudentRecord = { id: string; full_name: string; phone: string | null; email: string | null; auth_user_id: string | null; status: string }
+      const students = studentsData as StudentRecord[] | null
 
       // Find a matching student (case-insensitive name match and phone match)
       const matchingStudent = students?.find(s => {

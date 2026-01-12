@@ -27,12 +27,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user's center and role
-    const { data: userData } = await supabase
+    const { data: userDataRaw } = await supabase
       .from('users')
       .select('center_id, role')
       .eq('id', user.id)
       .single()
 
+    const userData = userDataRaw as { center_id: string | null; role: string } | null
     if (!userData?.center_id) {
       return NextResponse.json({ error: 'No center associated' }, { status: 400 })
     }
@@ -108,12 +109,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user's center
-    const { data: userData } = await supabase
+    const { data: userDataRaw2 } = await supabase
       .from('users')
       .select('center_id, role')
       .eq('id', user.id)
       .single()
 
+    const userData = userDataRaw2 as { center_id: string | null; role: string } | null
     if (!userData?.center_id) {
       return NextResponse.json({ error: 'No center associated' }, { status: 400 })
     }
@@ -140,10 +142,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Get counts by status
-    const { data: counts } = await supabase
+    const { data: countsRaw } = await supabase
       .from('notification_queue')
       .select('status')
       .eq('center_id', userData.center_id)
+
+    const counts = countsRaw as { status: string }[] | null
 
     const statusCounts = {
       pending: 0,

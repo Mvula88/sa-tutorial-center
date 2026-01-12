@@ -19,12 +19,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user's center and role
-    const { data: userData } = await supabase
+    const { data: userDataRaw } = await supabase
       .from('users')
       .select('center_id, role')
       .eq('id', user.id)
       .single()
 
+    const userData = userDataRaw as { center_id: string | null; role: string } | null
     if (!userData?.center_id) {
       return NextResponse.json({ error: 'No center associated' }, { status: 400 })
     }
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     let query = supabase
       .from('portal_access_tokens')
-      .update({ is_revoked: true })
+      .update({ is_revoked: true } as never)
       .eq('entity_type', entityType)
       .eq('entity_id', entityId)
       .eq('center_id', userData.center_id)

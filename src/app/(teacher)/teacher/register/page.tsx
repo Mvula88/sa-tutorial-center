@@ -35,7 +35,7 @@ export default function TeacherRegisterPage() {
       const supabase = createClient()
 
       // Find the teacher by name and phone
-      const { data: teachers, error: searchError } = await supabase
+      const { data: teachersData, error: searchError } = await supabase
         .from('teachers')
         .select('id, full_name, phone, email, auth_user_id, status')
         .ilike('full_name', `%${fullName.trim()}%`)
@@ -46,6 +46,9 @@ export default function TeacherRegisterPage() {
         setIsLoading(false)
         return
       }
+
+      type TeacherRecord = { id: string; full_name: string; phone: string | null; email: string | null; auth_user_id: string | null; status: string }
+      const teachers = teachersData as TeacherRecord[] | null
 
       // Find a matching teacher (case-insensitive name match and phone match)
       const matchingTeacher = teachers?.find(t => {

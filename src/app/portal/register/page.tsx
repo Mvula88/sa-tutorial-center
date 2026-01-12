@@ -149,7 +149,6 @@ export default function ParentRegisterPage() {
               value={formData.fullName}
               onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
               placeholder="Enter your full name"
-              leftIcon={<User className="w-5 h-5" />}
               required
             />
 
@@ -159,7 +158,6 @@ export default function ParentRegisterPage() {
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               placeholder="Enter your email"
-              leftIcon={<Mail className="w-5 h-5" />}
               required
             />
 
@@ -169,7 +167,6 @@ export default function ParentRegisterPage() {
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               placeholder="Enter your phone number"
-              leftIcon={<Phone className="w-5 h-5" />}
             />
 
             <Input
@@ -178,7 +175,6 @@ export default function ParentRegisterPage() {
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               placeholder="Create a password (min 8 characters)"
-              leftIcon={<Lock className="w-5 h-5" />}
               required
             />
 
@@ -188,7 +184,6 @@ export default function ParentRegisterPage() {
               value={formData.confirmPassword}
               onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
               placeholder="Confirm your password"
-              leftIcon={<Lock className="w-5 h-5" />}
               required
             />
 

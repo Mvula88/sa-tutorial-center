@@ -43,7 +43,7 @@ export async function queueNotification(data: NotificationData): Promise<{ succe
   try {
     const supabase = await createClient()
 
-    const { data: notification, error } = await supabase
+    const { data: notificationData, error } = await supabase
       .from('notification_queue')
       .insert({
         center_id: data.centerId,
@@ -58,13 +58,14 @@ export async function queueNotification(data: NotificationData): Promise<{ succe
         related_entity_type: data.relatedEntityType,
         related_entity_id: data.relatedEntityId,
         created_by: data.createdBy,
-      })
+      } as never)
       .select('id')
       .single()
 
-    if (error) {
+    const notification = notificationData as { id: string } | null
+    if (error || !notification) {
       console.error('Error queuing notification:', error)
-      return { success: false, error: error.message }
+      return { success: false, error: error?.message || 'Failed to create notification' }
     }
 
     return { success: true, notificationId: notification.id }
@@ -107,7 +108,7 @@ export async function processNotifications(limit: number = 50): Promise<{ proces
           .update({
             status: 'sent',
             sent_at: new Date().toISOString(),
-          })
+          } as never)
           .eq('id', notification.id)
 
         processed++
@@ -121,7 +122,7 @@ export async function processNotifications(limit: number = 50): Promise<{ proces
               status: 'failed',
               error_message: result.error,
               retry_count: retryCount + 1,
-            })
+            } as never)
             .eq('id', notification.id)
         } else {
           // Schedule retry
@@ -131,7 +132,7 @@ export async function processNotifications(limit: number = 50): Promise<{ proces
               error_message: result.error,
               retry_count: retryCount + 1,
               scheduled_for: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 min delay
-            })
+            } as never)
             .eq('id', notification.id)
         }
 
@@ -157,37 +158,42 @@ async function sendNotification(notification: QueuedNotification): Promise<{ suc
   let phone: string | null = null
   let recipientName: string = ''
 
+  type RecipientData = { email: string | null; phone: string | null; full_name: string }
+
   if (notification.recipient_type === 'parent') {
-    const { data: parent } = await supabase
+    const { data: parentData } = await supabase
       .from('parents')
       .select('email, phone, full_name')
       .eq('id', notification.recipient_id)
       .single()
 
+    const parent = parentData as RecipientData | null
     if (parent) {
       email = parent.email
       phone = parent.phone
       recipientName = parent.full_name
     }
   } else if (notification.recipient_type === 'student') {
-    const { data: student } = await supabase
+    const { data: studentData } = await supabase
       .from('students')
       .select('email, phone, full_name')
       .eq('id', notification.recipient_id)
       .single()
 
+    const student = studentData as RecipientData | null
     if (student) {
       email = student.email
       phone = student.phone
       recipientName = student.full_name
     }
   } else if (notification.recipient_type === 'teacher') {
-    const { data: teacher } = await supabase
+    const { data: teacherData } = await supabase
       .from('teachers')
       .select('email, phone, full_name')
       .eq('id', notification.recipient_id)
       .single()
 
+    const teacher = teacherData as RecipientData | null
     if (teacher) {
       email = teacher.email
       phone = teacher.phone
@@ -293,7 +299,7 @@ async function logNotification({
       provider,
       provider_message_id: providerMessageId,
       provider_response: providerResponse,
-    })
+    } as never)
 }
 
 /**
@@ -307,7 +313,7 @@ export async function queueAttendanceNotification(
   const supabase = await createClient()
 
   // Get student and center info
-  const { data: student } = await supabase
+  const { data: studentData } = await supabase
     .from('students')
     .select(`
       id, full_name, center_id,
@@ -316,12 +322,14 @@ export async function queueAttendanceNotification(
     .eq('id', studentId)
     .single()
 
+  type StudentWithCenter = { id: string; full_name: string; center_id: string; center: { name: string } }
+  const student = studentData as StudentWithCenter | null
   if (!student) return
 
-  const center = student.center as { name: string }
+  const center = student.center
 
   // Get parents who want immediate notifications
-  const { data: parentLinks } = await supabase
+  const { data: parentLinksData } = await supabase
     .from('parent_students')
     .select(`
       parent:parents(
@@ -333,18 +341,14 @@ export async function queueAttendanceNotification(
     .not('verified_at', 'is', null)
     .eq('can_receive_notifications', true)
 
+  type ParentLink = { parent: { id: string; full_name: string; notification_attendance: string; notification_sms: boolean; notification_email: boolean } }
+  const parentLinks = parentLinksData as ParentLink[] | null
   if (!parentLinks) return
 
   const dateStr = date.toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 
   for (const link of parentLinks) {
-    const parent = link.parent as {
-      id: string
-      full_name: string
-      notification_attendance: string
-      notification_sms: boolean
-      notification_email: boolean
-    }
+    const parent = link.parent
 
     if (!parent || parent.notification_attendance !== 'immediate') continue
 
@@ -378,7 +382,7 @@ export async function queueReportCardNotification(
   const supabase = await createClient()
 
   // Get student and center info
-  const { data: student } = await supabase
+  const { data: studentData2 } = await supabase
     .from('students')
     .select(`
       id, full_name, center_id,
@@ -387,12 +391,14 @@ export async function queueReportCardNotification(
     .eq('id', studentId)
     .single()
 
+  type StudentWithCenter2 = { id: string; full_name: string; center_id: string; center: { name: string } }
+  const student = studentData2 as StudentWithCenter2 | null
   if (!student) return
 
-  const center = student.center as { name: string }
+  const center = student.center
 
   // Get parents who want grade notifications
-  const { data: parentLinks } = await supabase
+  const { data: parentLinksData2 } = await supabase
     .from('parent_students')
     .select(`
       parent:parents(
@@ -404,15 +410,12 @@ export async function queueReportCardNotification(
     .not('verified_at', 'is', null)
     .eq('can_receive_notifications', true)
 
+  type ParentLink2 = { parent: { id: string; notification_grades: boolean; notification_sms: boolean; notification_email: boolean } }
+  const parentLinks = parentLinksData2 as ParentLink2[] | null
   if (!parentLinks) return
 
   for (const link of parentLinks) {
-    const parent = link.parent as {
-      id: string
-      notification_grades: boolean
-      notification_sms: boolean
-      notification_email: boolean
-    }
+    const parent = link.parent
 
     if (!parent || !parent.notification_grades) continue
 

@@ -48,11 +48,14 @@ export async function POST(request: NextRequest) {
     const tokenHash = hashToken(token)
 
     // Check if token exists and is not revoked in database
-    const { data: tokenRecord, error: tokenError } = await supabase
+    const { data: tokenRecordRaw, error: tokenError } = await supabase
       .from('portal_access_tokens')
       .select('id, is_revoked, expires_at')
       .eq('token_hash', tokenHash)
       .single()
+
+    type TokenRecord = { id: string; is_revoked: boolean; expires_at: string }
+    const tokenRecord = tokenRecordRaw as TokenRecord | null
 
     // If token not found in DB, it might be a legacy token (UUID-based)
     // or the token was never stored. We'll still validate the JWT.
@@ -85,7 +88,7 @@ export async function POST(request: NextRequest) {
         .update({
           last_used_at: new Date().toISOString(),
           last_ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || null,
-        })
+        } as never)
         .eq('id', tokenRecord.id)
     }
 

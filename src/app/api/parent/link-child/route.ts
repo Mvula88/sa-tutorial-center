@@ -21,12 +21,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Get parent record
-    const { data: parent, error: parentError } = await supabase
+    const { data: parentData, error: parentError } = await supabase
       .from('parents')
       .select('id')
       .eq('auth_user_id', user.id)
       .single()
 
+    const parent = parentData as { id: string } | null
     if (parentError || !parent) {
       return NextResponse.json({
         success: false,
@@ -55,7 +56,10 @@ export async function POST(request: NextRequest) {
       query = query.eq('email', studentEmail)
     }
 
-    const { data: student, error: studentError } = await query.single()
+    const { data: studentData, error: studentError } = await query.single()
+
+    type StudentData = { id: string; full_name: string; student_number: string | null; email: string | null; center_id: string; status: string }
+    const student = studentData as StudentData | null
 
     if (studentError || !student) {
       return NextResponse.json({
@@ -72,13 +76,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if already linked
-    const { data: existingLink } = await supabase
+    const { data: existingLinkData } = await supabase
       .from('parent_students')
       .select('id, verified_at')
       .eq('parent_id', parent.id)
       .eq('student_id', student.id)
       .single()
 
+    const existingLink = existingLinkData as { id: string; verified_at: string | null } | null
     if (existingLink) {
       return NextResponse.json({
         success: false,
@@ -100,7 +105,7 @@ export async function POST(request: NextRequest) {
         can_view_fees: true,
         can_receive_notifications: true,
         verified_at: null, // Requires admin verification
-      })
+      } as never)
 
     if (linkError) {
       console.error('Error linking child:', linkError)
@@ -144,13 +149,14 @@ export async function GET() {
     }
 
     // Get parent record
-    const { data: parent } = await supabase
+    const { data: parentDataGet } = await supabase
       .from('parents')
       .select('id')
       .eq('auth_user_id', user.id)
       .single()
 
-    if (!parent) {
+    const parentRecord = parentDataGet as { id: string } | null
+    if (!parentRecord) {
       return NextResponse.json({
         success: false,
         error: 'Parent account not found'
@@ -159,7 +165,7 @@ export async function GET() {
 
     // Get linked children
     const { data: children, error } = await supabase
-      .rpc('get_parent_children', { p_parent_id: parent.id })
+      .rpc('get_parent_children' as never, { p_parent_id: parentRecord.id } as never)
 
     if (error) {
       console.error('Error fetching children:', error)
@@ -198,13 +204,14 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Get parent record
-    const { data: parent } = await supabase
+    const { data: parentDataDel } = await supabase
       .from('parents')
       .select('id')
       .eq('auth_user_id', user.id)
       .single()
 
-    if (!parent) {
+    const parentDel = parentDataDel as { id: string } | null
+    if (!parentDel) {
       return NextResponse.json({
         success: false,
         error: 'Parent account not found'
@@ -225,7 +232,7 @@ export async function DELETE(request: NextRequest) {
     const { error } = await supabase
       .from('parent_students')
       .delete()
-      .eq('parent_id', parent.id)
+      .eq('parent_id', parentDel.id)
       .eq('student_id', studentId)
 
     if (error) {

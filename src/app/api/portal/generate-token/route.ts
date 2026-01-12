@@ -23,12 +23,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user's center and role
-    const { data: userData } = await supabase
+    const { data: userDataRaw } = await supabase
       .from('users')
       .select('center_id, role')
       .eq('id', user.id)
       .single()
 
+    const userData = userDataRaw as { center_id: string | null; role: string } | null
     if (!userData?.center_id) {
       return NextResponse.json({ error: 'No center associated' }, { status: 400 })
     }
@@ -63,11 +64,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Get center info for notification
-    const { data: center } = await supabase
+    const { data: centerData } = await supabase
       .from('tutorial_centers')
       .select('name')
       .eq('id', userData.center_id)
       .single()
+
+    const center = centerData as { name: string } | null
 
     // Generate the token
     const token = generatePortalToken(entityType, entityId, userData.center_id, { expiresInDays })
@@ -80,7 +83,7 @@ export async function POST(request: NextRequest) {
     // Revoke any existing active tokens for this entity
     await supabase
       .from('portal_access_tokens')
-      .update({ is_revoked: true })
+      .update({ is_revoked: true } as never)
       .eq('entity_type', entityType)
       .eq('entity_id', entityId)
       .eq('is_revoked', false)

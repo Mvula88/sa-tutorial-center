@@ -41,12 +41,13 @@ export default function StudentLoginPage() {
       }
 
       // Check if this auth user is linked to a student
-      const { data: student, error: studentError } = await supabase
+      const { data: studentData, error: studentError } = await supabase
         .from('students')
         .select('id, full_name, status')
         .eq('auth_user_id', authData.user.id)
         .single()
 
+      const student = studentData as { id: string; full_name: string; status: string } | null
       if (studentError || !student) {
         // Sign out since they're not a student
         await supabase.auth.signOut()
