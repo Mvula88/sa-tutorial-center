@@ -26,6 +26,11 @@ import {
   Receipt,
   Loader2,
   CalendarPlus,
+  Link as LinkIcon,
+  Copy,
+  Check,
+  Share2,
+  UserCheck,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { generateMonthlyFees } from '@/lib/fee-utils'
@@ -62,6 +67,8 @@ interface Student {
   status: string
   registration_date: string
   created_at: string
+  auth_user_id: string | null
+  center_id: string
 }
 
 interface Subject {
@@ -143,6 +150,11 @@ export default function StudentDetailPage() {
   const [deleteFeeModalOpen, setDeleteFeeModalOpen] = useState(false)
   const [feeToDelete, setFeeToDelete] = useState<StudentFee | null>(null)
   const [isDeletingFee, setIsDeletingFee] = useState(false)
+
+  // Portal access state
+  const [registrationLink, setRegistrationLink] = useState<string | null>(null)
+  const [isGeneratingLink, setIsGeneratingLink] = useState(false)
+  const [linkCopied, setLinkCopied] = useState(false)
 
   // Month names for display
   const monthNames = [
@@ -475,6 +487,59 @@ export default function StudentDetailPage() {
     } finally {
       setIsDeletingFee(false)
     }
+  }
+
+  async function generateRegistrationLink() {
+    if (!student) return
+    setIsGeneratingLink(true)
+
+    try {
+      const response = await fetch('/api/portal/generate-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          entityType: 'student',
+          entityId: student.id,
+          expiresInDays: 30,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to generate link')
+      }
+
+      const baseUrl = window.location.origin
+      const regLink = `${baseUrl}/student/register?token=${result.token}`
+      setRegistrationLink(regLink)
+      toast.success('Registration link generated!')
+    } catch (error) {
+      console.error('Error generating link:', error)
+      toast.error('Failed to generate registration link')
+    } finally {
+      setIsGeneratingLink(false)
+    }
+  }
+
+  function copyToClipboard() {
+    if (registrationLink) {
+      navigator.clipboard.writeText(registrationLink)
+      setLinkCopied(true)
+      toast.success('Link copied to clipboard!')
+      setTimeout(() => setLinkCopied(false), 2000)
+    }
+  }
+
+  function shareOnWhatsApp() {
+    if (!registrationLink || !student) return
+    const message = encodeURIComponent(
+      `Hello ${student.full_name},\n\nPlease use this link to create your student portal account:\n\n${registrationLink}\n\nThis link expires in 30 days.`
+    )
+    const whatsappUrl = student.phone
+      ? `https://wa.me/${student.phone.replace(/\D/g, '')}?text=${message}`
+      : `https://wa.me/?text=${message}`
+    window.open(whatsappUrl, '_blank')
   }
 
   async function handlePrint() {
@@ -1237,6 +1302,77 @@ export default function StudentDetailPage() {
                 </span>
               </div>
             </div>
+          </div>
+
+          {/* Portal Access */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <LinkIcon className="w-5 h-5 text-blue-600" />
+              <h2 className="text-lg font-semibold text-gray-900">Portal Access</h2>
+            </div>
+
+            {student.auth_user_id ? (
+              <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
+                <UserCheck className="w-5 h-5 text-green-600" />
+                <div>
+                  <p className="font-medium text-green-700">Account Created</p>
+                  <p className="text-sm text-green-600">Student has portal access</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600">
+                  This student doesn&apos;t have a portal account yet. Generate a registration link to share with them.
+                </p>
+
+                {!registrationLink ? (
+                  <Button
+                    onClick={generateRegistrationLink}
+                    disabled={isGeneratingLink}
+                    className="w-full"
+                    leftIcon={isGeneratingLink ? <Loader2 className="w-4 h-4 animate-spin" /> : <LinkIcon className="w-4 h-4" />}
+                  >
+                    {isGeneratingLink ? 'Generating...' : 'Generate Registration Link'}
+                  </Button>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <p className="text-xs text-gray-500 mb-1">Registration Link</p>
+                      <p className="text-sm text-gray-700 break-all font-mono">
+                        {registrationLink.substring(0, 50)}...
+                      </p>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={copyToClipboard}
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        leftIcon={linkCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      >
+                        {linkCopied ? 'Copied!' : 'Copy'}
+                      </Button>
+                      <Button
+                        onClick={shareOnWhatsApp}
+                        size="sm"
+                        className="flex-1 bg-green-600 hover:bg-green-700"
+                        leftIcon={<Share2 className="w-4 h-4" />}
+                      >
+                        WhatsApp
+                      </Button>
+                    </div>
+
+                    <button
+                      onClick={generateRegistrationLink}
+                      className="text-sm text-blue-600 hover:text-blue-700 w-full text-center"
+                    >
+                      Generate new link
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

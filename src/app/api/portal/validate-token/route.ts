@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
     const selectFields = decoded.type === 'student'
       ? 'id, full_name, email, phone, student_number, grade, class_id, center_id, status, center:tutorial_centers(name, logo_url, primary_color)'
       : decoded.type === 'teacher'
-        ? 'id, full_name, email, phone, subject_specialty, center_id, is_active, center:tutorial_centers(name, logo_url, primary_color)'
+        ? 'id, full_name, email, phone, specialization, center_id, status, center:tutorial_centers(name, logo_url, primary_color)'
         : 'id, full_name, email, phone, center_id, is_active'
 
     const { data: entity, error: entityError } = await supabase
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if entity is active
-    const isActive = decoded.type === 'student'
+    const isActive = decoded.type === 'student' || decoded.type === 'teacher'
       ? (entity as { status: string }).status === 'active'
       : (entity as { is_active: boolean }).is_active !== false
 
@@ -131,11 +131,17 @@ export async function POST(request: NextRequest) {
     // Log successful access
     await logAccessAttempt(supabase, decoded, request, true)
 
+    // Extract name and email for convenience
+    const entityData = entity as { full_name?: string; email?: string }
+
     return NextResponse.json({
+      success: true,
       valid: true,
       entityType: decoded.type,
       entityId: decoded.entityId,
       centerId: decoded.centerId,
+      entityName: entityData.full_name || '',
+      entityEmail: entityData.email || null,
       entity,
       expiresAt: new Date(decoded.exp * 1000).toISOString(),
     })
