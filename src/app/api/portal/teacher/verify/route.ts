@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,7 +12,8 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    const supabase = await createClient()
+    // Use admin client to bypass RLS since user is not authenticated yet
+    const supabase = await createAdminClient()
 
     // Search for teacher by name (case-insensitive partial match)
     const { data: teachersData, error: searchError } = await supabase
