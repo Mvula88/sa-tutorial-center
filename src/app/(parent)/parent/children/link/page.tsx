@@ -155,7 +155,6 @@ export default function LinkChildPage() {
               value={studentNumber}
               onChange={(e) => setStudentNumber(e.target.value)}
               placeholder="e.g., STU-2024-001"
-              leftIcon={<Hash className="w-5 h-5" />}
               required
             />
           ) : (
@@ -165,7 +164,6 @@ export default function LinkChildPage() {
               value={studentEmail}
               onChange={(e) => setStudentEmail(e.target.value)}
               placeholder="student@email.com"
-              leftIcon={<Mail className="w-5 h-5" />}
               required
             />
           )}
