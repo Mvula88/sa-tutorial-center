@@ -153,12 +153,14 @@ export default function HomeworkPage() {
   }, [user?.center_id, currentPage, searchQuery, classFilter, subjectFilter])
 
   async function fetchReferenceData() {
+    if (!user?.center_id) return
     const supabase = createClient()
+    const centerId = user.center_id
 
     const [classesRes, subjectsRes, teachersRes] = await Promise.all([
-      supabase.from('classes').select('id, name').eq('center_id', user!.center_id).eq('is_active', true).order('name'),
-      supabase.from('subjects').select('id, name').eq('center_id', user!.center_id).eq('is_active', true).order('name'),
-      supabase.from('teachers').select('id, full_name').eq('center_id', user!.center_id).eq('is_active', true).order('full_name'),
+      supabase.from('classes').select('id, name').eq('center_id', centerId).eq('is_active', true).order('name'),
+      supabase.from('subjects').select('id, name').eq('center_id', centerId).eq('is_active', true).order('name'),
+      supabase.from('teachers').select('id, full_name').eq('center_id', centerId).eq('is_active', true).order('full_name'),
     ])
 
     setClasses((classesRes.data || []) as Class[])

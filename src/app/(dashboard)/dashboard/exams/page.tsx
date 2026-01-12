@@ -132,11 +132,13 @@ export default function ExamsPage() {
   }, [user?.center_id, currentPage, searchQuery, classFilter, statusFilter])
 
   async function fetchReferenceData() {
+    if (!user?.center_id) return
     const supabase = createClient()
+    const centerId = user.center_id
 
     const [classesRes, subjectsRes] = await Promise.all([
-      supabase.from('classes').select('id, name').eq('center_id', user!.center_id).eq('is_active', true).order('name'),
-      supabase.from('subjects').select('id, name').eq('center_id', user!.center_id).eq('is_active', true).order('name'),
+      supabase.from('classes').select('id, name').eq('center_id', centerId).eq('is_active', true).order('name'),
+      supabase.from('subjects').select('id, name').eq('center_id', centerId).eq('is_active', true).order('name'),
     ])
 
     setClasses((classesRes.data || []) as Class[])
