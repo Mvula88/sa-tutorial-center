@@ -71,11 +71,12 @@ export default function ChildFeesPage() {
       .order('due_date', { ascending: false })
 
     if (feeData) {
-      setFees(feeData as unknown as FeeTransaction[])
+      const transactions = feeData as unknown as FeeTransaction[]
+      setFees(transactions)
 
       // Calculate stats
-      const pending = feeData.filter(f => f.status === 'pending' || f.status === 'partial')
-      const paid = feeData.filter(f => f.status === 'paid')
+      const pending = transactions.filter(f => f.status === 'pending' || f.status === 'partial')
+      const paid = transactions.filter(f => f.status === 'paid')
       const today = new Date().toISOString().split('T')[0]
       const overdueItems = pending.filter(f => f.due_date < today)
 
