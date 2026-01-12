@@ -98,12 +98,13 @@ export default function ParentDashboard() {
           : 100
 
         // Get pending fees
-        const { data: fees } = await supabase
+        const { data: feesData } = await supabase
           .from('fee_transactions')
           .select('amount, status')
           .eq('student_id', child.student_id)
           .in('status', ['pending', 'partial'])
 
+        const fees = feesData as { amount: number; status: string }[] | null
         const pendingFees = fees?.reduce((sum, f) => sum + Number(f.amount), 0) || 0
 
         // Get upcoming exams count (if table exists)
