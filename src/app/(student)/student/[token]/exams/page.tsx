@@ -96,12 +96,13 @@ export default function StudentExamsPage() {
     }
 
     // Get past exams
-    const { data: student } = await supabase
+    const { data: studentData } = await supabase
       .from('students')
       .select('class_id')
       .eq('id', studentId)
       .single()
 
+    const student = studentData as { class_id: string | null } | null
     if (student?.class_id) {
       const { data: past } = await supabase
         .from('exams')
