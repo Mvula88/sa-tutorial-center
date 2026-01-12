@@ -126,11 +126,13 @@ export default function StudentExamsPage() {
         .limit(10)
 
       if (past) {
-        setPastExams(past.map(e => ({
+        type PastExam = { id: string; name: string; exam_type: string; exam_date: string; start_time: string; end_time: string; duration_minutes: number | null; venue: string | null; total_marks: number; status: string; subject: { name: string } | null }
+        const pastExams = past as unknown as PastExam[]
+        setPastExams(pastExams.map(e => ({
           exam_id: e.id,
           exam_name: e.name,
           exam_type: e.exam_type,
-          subject_name: (e.subject as { name: string })?.name || null,
+          subject_name: e.subject?.name || null,
           exam_date: e.exam_date,
           start_time: e.start_time,
           end_time: e.end_time,
