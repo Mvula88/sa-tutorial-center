@@ -89,7 +89,7 @@ export default function StudentExamsPage() {
     const supabase = createClient()
 
     // Get upcoming exams using the function
-    const { data: upcoming } = await supabase.rpc('get_student_upcoming_exams', { p_student_id: studentId })
+    const { data: upcoming } = await supabase.rpc('get_student_upcoming_exams' as never, { p_student_id: studentId } as never)
 
     if (upcoming) {
       setUpcomingExams(upcoming as Exam[])
