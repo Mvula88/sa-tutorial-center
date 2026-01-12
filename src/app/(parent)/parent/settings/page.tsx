@@ -125,7 +125,6 @@ export default function ParentSettingsPage() {
             type="text"
             value={settings.full_name}
             onChange={(e) => setSettings({ ...settings, full_name: e.target.value })}
-            leftIcon={<User className="w-5 h-5" />}
           />
 
           <Input
@@ -133,7 +132,6 @@ export default function ParentSettingsPage() {
             type="email"
             value={settings.email}
             disabled
-            leftIcon={<Mail className="w-5 h-5" />}
             helperText="Contact support to change your email"
           />
 
@@ -143,7 +141,6 @@ export default function ParentSettingsPage() {
             value={settings.phone || ''}
             onChange={(e) => setSettings({ ...settings, phone: e.target.value })}
             placeholder="e.g., 0821234567"
-            leftIcon={<Phone className="w-5 h-5" />}
           />
         </div>
       </div>
