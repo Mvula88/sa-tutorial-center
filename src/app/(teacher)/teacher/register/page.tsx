@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
 import { BookOpen, Mail, Lock, Phone, User, Loader2, AlertCircle, Eye, EyeOff, CheckCircle } from 'lucide-react'
 
 export default function TeacherRegisterPage() {
@@ -32,54 +31,26 @@ export default function TeacherRegisterPage() {
     setError(null)
 
     try {
-      const supabase = createClient()
-
-      // Find the teacher by name and phone
-      const { data: teachersData, error: searchError } = await supabase
-        .from('teachers')
-        .select('id, full_name, phone, email, auth_user_id, status')
-        .ilike('full_name', `%${fullName.trim()}%`)
-        .limit(10)
-
-      if (searchError) {
-        setError('Error searching for teacher record. Please try again.')
-        setIsLoading(false)
-        return
-      }
-
-      type TeacherRecord = { id: string; full_name: string; phone: string | null; email: string | null; auth_user_id: string | null; status: string }
-      const teachers = teachersData as TeacherRecord[] | null
-
-      // Find a matching teacher (case-insensitive name match and phone match)
-      const matchingTeacher = teachers?.find(t => {
-        const nameMatch = t.full_name.toLowerCase().includes(fullName.toLowerCase().trim())
-        const phoneMatch = t.phone && phone && t.phone.replace(/\D/g, '').includes(phone.replace(/\D/g, ''))
-        return nameMatch && phoneMatch
+      // Call the verification API
+      const response = await fetch('/api/portal/teacher/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fullName, phone }),
       })
 
-      if (!matchingTeacher) {
-        setError('No matching teacher record found. Please check your name and phone number, or contact your tutorial center.')
-        setIsLoading(false)
-        return
-      }
+      const result = await response.json()
 
-      if (matchingTeacher.auth_user_id) {
-        setError('This teacher already has an account. Please login instead.')
-        setIsLoading(false)
-        return
-      }
-
-      if (matchingTeacher.status !== 'active') {
-        setError('Your teacher record is not active. Please contact your tutorial center.')
+      if (!result.success) {
+        setError(result.error)
         setIsLoading(false)
         return
       }
 
       // Set the teacher info and move to registration step
-      setTeacherId(matchingTeacher.id)
-      setTeacherName(matchingTeacher.full_name)
-      if (matchingTeacher.email) {
-        setEmail(matchingTeacher.email)
+      setTeacherId(result.teacher.id)
+      setTeacherName(result.teacher.name)
+      if (result.teacher.email) {
+        setEmail(result.teacher.email)
       }
       setStep('register')
       setIsLoading(false)

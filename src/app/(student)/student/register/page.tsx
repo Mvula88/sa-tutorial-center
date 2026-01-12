@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
 import { GraduationCap, Mail, Lock, Phone, User, Loader2, AlertCircle, Eye, EyeOff, CheckCircle } from 'lucide-react'
 
 export default function StudentRegisterPage() {
@@ -32,54 +31,26 @@ export default function StudentRegisterPage() {
     setError(null)
 
     try {
-      const supabase = createClient()
-
-      // Find the student by name and phone
-      const { data: studentsData, error: searchError } = await supabase
-        .from('students')
-        .select('id, full_name, phone, email, auth_user_id, status')
-        .ilike('full_name', `%${fullName.trim()}%`)
-        .limit(10)
-
-      if (searchError) {
-        setError('Error searching for student record. Please try again.')
-        setIsLoading(false)
-        return
-      }
-
-      type StudentRecord = { id: string; full_name: string; phone: string | null; email: string | null; auth_user_id: string | null; status: string }
-      const students = studentsData as StudentRecord[] | null
-
-      // Find a matching student (case-insensitive name match and phone match)
-      const matchingStudent = students?.find(s => {
-        const nameMatch = s.full_name.toLowerCase().includes(fullName.toLowerCase().trim())
-        const phoneMatch = s.phone && phone && s.phone.replace(/\D/g, '').includes(phone.replace(/\D/g, ''))
-        return nameMatch && phoneMatch
+      // Call the verification API
+      const response = await fetch('/api/portal/student/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fullName, phone }),
       })
 
-      if (!matchingStudent) {
-        setError('No matching student record found. Please check your name and phone number, or contact your tutorial center.')
-        setIsLoading(false)
-        return
-      }
+      const result = await response.json()
 
-      if (matchingStudent.auth_user_id) {
-        setError('This student already has an account. Please login instead.')
-        setIsLoading(false)
-        return
-      }
-
-      if (matchingStudent.status !== 'active') {
-        setError('Your student record is not active. Please contact your tutorial center.')
+      if (!result.success) {
+        setError(result.error)
         setIsLoading(false)
         return
       }
 
       // Set the student info and move to registration step
-      setStudentId(matchingStudent.id)
-      setStudentName(matchingStudent.full_name)
-      if (matchingStudent.email) {
-        setEmail(matchingStudent.email)
+      setStudentId(result.student.id)
+      setStudentName(result.student.name)
+      if (result.student.email) {
+        setEmail(result.student.email)
       }
       setStep('register')
       setIsLoading(false)
