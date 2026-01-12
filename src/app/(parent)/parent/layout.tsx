@@ -81,17 +81,18 @@ export default function ParentPortalLayout({
       return
     }
 
-    if (!parentData.is_active) {
+    const parent = parentData as unknown as ParentData
+    if (!parent.is_active) {
       setError('Your account has been deactivated. Please contact support.')
       setIsLoading(false)
       return
     }
 
-    setParent(parentData as ParentData)
+    setParent(parent)
 
     // Get linked children using the function
     const { data: childrenData, error: childrenError } = await supabase
-      .rpc('get_parent_children', { p_parent_id: parentData.id })
+      .rpc('get_parent_children' as never, { p_parent_id: parent.id } as never)
 
     if (!childrenError && childrenData) {
       setLinkedChildren(childrenData as ChildData[])
