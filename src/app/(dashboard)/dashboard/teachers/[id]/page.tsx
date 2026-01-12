@@ -163,7 +163,8 @@ export default function TeacherDetailPage() {
       toast.success('Registration link generated!')
     } catch (error) {
       console.error('Error generating link:', error)
-      toast.error('Failed to generate registration link')
+      const errorMsg = error instanceof Error ? error.message : 'Failed to generate registration link'
+      toast.error(errorMsg)
     } finally {
       setIsGeneratingLink(false)
     }

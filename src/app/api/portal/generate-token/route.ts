@@ -35,20 +35,25 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user's center and role
-    const { data: userDataRaw } = await supabase
+    const { data: userDataRaw, error: userError } = await supabase
       .from('users')
       .select('center_id, role')
       .eq('id', user.id)
       .single()
 
+    if (userError) {
+      console.error('Error fetching user data:', userError)
+      return NextResponse.json({ error: 'User data not found. Please ensure you are properly logged in.' }, { status: 400 })
+    }
+
     const userData = userDataRaw as { center_id: string | null; role: string } | null
     if (!userData?.center_id) {
-      return NextResponse.json({ error: 'No center associated' }, { status: 400 })
+      return NextResponse.json({ error: 'No center associated with your account' }, { status: 400 })
     }
 
     // Center admins and staff can generate tokens
     if (!['center_admin', 'center_staff', 'super_admin'].includes(userData.role)) {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+      return NextResponse.json({ error: `Insufficient permissions. Your role (${userData.role}) cannot generate registration links.` }, { status: 403 })
     }
 
     const body: GenerateTokenRequest = await request.json()
