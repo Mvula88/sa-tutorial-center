@@ -76,7 +76,7 @@ export default function ParentSettingsPage() {
         notification_fees: settings.notification_fees,
         notification_sms: settings.notification_sms,
         notification_email: settings.notification_email,
-      })
+      } as never)
       .eq('auth_user_id', user.id)
 
     if (error) {
