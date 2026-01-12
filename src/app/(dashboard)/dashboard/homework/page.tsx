@@ -198,9 +198,10 @@ export default function HomeworkPage() {
       const assignmentsWithStats = await Promise.all(
         (data as Assignment[]).map(async (a) => {
           const { data: stats } = await supabase.rpc('get_assignment_stats' as never, { p_assignment_id: a.id } as never)
+          const statsArray = stats as unknown as { total: number; completed: number; pending: number; late: number }[] | null
           return {
             ...a,
-            _stats: (stats as { total: number; completed: number; pending: number; late: number }[])?.[0] || { total: 0, completed: 0, pending: 0, late: 0 }
+            _stats: statsArray?.[0] || { total: 0, completed: 0, pending: 0, late: 0 }
           }
         })
       )
