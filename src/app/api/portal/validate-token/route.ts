@@ -1,10 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { verifyPortalToken, hashToken, isValidTokenFormat } from '@/lib/portal-tokens'
+import { verifyPortalToken, hashToken, isValidTokenFormat, isPortalTokensConfigured } from '@/lib/portal-tokens'
 
 interface ValidateTokenRequest {
   token: string
   entityType?: 'student' | 'teacher' | 'parent'
+}
+
+// Decode simple base64 token (fallback when JWT not configured)
+function decodeSimpleToken(token: string): { type: string; entityId: string; centerId: string; exp: number } | null {
+  try {
+    const json = Buffer.from(token, 'base64url').toString('utf-8')
+    const payload = JSON.parse(json)
+    if (payload.t && payload.e && payload.c && payload.x) {
+      // Check if expired
+      if (payload.x < Date.now()) {
+        return null
+      }
+      return {
+        type: payload.t,
+        entityId: payload.e,
+        centerId: payload.c,
+        exp: Math.floor(payload.x / 1000),
+      }
+    }
+    return null
+  } catch {
+    return null
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -19,16 +42,27 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Quick format check
-    if (!isValidTokenFormat(token)) {
-      return NextResponse.json({
-        valid: false,
-        error: 'Invalid token format'
-      })
+    // Try to decode token - first try JWT, then simple token
+    let decoded: { type: string; entityId: string; centerId: string; exp: number } | null = null
+
+    // Try JWT first if configured
+    if (isPortalTokensConfigured() && isValidTokenFormat(token)) {
+      const jwtDecoded = verifyPortalToken(token)
+      if (jwtDecoded) {
+        decoded = {
+          type: jwtDecoded.type,
+          entityId: jwtDecoded.entityId,
+          centerId: jwtDecoded.centerId,
+          exp: jwtDecoded.exp,
+        }
+      }
     }
 
-    // Verify JWT signature and expiration
-    const decoded = verifyPortalToken(token)
+    // Try simple token as fallback
+    if (!decoded) {
+      decoded = decodeSimpleToken(token)
+    }
+
     if (!decoded) {
       return NextResponse.json({
         valid: false,

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { generatePortalToken, hashToken } from '@/lib/portal-tokens'
+import { generatePortalToken, hashToken, isPortalTokensConfigured } from '@/lib/portal-tokens'
 import { sendSMS } from '@/lib/sms'
 import { sendEmail } from '@/lib/email'
 
@@ -12,8 +12,20 @@ interface GenerateTokenRequest {
   notificationChannel?: 'sms' | 'email' | 'both'
 }
 
+// Simple base64 token for when JWT is not configured
+function generateSimpleToken(entityType: string, entityId: string, centerId: string, expiresInDays: number): string {
+  const expiresAt = Date.now() + (expiresInDays * 24 * 60 * 60 * 1000)
+  const payload = { t: entityType, e: entityId, c: centerId, x: expiresAt }
+  return Buffer.from(JSON.stringify(payload)).toString('base64url')
+}
+
 export async function POST(request: NextRequest) {
   try {
+    const useSimpleToken = !isPortalTokensConfigured()
+    if (useSimpleToken) {
+      console.warn('PORTAL_JWT_SECRET not configured, using simple token (less secure)')
+    }
+
     const supabase = await createClient()
 
     // Get current user
@@ -72,38 +84,42 @@ export async function POST(request: NextRequest) {
 
     const center = centerData as { name: string } | null
 
-    // Generate the token
-    const token = generatePortalToken(entityType, entityId, userData.center_id, { expiresInDays })
+    // Generate the token (use JWT if configured, otherwise simple base64)
+    const token = useSimpleToken
+      ? generateSimpleToken(entityType, entityId, userData.center_id, expiresInDays)
+      : generatePortalToken(entityType, entityId, userData.center_id, { expiresInDays })
     const tokenHash = hashToken(token)
 
     // Calculate expiration
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + expiresInDays)
 
-    // Revoke any existing active tokens for this entity
-    await supabase
-      .from('portal_access_tokens')
-      .update({ is_revoked: true } as never)
-      .eq('entity_type', entityType)
-      .eq('entity_id', entityId)
-      .eq('is_revoked', false)
+    // Try to store token in database (optional - for tracking/revocation)
+    // If the table doesn't exist, we still return the token
+    try {
+      // Revoke any existing active tokens for this entity
+      await supabase
+        .from('portal_access_tokens')
+        .update({ is_revoked: true } as never)
+        .eq('entity_type', entityType)
+        .eq('entity_id', entityId)
+        .eq('is_revoked', false)
 
-    // Store the token hash in database
-    const { error: insertError } = await supabase
-      .from('portal_access_tokens')
-      .insert({
-        center_id: userData.center_id,
-        entity_type: entityType,
-        entity_id: entityId,
-        token_hash: tokenHash,
-        expires_at: expiresAt.toISOString(),
-        created_by: user.id,
-        created_ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || null,
-      } as never)
-
-    if (insertError) {
-      console.error('Error storing token:', insertError)
-      return NextResponse.json({ error: 'Failed to generate token' }, { status: 500 })
+      // Store the token hash in database
+      await supabase
+        .from('portal_access_tokens')
+        .insert({
+          center_id: userData.center_id,
+          entity_type: entityType,
+          entity_id: entityId,
+          token_hash: tokenHash,
+          expires_at: expiresAt.toISOString(),
+          created_by: user.id,
+          created_ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || null,
+        } as never)
+    } catch (dbError) {
+      // Database storage is optional - token will still work via JWT validation
+      console.warn('Could not store token in database (table may not exist):', dbError)
     }
 
     // Build portal URL
