@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams, usePathname } from 'next/navigation'
+import { useParams, usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import {
@@ -10,8 +10,11 @@ import {
   ClipboardCheck,
   Award,
   Users,
+  BookOpen,
+  CalendarDays,
   LogOut,
 } from 'lucide-react'
+import { isValidTokenFormat } from '@/lib/portal-tokens'
 
 interface TeacherData {
   id: string
@@ -34,6 +37,7 @@ export default function TeacherPortalLayout({
 }) {
   const params = useParams()
   const pathname = usePathname()
+  const router = useRouter()
   const token = params.token as string
   const [teacher, setTeacher] = useState<TeacherData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -49,25 +53,63 @@ export default function TeacherPortalLayout({
     setIsLoading(true)
     const supabase = createClient()
 
-    // Token is the teacher ID
-    const { data, error } = await supabase
-      .from('teachers')
-      .select(`
-        id, full_name, email, phone, subject_specialty, center_id,
-        center:tutorial_centers(name, logo_url, primary_color)
-      `)
-      .eq('id', token)
-      .eq('is_active', true)
-      .single()
+    // Check if token is a JWT (new secure format) or UUID (legacy)
+    if (isValidTokenFormat(token)) {
+      // Validate JWT token via API
+      try {
+        const response = await fetch('/api/portal/validate-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token, entityType: 'teacher' }),
+        })
+        const result = await response.json()
 
-    if (error || !data) {
-      setError('Invalid or expired access link')
+        if (!result.valid) {
+          setError(result.error || 'Invalid or expired access link')
+          setIsLoading(false)
+          return
+        }
+
+        setTeacher(result.entity as TeacherData)
+        setIsLoading(false)
+        return
+      } catch (err) {
+        console.error('Token validation error:', err)
+      }
+    }
+
+    // Fallback: Check if token is a valid UUID (legacy support)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (uuidRegex.test(token)) {
+      const { data, error: dbError } = await supabase
+        .from('teachers')
+        .select(`
+          id, full_name, email, phone, subject_specialty, center_id,
+          center:tutorial_centers(name, logo_url, primary_color)
+        `)
+        .eq('id', token)
+        .eq('is_active', true)
+        .single()
+
+      if (dbError || !data) {
+        setError('Invalid or expired access link')
+        setIsLoading(false)
+        return
+      }
+
+      setTeacher(data as unknown as TeacherData)
       setIsLoading(false)
       return
     }
 
-    setTeacher(data as unknown as TeacherData)
+    setError('Invalid access link format')
     setIsLoading(false)
+  }
+
+  async function handleLogout() {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push('/teacher/login')
   }
 
   if (isLoading) {
@@ -87,6 +129,12 @@ export default function TeacherPortalLayout({
           </div>
           <h1 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h1>
           <p className="text-gray-500">{error || 'This link is invalid or has expired.'}</p>
+          <Link
+            href="/teacher/login"
+            className="inline-block mt-4 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+          >
+            Go to Login
+          </Link>
         </div>
       </div>
     )
@@ -99,6 +147,8 @@ export default function TeacherPortalLayout({
     { label: 'Timetable', href: `/teacher/${token}/timetable`, icon: <Calendar className="w-5 h-5" /> },
     { label: 'Attendance', href: `/teacher/${token}/attendance`, icon: <ClipboardCheck className="w-5 h-5" /> },
     { label: 'Grades', href: `/teacher/${token}/grades`, icon: <Award className="w-5 h-5" /> },
+    { label: 'Homework', href: `/teacher/${token}/homework`, icon: <BookOpen className="w-5 h-5" /> },
+    { label: 'Exams', href: `/teacher/${token}/exams`, icon: <CalendarDays className="w-5 h-5" /> },
     { label: 'Students', href: `/teacher/${token}/students`, icon: <Users className="w-5 h-5" /> },
   ]
 
@@ -141,6 +191,13 @@ export default function TeacherPortalLayout({
               >
                 {teacher.full_name.charAt(0)}
               </div>
+              <button
+                onClick={handleLogout}
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Logout"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
             </div>
           </div>
         </div>
