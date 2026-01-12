@@ -34,8 +34,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No center associated' }, { status: 400 })
     }
 
-    // Only center admins can generate tokens
-    if (!['center_admin', 'super_admin'].includes(userData.role)) {
+    // Center admins and staff can generate tokens
+    if (!['center_admin', 'center_staff', 'super_admin'].includes(userData.role)) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
     }
 
