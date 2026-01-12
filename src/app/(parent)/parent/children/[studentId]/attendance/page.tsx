@@ -84,13 +84,14 @@ export default function ChildAttendancePage() {
       .order('date', { ascending: false })
 
     if (attendanceData) {
-      setAttendance(attendanceData as unknown as AttendanceRecord[])
+      const records = attendanceData as unknown as AttendanceRecord[]
+      setAttendance(records)
 
       // Calculate stats
-      const present = attendanceData.filter(a => a.status === 'present').length
-      const absent = attendanceData.filter(a => a.status === 'absent').length
-      const late = attendanceData.filter(a => a.status === 'late').length
-      setStats({ present, absent, late, total: attendanceData.length })
+      const present = records.filter(a => a.status === 'present').length
+      const absent = records.filter(a => a.status === 'absent').length
+      const late = records.filter(a => a.status === 'late').length
+      setStats({ present, absent, late, total: records.length })
     }
 
     setIsLoading(false)
