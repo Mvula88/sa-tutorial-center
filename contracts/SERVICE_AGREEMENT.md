@@ -60,7 +60,7 @@ If selected, the Service Provider will develop and host a professional website f
 
 | Description | Amount |
 |-------------|--------|
-| System setup, configuration, branding & training | **N$ 1,950.00** |
+| System setup, configuration, branding & training | **R 1,950.00** |
 
 *This fee is payable before system activation and is non-refundable.*
 
@@ -68,7 +68,7 @@ If selected, the Service Provider will develop and host a professional website f
 
 | Description | Amount |
 |-------------|--------|
-| School Management System monthly access | **N$ 650.00** |
+| School Management System monthly access | **R 650.00** |
 
 *Payable on or before the 1st of each month.*
 
@@ -76,7 +76,7 @@ If selected, the Service Provider will develop and host a professional website f
 
 | Description | Amount |
 |-------------|--------|
-| Domain renewal and hosting (annually) | **N$ 700.00** |
+| Domain renewal and hosting (annually) | **R 700.00** |
 
 *Payable annually on the anniversary of the website launch date.*
 
@@ -94,7 +94,7 @@ If selected, the Service Provider will develop and host a professional website f
 
 ## 3. WHAT'S INCLUDED IN YOUR MONTHLY FEE
 
-The monthly subscription fee of N$ 650.00 includes:
+The monthly subscription fee of R 650.00 includes:
 
 ### 3.1 Technical Support
 - Phone support (Monday to Friday, 8:00 AM - 5:00 PM)
@@ -250,9 +250,9 @@ The Client agrees to:
 
 11.1 Any disputes arising from this agreement shall first be addressed through good-faith negotiation.
 
-11.2 If negotiation fails, disputes shall be resolved through mediation in Windhoek, Namibia.
+11.2 If negotiation fails, disputes shall be resolved through mediation in Johannesburg, South Africa.
 
-11.3 This agreement is governed by the laws of the Republic of Namibia.
+11.3 This agreement is governed by the laws of the Republic of South Africa.
 
 ---
 

@@ -80,7 +80,7 @@ export function TrialExpiredModal() {
             <div className="flex items-baseline justify-between">
               <span className="text-sm text-gray-600">Plans from</span>
               <div>
-                <span className="text-2xl font-bold text-gray-900">N$99</span>
+                <span className="text-2xl font-bold text-gray-900">R59</span>
                 <span className="text-gray-500 text-sm">/mo</span>
               </div>
             </div>
@@ -95,7 +95,7 @@ export function TrialExpiredModal() {
           </button>
 
           <p className="text-center text-xs text-gray-400 mt-4">
-            Questions? <a href="mailto:support@namclass.com" className="text-gray-500 hover:text-gray-700">Contact support</a>
+            Questions? <a href="mailto:support@satutorialcentres.co.za" className="text-gray-500 hover:text-gray-700">Contact support</a>
           </p>
         </div>
       </div>

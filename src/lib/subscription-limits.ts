@@ -16,7 +16,7 @@ import { createClient } from '@/lib/supabase/client'
  */
 export const PLAN_LIMITS = {
   micro: {
-    maxStudents: 15,
+    maxStudents: 30,
     maxStaff: 0, // Solo operator - center admin only, no additional staff
     modules: {
       // Core features - included in all plans
@@ -36,7 +36,7 @@ export const PLAN_LIMITS = {
     },
   },
   starter: {
-    maxStudents: 50,
+    maxStudents: 80,
     maxStaff: 2, // Center admin + 2 staff members
     modules: {
       // Core features - included in all plans
@@ -56,7 +56,7 @@ export const PLAN_LIMITS = {
     },
   },
   standard: {
-    maxStudents: 150,
+    maxStudents: 200,
     maxStaff: 5,
     modules: {
       // Core features - included in all plans
@@ -232,7 +232,7 @@ export function getStaffLimitMessage(check: StaffLimitCheck): string | null {
   }
 
   if (check.limit === 0) {
-    return 'Your Micro plan does not include additional staff. Upgrade to Starter to add staff members.'
+    return 'Your Starter plan does not include additional staff. Upgrade to Growth to add staff members.'
   }
 
   if (check.isAtLimit) {

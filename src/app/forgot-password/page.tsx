@@ -45,7 +45,7 @@ export default function ForgotPasswordPage() {
           <Link href="/" className="flex items-center">
             <Image 
               src="/namclass-logo.png" 
-              alt="NamClass Logo" 
+              alt="SA Tutorial Centers Logo" 
               width={180} 
               height={50}
               className="h-10 w-auto"
@@ -153,7 +153,7 @@ export default function ForgotPasswordPage() {
       <footer className="bg-white border-t border-gray-200 py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <p className="text-center text-sm text-gray-600">
-            &copy; {new Date().getFullYear()} NamClass. All rights reserved.
+            &copy; {new Date().getFullYear()} SA Tutorial Centers. All rights reserved.
           </p>
         </div>
       </footer>

@@ -178,7 +178,7 @@ export function ProcessRefundModal({
     } else if (maxRefundable <= 0) {
       newErrors.amount = 'This payment has already been fully refunded'
     } else if (parseFloat(formData.amount) > maxRefundable) {
-      newErrors.amount = `Refund amount cannot exceed N$ ${maxRefundable.toFixed(2)} (remaining refundable)`
+      newErrors.amount = `Refund amount cannot exceed R ${maxRefundable.toFixed(2)} (remaining refundable)`
     }
 
     if (!formData.reason) {
@@ -233,9 +233,9 @@ export function ProcessRefundModal({
   }
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-NA', {
+    return new Intl.NumberFormat('en-ZA', {
       style: 'currency',
-      currency: 'NAD',
+      currency: 'ZAR',
     }).format(amount)
   }
 
@@ -337,7 +337,7 @@ export function ProcessRefundModal({
             Refund Amount <span className="text-red-500">*</span>
           </label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">N$</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">R</span>
             <input
               type="number"
               step="0.01"

@@ -340,7 +340,7 @@ export function SetupWizard() {
                 </label>
                 <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
                   <div className="flex items-center gap-3">
-                    <span className="text-gray-400 text-lg">N$</span>
+                    <span className="text-gray-400 text-lg">R</span>
                     <input
                       type="number"
                       value={registrationFee || ''}
@@ -391,13 +391,13 @@ export function SetupWizard() {
                   <span className="text-sm text-gray-600">Example yearly fee</span>
                   <div>
                     <span className="text-xl font-bold text-gray-900">
-                      N${(300 * paymentMonths.length).toLocaleString()}
+                      R{(300 * paymentMonths.length).toLocaleString()}
                     </span>
                     <span className="text-gray-500 text-sm">/year</span>
                   </div>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  For a subject at N$300/month
+                  For a subject at R300/month
                 </p>
               </div>
             </div>
@@ -445,7 +445,7 @@ export function SetupWizard() {
                             className="flex-1 px-3 py-1.5 rounded-lg border border-gray-300 text-sm"
                           />
                           <div className="flex items-center">
-                            <span className="text-gray-400 text-sm mr-1">N$</span>
+                            <span className="text-gray-400 text-sm mr-1">R</span>
                             <input
                               type="number"
                               value={editingSubject.monthly_fee || ''}
@@ -478,7 +478,7 @@ export function SetupWizard() {
                           <div>
                             <p className="font-medium text-gray-900 text-sm">{subject.name}</p>
                             <p className="text-xs text-gray-500">
-                              N${subject.monthly_fee}/mo · N${(subject.monthly_fee * paymentMonths.length).toLocaleString()}/yr
+                              R{subject.monthly_fee}/mo · R{(subject.monthly_fee * paymentMonths.length).toLocaleString()}/yr
                             </p>
                           </div>
                           <div className="flex items-center gap-1">
@@ -515,7 +515,7 @@ export function SetupWizard() {
                       autoFocus
                     />
                     <div className="flex items-center">
-                      <span className="text-gray-400 text-sm mr-1">N$</span>
+                      <span className="text-gray-400 text-sm mr-1">R</span>
                       <input
                         type="number"
                         value={newSubject.monthly_fee || ''}

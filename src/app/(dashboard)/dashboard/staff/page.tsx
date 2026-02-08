@@ -375,7 +375,7 @@ export default function StaffPage() {
             <Lock className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">Staff Management Not Available</h3>
             <p className="text-gray-500 mb-6 max-w-md mx-auto">
-              The Micro plan is designed for solo operators. Upgrade to Starter or higher to add staff members.
+              The Starter plan is designed for solo operators. Upgrade to Growth or higher to add staff members.
             </p>
             <Link href="/dashboard/subscription">
               <Button leftIcon={<Crown className="w-4 h-4" />}>
@@ -388,10 +388,10 @@ export default function StaffPage() {
               <p className="text-sm font-medium text-gray-700 mb-4">Staff Limits by Plan</p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto">
                 {[
-                  { name: 'Micro', price: 'N$99', staff: '0', current: subscriptionTier === 'micro' },
-                  { name: 'Starter', price: 'N$199', staff: '2', current: subscriptionTier === 'starter' },
-                  { name: 'Standard', price: 'N$399', staff: '5', current: subscriptionTier === 'standard' },
-                  { name: 'Premium', price: 'N$599', staff: 'Unlimited', current: subscriptionTier === 'premium' },
+                  { name: 'Starter', price: 'R59', staff: '0', current: subscriptionTier === 'micro' },
+                  { name: 'Growth', price: 'R149', staff: '2', current: subscriptionTier === 'starter' },
+                  { name: 'Professional', price: 'R279', staff: '5', current: subscriptionTier === 'standard' },
+                  { name: 'Enterprise', price: 'R449', staff: 'Unlimited', current: subscriptionTier === 'premium' },
                 ].map((plan) => (
                   <div
                     key={plan.name}

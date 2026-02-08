@@ -171,7 +171,7 @@ export default function AdminSettingsPage() {
                   type="tel"
                   value={profileData.phone}
                   onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
-                  placeholder="+264 81 123 4567"
+                  placeholder="+27 82 123 4567"
                 />
 
                 <Button

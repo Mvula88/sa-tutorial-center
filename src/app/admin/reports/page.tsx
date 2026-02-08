@@ -79,9 +79,9 @@ export default function AdminReportsPage() {
   }, [fetchPlatformStats])
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-NA', {
+    return new Intl.NumberFormat('en-ZA', {
       style: 'currency',
-      currency: 'NAD',
+      currency: 'ZAR',
       minimumFractionDigits: 0,
     }).format(amount)
   }

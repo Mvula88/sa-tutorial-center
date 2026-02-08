@@ -358,7 +358,7 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
   if (paymentError) {
     console.error('Failed to record subscription payment:', paymentError)
   } else {
-    console.log(`Payment recorded for center ${center.id}, amount: N$${inv.amount_paid / 100}`)
+    console.log(`Payment recorded for center ${center.id}, amount: R${inv.amount_paid / 100}`)
   }
 }
 

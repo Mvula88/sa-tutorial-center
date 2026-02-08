@@ -16,17 +16,17 @@ export function getStripe(): Stripe {
   return _stripe
 }
 
-// Subscription plans configuration - Ultra-aggressive market penetration pricing
+// Subscription plans configuration - Market penetration pricing for South Africa
 export const SUBSCRIPTION_PLANS = {
   micro: {
-    name: 'Micro',
-    description: 'Individual tutors & township operators',
+    name: 'Starter',
+    description: 'Individual tutors & small operators',
     priceId: process.env.STRIPE_MICRO_PRICE_ID!,
-    monthlyPrice: 99, // N$99
+    monthlyPrice: 59, // R59
     setupFee: 0,
-    maxStudents: 15,
+    maxStudents: 30,
     features: [
-      'Up to 15 students',
+      'Up to 30 students',
       'Student management',
       'Fee tracking',
       'Payment recording',
@@ -34,14 +34,15 @@ export const SUBSCRIPTION_PLANS = {
     ],
   },
   starter: {
-    name: 'Starter',
+    name: 'Growth',
     description: 'Small tutorial centres',
     priceId: process.env.STRIPE_STARTER_PRICE_ID!,
-    monthlyPrice: 199, // N$199
+    monthlyPrice: 149, // R149
     setupFee: 0,
-    maxStudents: 50,
+    maxStudents: 80,
     features: [
-      'Up to 50 students',
+      'Up to 80 students',
+      'Up to 2 staff members',
       'Student management',
       'Fee tracking',
       'Payment recording',
@@ -50,29 +51,30 @@ export const SUBSCRIPTION_PLANS = {
     ],
   },
   standard: {
-    name: 'Standard',
+    name: 'Professional',
     description: 'Growing tutorial centres',
     priceId: process.env.STRIPE_STANDARD_PRICE_ID!,
-    monthlyPrice: 399, // N$399
+    monthlyPrice: 279, // R279
     setupFee: 0,
-    maxStudents: 150,
+    maxStudents: 200,
     features: [
-      'Everything in Starter',
-      'Multiple staff accounts',
+      'Everything in Growth',
+      'Up to 5 staff members',
       'Advanced reports',
       'SMS notifications',
       'Priority support',
     ],
   },
   premium: {
-    name: 'Premium',
+    name: 'Enterprise',
     description: 'Large centres & academies',
     priceId: process.env.STRIPE_PREMIUM_PRICE_ID!,
-    monthlyPrice: 599, // N$599
+    monthlyPrice: 449, // R449
     setupFee: 0,
     maxStudents: -1, // Unlimited
     features: [
-      'Everything in Standard',
+      'Everything in Professional',
+      'Unlimited staff',
       'Hostel management',
       'Transport tracking',
       'Custom branding',
@@ -90,25 +92,25 @@ export const SMS_CREDIT_PACKAGES = {
     name: '100 SMS Credits',
     credits: 100,
     priceId: process.env.STRIPE_SMS_SMALL_PRICE_ID || '',
-    price: 50, // N$50 = N$0.50 per SMS
+    price: 50, // R50 = R0.50 per SMS
   },
   medium: {
     name: '500 SMS Credits',
     credits: 500,
     priceId: process.env.STRIPE_SMS_MEDIUM_PRICE_ID || '',
-    price: 200, // N$200 = N$0.40 per SMS
+    price: 200, // R200 = R0.40 per SMS
   },
   large: {
     name: '1000 SMS Credits',
     credits: 1000,
     priceId: process.env.STRIPE_SMS_LARGE_PRICE_ID || '',
-    price: 350, // N$350 = N$0.35 per SMS
+    price: 350, // R350 = R0.35 per SMS
   },
   bulk: {
     name: '5000 SMS Credits',
     credits: 5000,
     priceId: process.env.STRIPE_SMS_BULK_PRICE_ID || '',
-    price: 1500, // N$1500 = N$0.30 per SMS
+    price: 1500, // R1500 = R0.30 per SMS
   },
 } as const
 
@@ -200,7 +202,7 @@ export async function createSMSCreditCheckoutSession({
     line_items: [
       {
         price_data: {
-          currency: 'nad',
+          currency: 'zar',
           product_data: {
             name: packageConfig.name,
             description: `${packageConfig.credits} SMS credits for ${centerName}`,

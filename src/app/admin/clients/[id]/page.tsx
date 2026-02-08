@@ -213,7 +213,7 @@ export default function ClientDetailPage() {
   }
 
   const formatCurrency = (amount: number) => {
-    return `N$ ${amount.toLocaleString('en-NA', { minimumFractionDigits: 2 })}`
+    return `R ${amount.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}`
   }
 
   const formatDate = (date: string) => {

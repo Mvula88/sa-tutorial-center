@@ -3,8 +3,8 @@ import Image from 'next/image'
 import { GraduationCap, ArrowLeft } from 'lucide-react'
 
 export const metadata = {
-  title: 'Terms of Service | NamClass',
-  description: 'Terms of Service for NamClass tutorial centre and school management platform',
+  title: 'Terms of Service | SA Tutorial Centers',
+  description: 'Terms of Service for SA Tutorial Centers tutorial centre and school management platform',
 }
 
 export default function TermsOfServicePage() {
@@ -17,7 +17,7 @@ export default function TermsOfServicePage() {
             <Link href="/" className="flex items-center gap-2">
               <Image 
                 src="/namclass-logo.png" 
-                alt="NamClass Logo" 
+                alt="SA Tutorial Centers Logo" 
                 width={200} 
                 height={55}
                 className="h-12 w-auto"
@@ -46,12 +46,12 @@ export default function TermsOfServicePage() {
             </p>
 
             <p className="text-gray-600 mb-6">
-              Welcome to NamClass. These Terms of Service (&ldquo;Terms&rdquo;) govern your use of our tutorial centre and school management platform. By accessing or using our services, you agree to be bound by these Terms.
+              Welcome to SA Tutorial Centers. These Terms of Service (&ldquo;Terms&rdquo;) govern your use of our tutorial centre and school management platform. By accessing or using our services, you agree to be bound by these Terms.
             </p>
 
             <h2 className="text-xl font-semibold text-gray-900 mt-8 mb-4">1. Definitions</h2>
             <ul className="list-disc pl-6 mb-6 text-gray-600 space-y-2">
-              <li><strong>&ldquo;Platform&rdquo;</strong> refers to the NamClass web application and related services</li>
+              <li><strong>&ldquo;Platform&rdquo;</strong> refers to the SA Tutorial Centers web application and related services</li>
               <li><strong>&ldquo;User&rdquo;</strong> refers to any individual or entity using the Platform</li>
               <li><strong>&ldquo;Subscriber&rdquo;</strong> refers to a tutorial centre that has subscribed to our paid services</li>
               <li><strong>&ldquo;Content&rdquo;</strong> refers to any data, information, or materials uploaded to the Platform</li>
@@ -74,7 +74,7 @@ export default function TermsOfServicePage() {
 
             <h3 className="text-lg font-medium text-gray-800 mt-6 mb-3">3.2 Payment</h3>
             <ul className="list-disc pl-6 mb-6 text-gray-600 space-y-2">
-              <li>Subscriptions are billed monthly in Namibian Dollar (NAD)</li>
+              <li>Subscriptions are billed monthly in South African Rand (ZAR)</li>
               <li>Payment is due at the start of each billing period</li>
               <li>Setup fees (where applicable) are charged once upon subscription</li>
               <li>All fees are exclusive of VAT unless otherwise stated</li>
@@ -131,7 +131,7 @@ export default function TermsOfServicePage() {
 
             <h2 className="text-xl font-semibold text-gray-900 mt-8 mb-4">7. Intellectual Property</h2>
             <p className="text-gray-600 mb-6">
-              The Platform, including its design, features, and underlying technology, is owned by NamClass. You may not copy, modify, or reverse engineer any part of the Platform without our written permission.
+              The Platform, including its design, features, and underlying technology, is owned by SA Tutorial Centers. You may not copy, modify, or reverse engineer any part of the Platform without our written permission.
             </p>
 
             <h2 className="text-xl font-semibold text-gray-900 mt-8 mb-4">8. Limitation of Liability</h2>
@@ -166,7 +166,7 @@ export default function TermsOfServicePage() {
 
             <h2 className="text-xl font-semibold text-gray-900 mt-8 mb-4">12. Governing Law</h2>
             <p className="text-gray-600 mb-6">
-              These Terms are governed by the laws of Namibia. Any disputes shall be resolved in the courts of Namibia.
+              These Terms are governed by the laws of the Republic of South Africa. Any disputes shall be resolved in the courts of South Africa.
             </p>
 
             <h2 className="text-xl font-semibold text-gray-900 mt-8 mb-4">13. Contact Information</h2>
@@ -175,8 +175,8 @@ export default function TermsOfServicePage() {
             </p>
             <div className="bg-gray-50 rounded-lg p-4 mb-6">
               <p className="text-gray-600">
-                <strong>Email:</strong> legal@namclass.com<br />
-                <strong>Support:</strong> support@namclass.com
+                <strong>Email:</strong> legal@satutorialcentres.co.za<br />
+                <strong>Support:</strong> support@satutorialcentres.co.za
               </p>
             </div>
 
@@ -187,7 +187,7 @@ export default function TermsOfServicePage() {
 
             <div className="border-t border-gray-200 pt-8 mt-8">
               <p className="text-gray-500 text-sm">
-                By using NamClass, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service.
+                By using SA Tutorial Centers, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service.
               </p>
             </div>
           </div>
@@ -199,7 +199,7 @@ export default function TermsOfServicePage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-gray-500 text-sm">
-              &copy; {new Date().getFullYear()} NamClass. All rights reserved.
+              &copy; {new Date().getFullYear()} SA Tutorial Centers. All rights reserved.
             </p>
             <div className="flex items-center gap-6">
               <Link href="/privacy" className="text-gray-500 hover:text-gray-700 text-sm">

@@ -149,7 +149,7 @@ export default function NewUserPage() {
             type="tel"
             value={formData.phone}
             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-            placeholder="+264 81 123 4567"
+            placeholder="+27 82 123 4567"
           />
         </div>
 

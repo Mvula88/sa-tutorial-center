@@ -3,8 +3,8 @@ import Image from 'next/image'
 import { GraduationCap, ArrowLeft } from 'lucide-react'
 
 export const metadata = {
-  title: 'Privacy Policy | NamClass',
-  description: 'Privacy Policy and data protection information for NamClass',
+  title: 'Privacy Policy | SA Tutorial Centers',
+  description: 'Privacy Policy and data protection information for SA Tutorial Centers',
 }
 
 export default function PrivacyPolicyPage() {
@@ -17,7 +17,7 @@ export default function PrivacyPolicyPage() {
             <Link href="/" className="flex items-center gap-2">
               <Image 
                 src="/namclass-logo.png" 
-                alt="NamClass Logo" 
+                alt="SA Tutorial Centers Logo" 
                 width={200} 
                 height={55}
                 className="h-12 w-auto"
@@ -46,7 +46,7 @@ export default function PrivacyPolicyPage() {
             </p>
 
             <p className="text-gray-600 mb-6">
-              NamClass (&ldquo;we&rdquo;, &ldquo;us&rdquo;, or &ldquo;our&rdquo;) is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your personal information in accordance with applicable data protection laws.
+              SA Tutorial Centers (&ldquo;we&rdquo;, &ldquo;us&rdquo;, or &ldquo;our&rdquo;) is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your personal information in accordance with applicable data protection laws.
             </p>
 
             <h2 className="text-xl font-semibold text-gray-900 mt-8 mb-4">1. Information We Collect</h2>
@@ -127,7 +127,7 @@ export default function PrivacyPolicyPage() {
 
             <h2 className="text-xl font-semibold text-gray-900 mt-8 mb-4">9. Cross-Border Data Transfers</h2>
             <p className="text-gray-600 mb-6">
-              Your data may be transferred to and processed in countries outside Namibia (including the United States for our cloud service providers). We ensure appropriate safeguards are in place for such transfers in compliance with data protection requirements.
+              Your data may be transferred to and processed in countries outside South Africa (including the United States for our cloud service providers). We ensure appropriate safeguards are in place for such transfers in compliance with POPIA and other data protection requirements.
             </p>
 
             <h2 className="text-xl font-semibold text-gray-900 mt-8 mb-4">10. Cookies and Tracking</h2>
@@ -141,8 +141,8 @@ export default function PrivacyPolicyPage() {
             </p>
             <div className="bg-gray-50 rounded-lg p-4 mb-6">
               <p className="text-gray-600">
-                <strong>Email:</strong> privacy@namclass.com<br />
-                <strong>Address:</strong> Namibia
+                <strong>Email:</strong> privacy@satutorialcentres.co.za<br />
+                <strong>Address:</strong> Johannesburg, South Africa
               </p>
             </div>
 
@@ -158,7 +158,7 @@ export default function PrivacyPolicyPage() {
 
             <div className="border-t border-gray-200 pt-8 mt-8">
               <p className="text-gray-500 text-sm">
-                This Privacy Policy complies with applicable data protection laws and regulations.
+                This Privacy Policy complies with the Protection of Personal Information Act (POPIA) and other applicable data protection laws and regulations.
               </p>
             </div>
           </div>
@@ -170,7 +170,7 @@ export default function PrivacyPolicyPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-gray-500 text-sm">
-              &copy; {new Date().getFullYear()} NamClass. All rights reserved.
+              &copy; {new Date().getFullYear()} SA Tutorial Centers. All rights reserved.
             </p>
             <div className="flex items-center gap-6">
               <Link href="/terms" className="text-gray-500 hover:text-gray-700 text-sm">

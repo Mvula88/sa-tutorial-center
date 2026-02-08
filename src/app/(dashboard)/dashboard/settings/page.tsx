@@ -226,7 +226,7 @@ export default function CenterSettingsPage() {
 
   function formatDate(dateString: string | null) {
     if (!dateString) return 'N/A'
-    return new Date(dateString).toLocaleDateString('en-NA', {
+    return new Date(dateString).toLocaleDateString('en-ZA', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -526,7 +526,7 @@ export default function CenterSettingsPage() {
                   type="tel"
                   value={profileData.phone}
                   onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
-                  placeholder="+264 81 123 4567"
+                  placeholder="+27 82 123 4567"
                 />
 
                 <Button
@@ -711,18 +711,18 @@ export default function CenterSettingsPage() {
                             disabled={isPortalLoading}
                             className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 transition-colors text-left"
                           >
-                            <h4 className="font-medium text-gray-900">Micro</h4>
-                            <p className="text-2xl font-bold text-gray-900 mt-1">N$99<span className="text-sm font-normal text-gray-500">/mo</span></p>
-                            <p className="text-xs text-gray-500 mt-1">Up to 15 students</p>
+                            <h4 className="font-medium text-gray-900">Starter</h4>
+                            <p className="text-2xl font-bold text-gray-900 mt-1">R59<span className="text-sm font-normal text-gray-500">/mo</span></p>
+                            <p className="text-xs text-gray-500 mt-1">Up to 30 students</p>
                           </button>
                           <button
                             onClick={() => handleUpgrade('starter')}
                             disabled={isPortalLoading}
                             className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 transition-colors text-left"
                           >
-                            <h4 className="font-medium text-gray-900">Starter</h4>
-                            <p className="text-2xl font-bold text-gray-900 mt-1">N$199<span className="text-sm font-normal text-gray-500">/mo</span></p>
-                            <p className="text-xs text-gray-500 mt-1">Up to 50 students</p>
+                            <h4 className="font-medium text-gray-900">Growth</h4>
+                            <p className="text-2xl font-bold text-gray-900 mt-1">R149<span className="text-sm font-normal text-gray-500">/mo</span></p>
+                            <p className="text-xs text-gray-500 mt-1">Up to 80 students</p>
                           </button>
                           <button
                             onClick={() => handleUpgrade('standard')}
@@ -730,17 +730,17 @@ export default function CenterSettingsPage() {
                             className="p-4 border-2 border-blue-500 rounded-lg bg-blue-50 text-left relative"
                           >
                             <span className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">Popular</span>
-                            <h4 className="font-medium text-gray-900">Standard</h4>
-                            <p className="text-2xl font-bold text-gray-900 mt-1">N$399<span className="text-sm font-normal text-gray-500">/mo</span></p>
-                            <p className="text-xs text-gray-500 mt-1">Up to 150 students</p>
+                            <h4 className="font-medium text-gray-900">Professional</h4>
+                            <p className="text-2xl font-bold text-gray-900 mt-1">R279<span className="text-sm font-normal text-gray-500">/mo</span></p>
+                            <p className="text-xs text-gray-500 mt-1">Up to 200 students</p>
                           </button>
                           <button
                             onClick={() => handleUpgrade('premium')}
                             disabled={isPortalLoading}
                             className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 transition-colors text-left"
                           >
-                            <h4 className="font-medium text-gray-900">Premium</h4>
-                            <p className="text-2xl font-bold text-gray-900 mt-1">N$599<span className="text-sm font-normal text-gray-500">/mo</span></p>
+                            <h4 className="font-medium text-gray-900">Enterprise</h4>
+                            <p className="text-2xl font-bold text-gray-900 mt-1">R449<span className="text-sm font-normal text-gray-500">/mo</span></p>
                             <p className="text-xs text-gray-500 mt-1">Unlimited students</p>
                           </button>
                         </div>
@@ -755,9 +755,9 @@ export default function CenterSettingsPage() {
                 <h3 className="font-medium text-gray-900 mb-4">Plan Features</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
                   <div className="p-4 bg-gray-50 rounded-lg">
-                    <h4 className="font-medium text-gray-900 mb-2">Micro</h4>
+                    <h4 className="font-medium text-gray-900 mb-2">Starter</h4>
                     <ul className="space-y-1 text-gray-600">
-                      <li>Up to 15 students</li>
+                      <li>Up to 30 students</li>
                       <li>Student management</li>
                       <li>Fee tracking</li>
                       <li>Payment recording</li>
@@ -765,9 +765,9 @@ export default function CenterSettingsPage() {
                     </ul>
                   </div>
                   <div className="p-4 bg-gray-50 rounded-lg">
-                    <h4 className="font-medium text-gray-900 mb-2">Starter</h4>
+                    <h4 className="font-medium text-gray-900 mb-2">Growth</h4>
                     <ul className="space-y-1 text-gray-600">
-                      <li>Up to 50 students</li>
+                      <li>Up to 80 students</li>
                       <li>Student management</li>
                       <li>Fee tracking</li>
                       <li>Basic reports</li>
@@ -775,20 +775,20 @@ export default function CenterSettingsPage() {
                     </ul>
                   </div>
                   <div className="p-4 bg-blue-50 rounded-lg">
-                    <h4 className="font-medium text-gray-900 mb-2">Standard</h4>
+                    <h4 className="font-medium text-gray-900 mb-2">Professional</h4>
                     <ul className="space-y-1 text-gray-600">
-                      <li>Up to 150 students</li>
-                      <li>Everything in Starter</li>
+                      <li>Up to 200 students</li>
+                      <li>Everything in Growth</li>
                       <li>Library module</li>
                       <li>SMS notifications</li>
                       <li>Priority support</li>
                     </ul>
                   </div>
                   <div className="p-4 bg-gray-50 rounded-lg">
-                    <h4 className="font-medium text-gray-900 mb-2">Premium</h4>
+                    <h4 className="font-medium text-gray-900 mb-2">Enterprise</h4>
                     <ul className="space-y-1 text-gray-600">
                       <li>Unlimited students</li>
-                      <li>Everything in Standard</li>
+                      <li>Everything in Professional</li>
                       <li>Hostel management</li>
                       <li>Transport tracking</li>
                       <li>Custom branding</li>
@@ -834,7 +834,7 @@ export default function CenterSettingsPage() {
                     type="tel"
                     value={centerData.phone}
                     onChange={(e) => setCenterData({ ...centerData, phone: e.target.value })}
-                    placeholder="+264 61 123 4567"
+                    placeholder="+27 11 123 4567"
                   />
                 </div>
 
@@ -919,15 +919,15 @@ export default function CenterSettingsPage() {
                 <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
                   <h4 className="font-medium text-indigo-900 mb-2">Fee Calculation Example</h4>
                   <p className="text-sm text-indigo-700">
-                    If a subject costs N$ 300/month, the yearly total will be:
+                    If a subject costs R 300/month, the yearly total will be:
                     <br />
-                    <span className="font-bold">N$ 300 x {centerData.payment_months.length} months = N$ {(300 * centerData.payment_months.length).toLocaleString()}</span>
+                    <span className="font-bold">R 300 x {centerData.payment_months.length} months = R {(300 * centerData.payment_months.length).toLocaleString()}</span>
                   </p>
                 </div>
 
                 <div>
                   <Input
-                    label="Default Registration Fee (N$)"
+                    label="Default Registration Fee (R)"
                     type="number"
                     value={centerData.default_registration_fee || ''}
                     onChange={(e) => setCenterData({ ...centerData, default_registration_fee: e.target.value === '' ? 0 : parseFloat(e.target.value) })}

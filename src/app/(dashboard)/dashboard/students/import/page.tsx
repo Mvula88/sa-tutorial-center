@@ -205,7 +205,7 @@ export default function StudentImportPage() {
                 <li>• <strong>Required columns:</strong> first_name, last_name</li>
                 <li>• <strong>Optional columns:</strong> email, phone, date_of_birth, gender, grade, parent_name, parent_phone, parent_email, address</li>
                 <li>• Date format: YYYY-MM-DD or DD/MM/YYYY</li>
-                <li>• Phone format: Namibian format (e.g., 0811234567 or +264811234567)</li>
+                <li>• Phone format: South African format (e.g., 0821234567 or +27821234567)</li>
               </ul>
             </div>
           </div>

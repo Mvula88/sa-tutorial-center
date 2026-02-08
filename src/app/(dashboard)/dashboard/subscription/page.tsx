@@ -32,11 +32,11 @@ interface SubscriptionData {
 const plans = [
   {
     id: 'micro',
-    name: 'Micro',
-    price: 99,
-    description: 'Individual tutors & township operators',
+    name: 'Starter',
+    price: 59,
+    description: 'Individual tutors & small operators',
     features: [
-      'Up to 15 students',
+      'Up to 30 students',
       'Solo operator (no staff)',
       'Student management',
       'Fee tracking',
@@ -47,11 +47,11 @@ const plans = [
   },
   {
     id: 'starter',
-    name: 'Starter',
-    price: 199,
+    name: 'Growth',
+    price: 149,
     description: 'Small tutorial centres',
     features: [
-      'Up to 50 students',
+      'Up to 80 students',
       'Up to 2 staff members',
       'Student management',
       'Fee tracking',
@@ -63,13 +63,13 @@ const plans = [
   },
   {
     id: 'standard',
-    name: 'Standard',
-    price: 399,
+    name: 'Professional',
+    price: 279,
     description: 'Growing tutorial centres',
     features: [
-      'Up to 150 students',
+      'Up to 200 students',
       'Up to 5 staff members',
-      'Everything in Starter',
+      'Everything in Growth',
       'Advanced reports',
       'Library module',
       'SMS notifications',
@@ -80,13 +80,13 @@ const plans = [
   },
   {
     id: 'premium',
-    name: 'Premium',
-    price: 599,
+    name: 'Enterprise',
+    price: 449,
     description: 'Large centres & academies',
     features: [
       'Unlimited students',
       'Unlimited staff',
-      'Everything in Standard',
+      'Everything in Professional',
       'Hostel management',
       'Transport tracking',
       'Custom branding',
@@ -186,10 +186,10 @@ export default function SubscriptionPage() {
           `Important: You have ${data.staffCount} active staff member${data.staffCount > 1 ? 's' : ''}.\n\n` +
           `If you downgrade your plan, you may need to deactivate staff members first to comply with your new plan's limits.\n\n` +
           `Staff limits by plan:\n` +
-          `- Micro: 0 staff (solo operator)\n` +
-          `- Starter: Up to 2 staff\n` +
-          `- Standard: Up to 5 staff\n` +
-          `- Premium: Unlimited staff\n\n` +
+          `- Starter: 0 staff (solo operator)\n` +
+          `- Growth: Up to 2 staff\n` +
+          `- Professional: Up to 5 staff\n` +
+          `- Enterprise: Unlimited staff\n\n` +
           `Do you want to continue to billing management?`
         )
 
@@ -493,8 +493,8 @@ export default function SubscriptionPage() {
           <h3 className="font-semibold text-gray-900 mb-2">Need help choosing?</h3>
           <p className="text-sm text-gray-600">
             Contact us at{' '}
-            <a href="mailto:support@namclass.com" className="text-blue-600 hover:underline">
-              support@namclass.com
+            <a href="mailto:support@satutorialcentres.co.za" className="text-blue-600 hover:underline">
+              support@satutorialcentres.co.za
             </a>{' '}
             and we&apos;ll help you find the right plan for your tutorial centre.
           </p>

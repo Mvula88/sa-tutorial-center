@@ -120,9 +120,9 @@ function SignupContent() {
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match'
     }
-    // Validate Namibian phone number if provided
-    if (formData.phone && !/^(\+?264|0)[0-9]{8,9}$/.test(formData.phone.replace(/\s/g, ''))) {
-      newErrors.phone = 'Invalid Namibian phone number'
+    // Validate South African phone number if provided
+    if (formData.phone && !/^(\+?27|0)[0-9]{9}$/.test(formData.phone.replace(/\s/g, ''))) {
+      newErrors.phone = 'Invalid South African phone number'
     }
 
     setErrors(newErrors)
@@ -187,7 +187,7 @@ function SignupContent() {
           <Link href="/" className="flex items-center">
             <Image 
               src="/namclass-logo.png" 
-              alt="NamClass Logo" 
+              alt="SA Tutorial Centers Logo" 
               width={176} 
               height={44}
               className="h-11 w-auto"
@@ -323,7 +323,7 @@ function SignupContent() {
                         className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
                           errors.centerName ? 'border-red-500' : 'border-gray-300'
                         } focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none`}
-                        placeholder="e.g., Windhoek Tutorial Centre"
+                        placeholder="e.g., Johannesburg Tutorial Centre"
                       />
                     </div>
                     {errors.centerName && (
@@ -362,7 +362,7 @@ function SignupContent() {
                       className={`w-full px-4 py-3 rounded-lg border ${
                         errors.centerCity ? 'border-red-500' : 'border-gray-300'
                       } focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none`}
-                      placeholder="e.g., Windhoek"
+                      placeholder="e.g., Johannesburg"
                     />
                     {errors.centerCity && (
                       <p className="text-red-500 text-sm mt-1">{errors.centerCity}</p>
@@ -569,7 +569,7 @@ function SignupContent() {
       <footer className="bg-white border-t border-gray-200 py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <p className="text-center text-sm text-gray-600">
-            &copy; {new Date().getFullYear()} NamClass. All rights reserved.
+            &copy; {new Date().getFullYear()} SA Tutorial Centers. All rights reserved.
           </p>
         </div>
       </footer>

@@ -171,7 +171,7 @@ export default function StudentPortalOverview() {
     },
     {
       label: 'Outstanding Fees',
-      value: stats.outstandingFees > 0 ? `N$${stats.outstandingFees.toLocaleString()}` : 'N$0',
+      value: stats.outstandingFees > 0 ? `R${stats.outstandingFees.toLocaleString()}` : 'R0',
       icon: <CreditCard className="w-6 h-6" />,
       color: stats.outstandingFees > 0 ? 'red' : 'green',
       href: `/student/${token}/fees`,
@@ -289,7 +289,7 @@ export default function StudentPortalOverview() {
               <div className="flex justify-between">
                 <span className="text-gray-500">Date of Birth</span>
                 <span className="text-gray-900">
-                  {new Date(student.date_of_birth).toLocaleDateString('en-NA')}
+                  {new Date(student.date_of_birth).toLocaleDateString('en-ZA')}
                 </span>
               </div>
             )}
@@ -303,7 +303,7 @@ export default function StudentPortalOverview() {
               <div className="flex justify-between">
                 <span className="text-gray-500">Enrolled</span>
                 <span className="text-gray-900">
-                  {new Date(student.enrollment_date).toLocaleDateString('en-NA')}
+                  {new Date(student.enrollment_date).toLocaleDateString('en-ZA')}
                 </span>
               </div>
             )}
@@ -331,7 +331,7 @@ export default function StudentPortalOverview() {
             <div>
               <p className="font-medium text-red-900">Outstanding Fees</p>
               <p className="text-sm text-red-700 mt-1">
-                You have outstanding fees of N${stats.outstandingFees.toLocaleString()}.
+                You have outstanding fees of R${stats.outstandingFees.toLocaleString()}.
                 Please contact the administration to arrange payment.
               </p>
               <Link

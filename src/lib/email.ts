@@ -116,9 +116,9 @@ export async function sendPaymentReceiptEmail(
   try {
     const resend = getResend()
 
-    const formattedAmount = new Intl.NumberFormat('en-NA', {
+    const formattedAmount = new Intl.NumberFormat('en-ZA', {
       style: 'currency',
-      currency: 'NAD',
+      currency: 'ZAR',
     }).format(data.amount)
 
     const { data: result, error } = await resend.emails.send({
@@ -213,9 +213,9 @@ export async function sendFeeReminderEmail(
   try {
     const resend = getResend()
 
-    const formattedTotal = new Intl.NumberFormat('en-NA', {
+    const formattedTotal = new Intl.NumberFormat('en-ZA', {
       style: 'currency',
-      currency: 'NAD',
+      currency: 'ZAR',
     }).format(data.totalOutstanding)
 
     const feeRows = data.fees
@@ -224,7 +224,7 @@ export async function sendFeeReminderEmail(
         <tr>
           <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${fee.description}</td>
           <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${fee.dueDate}</td>
-          <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right;">N$${fee.amount.toFixed(2)}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right;">R${fee.amount.toFixed(2)}</td>
         </tr>
       `
       )

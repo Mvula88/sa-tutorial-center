@@ -10,19 +10,19 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "NamClass | Tutorial Centre & School Management Software for Namibia",
-  description: "Affordable tutorial centre and school management software designed for Namibian educators. Manage students, fees, payments, and more. Start free today!",
-  keywords: ["tutorial centre software", "school management system", "namibia", "student management", "fee management", "namclass"],
+  title: "SA Tutorial Centers | Tutorial Centre & School Management Software for South Africa",
+  description: "Affordable tutorial centre and school management software designed for South African educators. Manage students, fees, payments, and more. Start free today!",
+  keywords: ["tutorial centre software", "school management system", "south africa", "student management", "fee management", "sa tutorial centers"],
   icons: {
     icon: '/favicon.png',
     shortcut: '/favicon.png',
     apple: '/favicon.png',
   },
   openGraph: {
-    title: "NamClass | Tutorial Centre & School Management Software",
-    description: "Affordable tutorial centre and school management software designed for Namibian educators.",
+    title: "SA Tutorial Centers | Tutorial Centre & School Management Software",
+    description: "Affordable tutorial centre and school management software designed for South African educators.",
     type: "website",
-    locale: "en_NA",
+    locale: "en_ZA",
     images: ['/namclass-logo.png'],
   },
 };

@@ -331,7 +331,7 @@ export default function NewCenterPage() {
                 name="phone"
                 value={formData.phone}
                 onChange={handleChange}
-                placeholder="+264 XX XXX XXXX"
+                placeholder="+27 XX XXX XXXX"
               />
               <Input
                 label="City"

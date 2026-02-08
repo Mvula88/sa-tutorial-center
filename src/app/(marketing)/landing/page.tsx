@@ -65,11 +65,11 @@ const features = [
 
 const plans = [
   {
-    name: 'Micro',
-    description: 'Individual tutors & township operators',
-    monthlyPrice: 99,
+    name: 'Starter',
+    description: 'Individual tutors & small operators',
+    monthlyPrice: 59,
     setupFee: 0,
-    students: 'Up to 15 students',
+    students: 'Up to 30 students',
     features: [
       'Student management',
       'Fee tracking',
@@ -79,27 +79,28 @@ const plans = [
     highlighted: false,
   },
   {
-    name: 'Starter',
+    name: 'Growth',
     description: 'Small tutorial centres',
-    monthlyPrice: 199,
+    monthlyPrice: 149,
     setupFee: 0,
-    students: 'Up to 50 students',
+    students: 'Up to 80 students',
     features: [
-      'Everything in Micro',
+      'Everything in Starter',
+      'Up to 2 staff members',
       'Basic reports',
       'Priority email support',
     ],
     highlighted: false,
   },
   {
-    name: 'Standard',
+    name: 'Professional',
     description: 'Growing tutorial centres',
-    monthlyPrice: 399,
+    monthlyPrice: 279,
     setupFee: 0,
-    students: '50-150 students',
+    students: 'Up to 200 students',
     features: [
-      'Everything in Starter',
-      'Multiple staff accounts',
+      'Everything in Growth',
+      'Up to 5 staff members',
       'Advanced reports',
       'Library module',
       'SMS notifications',
@@ -108,13 +109,14 @@ const plans = [
     highlighted: true,
   },
   {
-    name: 'Premium',
+    name: 'Enterprise',
     description: 'Large centres & academies',
-    monthlyPrice: 599,
+    monthlyPrice: 449,
     setupFee: 0,
     students: 'Unlimited students',
     features: [
-      'Everything in Standard',
+      'Everything in Professional',
+      'Unlimited staff',
       'Hostel management',
       'Transport tracking',
       'Custom branding',
@@ -127,18 +129,18 @@ const plans = [
 
 const testimonials = [
   {
-    name: 'Andreas K.',
-    role: 'Windhoek Learning Hub',
+    name: 'Thabo M.',
+    role: 'Johannesburg Learning Hub',
     quote: 'I used to spend Sunday evenings updating my Excel sheet. Now I just check the dashboard on Monday morning and everything is there.',
   },
   {
-    name: 'Selma N.',
-    role: 'Oshakati Tutors',
+    name: 'Naledi K.',
+    role: 'Soweto Tutors',
     quote: 'Parents stopped asking me "did we pay last month?" because now I can show them the statement on my phone right there.',
   },
   {
-    name: 'Johannes S.',
-    role: 'Swakopmund Academy',
+    name: 'Johan V.',
+    role: 'Cape Town Academy',
     quote: 'We tried those big school systems before. Way too complicated. This one we actually use.',
   },
 ]
@@ -396,7 +398,7 @@ export default function LandingPage() {
             >
               <Image 
                 src="/namclass-logo.png" 
-                alt="NamClass Logo" 
+                alt="SA Tutorial Centers Logo" 
                 width={176} 
                 height={44}
                 className="h-11 w-auto"
@@ -424,7 +426,7 @@ export default function LandingPage() {
                   Sign In
                 </Link>
                 <Link
-                  href="https://www.namclass.com/signup"
+                  href="/signup"
                   className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-medium hover:from-blue-700 hover:to-blue-800 transition-all duration-300 shadow-lg hover:shadow-blue-500/30 hover:scale-105"
                 >
                   Join Now
@@ -460,7 +462,7 @@ export default function LandingPage() {
           className={`max-w-7xl mx-auto text-center relative z-10 ${heroRef.isInView ? 'animate-fade-in-up' : 'opacity-0'}`}
         >
           <p className="text-blue-600 font-medium mb-6 tracking-wide uppercase text-sm">
-            Proudly Namibian
+            Proudly South African
           </p>
           <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
             Simple School Management<br />
@@ -512,7 +514,7 @@ export default function LandingPage() {
               <div className="flex-1 mx-4">
                 <div className="bg-gray-700 rounded-md px-3 py-1 text-gray-400 text-sm flex items-center gap-2">
                   <Lock className="w-3 h-3 text-green-400" />
-                  <span className="animate-shimmer bg-clip-text">app.namclass.com/dashboard</span>
+                  <span className="animate-shimmer bg-clip-text">app.satutorialcentres.co.za/dashboard</span>
                 </div>
               </div>
             </div>
@@ -602,7 +604,7 @@ export default function LandingPage() {
                     </div>
                     <div className="bg-white rounded-xl p-3 md:p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow hover:-translate-y-0.5 transform duration-200">
                       <p className="text-xs text-gray-500">Revenue (Jan)</p>
-                      <p className="text-xl md:text-2xl font-bold text-gray-900">N$48,500</p>
+                      <p className="text-xl md:text-2xl font-bold text-gray-900">R48,500</p>
                       <p className="text-xs text-green-600 flex items-center gap-1">
                         <span className="inline-block w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
                         +8% vs Dec
@@ -610,7 +612,7 @@ export default function LandingPage() {
                     </div>
                     <div className="bg-white rounded-xl p-3 md:p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow hover:-translate-y-0.5 transform duration-200">
                       <p className="text-xs text-gray-500">Outstanding</p>
-                      <p className="text-xl md:text-2xl font-bold text-orange-600">N$12,300</p>
+                      <p className="text-xl md:text-2xl font-bold text-orange-600">R12,300</p>
                       <p className="text-xs text-gray-500">23 students</p>
                     </div>
                     <div className="bg-white rounded-xl p-3 md:p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow hover:-translate-y-0.5 transform duration-200">
@@ -638,21 +640,21 @@ export default function LandingPage() {
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                           <tr className="hover:bg-gray-50 transition-colors">
-                            <td className="px-4 py-2 font-medium text-gray-900">Andreas Shikongo</td>
+                            <td className="px-4 py-2 font-medium text-gray-900">Thabo Molefe</td>
                             <td className="px-4 py-2 text-gray-500 hidden sm:table-cell">Today, 10:30</td>
-                            <td className="px-4 py-2 text-right text-green-600 font-medium">N$450.00</td>
+                            <td className="px-4 py-2 text-right text-green-600 font-medium">R450.00</td>
                             <td className="px-4 py-2 text-center hidden sm:table-cell"><span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs animate-pulse">Paid</span></td>
                           </tr>
                           <tr className="hover:bg-gray-50 transition-colors">
-                            <td className="px-4 py-2 font-medium text-gray-900">Selma Nghidinwa</td>
+                            <td className="px-4 py-2 font-medium text-gray-900">Naledi Dlamini</td>
                             <td className="px-4 py-2 text-gray-500 hidden sm:table-cell">Today, 09:15</td>
-                            <td className="px-4 py-2 text-right text-green-600 font-medium">N$300.00</td>
+                            <td className="px-4 py-2 text-right text-green-600 font-medium">R300.00</td>
                             <td className="px-4 py-2 text-center hidden sm:table-cell"><span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs">Paid</span></td>
                           </tr>
                           <tr className="hover:bg-gray-50 transition-colors">
-                            <td className="px-4 py-2 font-medium text-gray-900">Johannes Nangolo</td>
+                            <td className="px-4 py-2 font-medium text-gray-900">Johan van der Merwe</td>
                             <td className="px-4 py-2 text-gray-500 hidden sm:table-cell">Yesterday</td>
-                            <td className="px-4 py-2 text-right text-green-600 font-medium">N$600.00</td>
+                            <td className="px-4 py-2 text-right text-green-600 font-medium">R600.00</td>
                             <td className="px-4 py-2 text-center hidden sm:table-cell"><span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs">Paid</span></td>
                           </tr>
                         </tbody>
@@ -683,11 +685,11 @@ export default function LandingPage() {
             </h2>
             <p className="text-xl text-gray-600 leading-relaxed">
               Tutorial centre owners spend hours every week on administrative tasks that could be automated.
-              NamClass gives you back your time to focus on what matters—teaching.
+              SA Tutorial Centers gives you back your time to focus on what matters—teaching.
             </p>
             <div className="mt-12 grid grid-cols-3 gap-8">
               <div className="text-center">
-                <div className="text-3xl font-bold text-blue-600 mb-2">N$99</div>
+                <div className="text-3xl font-bold text-blue-600 mb-2">R59</div>
                 <div className="text-sm text-gray-600">Starting price</div>
               </div>
               <div className="text-center">
@@ -715,7 +717,7 @@ export default function LandingPage() {
               <span className="block">nothing you don't.</span>
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Built specifically for tutorial centres and small schools in Namibia.
+              Built specifically for tutorial centres and small schools in South Africa.
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -774,13 +776,13 @@ export default function LandingPage() {
                 </div>
                 <div className="mb-4">
                   <div className="flex items-baseline gap-1">
-                    <span className="text-sm font-medium text-gray-600">N$</span>
+                    <span className="text-sm font-medium text-gray-600">R</span>
                     <span className="text-4xl font-bold text-gray-900">{plan.monthlyPrice}</span>
                     <span className="text-gray-600">/mo</span>
                   </div>
                   {plan.setupFee > 0 && (
                     <p className="text-xs text-gray-500 mt-1">
-                      + N${plan.setupFee.toLocaleString()} setup
+                      + R{plan.setupFee.toLocaleString()} setup
                     </p>
                   )}
                 </div>
@@ -846,7 +848,7 @@ export default function LandingPage() {
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
               Loved by educators
             </h2>
-            <p className="text-xl text-gray-600">Real feedback from centre owners across Namibia</p>
+            <p className="text-xl text-gray-600">Real feedback from centre owners across South Africa</p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
@@ -890,7 +892,7 @@ export default function LandingPage() {
             Ready to get started?
           </h2>
           <p className="text-xl text-blue-100 mb-10 max-w-2xl mx-auto">
-            Join tutorial centres across Namibia. Start your 14-day free trial today—no credit card required.
+            Join tutorial centres across South Africa. Start your 14-day free trial today—no credit card required.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
@@ -930,8 +932,8 @@ export default function LandingPage() {
                 <Mail className="w-6 h-6 text-blue-600" />
               </div>
               <h3 className="font-semibold text-gray-900 mb-2">Email</h3>
-              <a href="mailto:support@namclass.com" className="text-blue-600 hover:text-blue-700 text-sm">
-                support@namclass.com
+              <a href="mailto:support@satutorialcentres.co.za" className="text-blue-600 hover:text-blue-700 text-sm">
+                support@satutorialcentres.co.za
               </a>
             </div>
             <div className="text-center p-8 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-colors">
@@ -939,8 +941,8 @@ export default function LandingPage() {
                 <Phone className="w-6 h-6 text-green-600" />
               </div>
               <h3 className="font-semibold text-gray-900 mb-2">WhatsApp</h3>
-              <a href="https://wa.me/264813214813" className="text-green-600 hover:text-green-700 text-sm">
-                +264 81 321 4813
+              <a href="https://wa.me/27813214813" className="text-green-600 hover:text-green-700 text-sm">
+                +27 81 321 4813
               </a>
             </div>
             <div className="text-center p-8 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-colors">
@@ -969,7 +971,7 @@ export default function LandingPage() {
                 <div className="bg-white rounded-lg p-3 inline-flex items-center">
                   <Image 
                     src="/namclass-logo.png" 
-                    alt="NamClass Logo" 
+                    alt="SA Tutorial Centers Logo" 
                     width={160} 
                     height={40}
                     className="h-10 w-auto"
@@ -977,7 +979,7 @@ export default function LandingPage() {
                 </div>
               </button>
               <p className="text-gray-400 text-sm leading-relaxed">
-                Tutorial centre and school management software for Namibia.
+                Tutorial centre and school management software for South Africa.
               </p>
             </div>
             <div>
@@ -998,14 +1000,14 @@ export default function LandingPage() {
             <div>
               <h4 className="text-sm font-semibold text-white mb-4">Contact</h4>
               <ul className="space-y-3">
-                <li><a href="mailto:support@namclass.com" className="text-sm text-gray-400 hover:text-white transition-colors">support@namclass.com</a></li>
-                <li><span className="text-sm text-gray-400">Windhoek, Namibia</span></li>
+                <li><a href="mailto:support@satutorialcentres.co.za" className="text-sm text-gray-400 hover:text-white transition-colors">support@satutorialcentres.co.za</a></li>
+                <li><span className="text-sm text-gray-400">Johannesburg, South Africa</span></li>
               </ul>
             </div>
           </div>
           <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-sm text-gray-400">
-              &copy; {new Date().getFullYear()} NamClass. All rights reserved.
+              &copy; {new Date().getFullYear()} SA Tutorial Centers. All rights reserved.
             </p>
             <div className="flex items-center gap-2">
               <Shield className="w-4 h-4 text-gray-600" />

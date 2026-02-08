@@ -1,4 +1,4 @@
-// Currency configuration for Namibian market
+// Currency configuration for South African market
 // This centralizes all currency-related formatting and settings
 
 export interface CurrencyConfig {
@@ -8,19 +8,19 @@ export interface CurrencyConfig {
   name: string
 }
 
-// Namibian Dollar configuration
+// South African Rand configuration
 export const CURRENCY_CONFIG: CurrencyConfig = {
-  code: 'NAD',
-  symbol: 'N$',
-  locale: 'en-NA',
-  name: 'Namibian Dollar',
+  code: 'ZAR',
+  symbol: 'R',
+  locale: 'en-ZA',
+  name: 'South African Rand',
 }
 
 /**
  * Format a number as currency using the configured currency settings
  * @param amount - The amount to format
  * @param options - Optional formatting options
- * @returns Formatted currency string (e.g., "N$ 1,234.56")
+ * @returns Formatted currency string (e.g., "R 1,234.56")
  */
 export function formatCurrency(
   amount: number,
@@ -105,7 +105,7 @@ export function multiplyCurrency(amount: number, multiplier: number): number {
 }
 
 /**
- * Format a date using Namibian locale
+ * Format a date using South African locale
  * @param date - The date to format
  * @param options - Intl.DateTimeFormatOptions
  * @returns Formatted date string

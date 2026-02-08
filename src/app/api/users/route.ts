@@ -85,7 +85,7 @@ export async function POST(request: Request) {
       if (!staffLimit.canAdd) {
         if (staffLimit.limit === 0) {
           return NextResponse.json(
-            { error: 'Your Micro plan does not include additional staff members. Please upgrade to the Starter plan or higher to add staff.' },
+            { error: 'Your Starter plan does not include additional staff members. Please upgrade to the Growth plan or higher to add staff.' },
             { status: 403 }
           )
         }
