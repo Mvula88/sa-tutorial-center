@@ -80,7 +80,7 @@ const plans = [
   },
   {
     name: 'Growth',
-    description: 'Small tutorial centres',
+    description: 'Small centres & schools',
     monthlyPrice: 149,
     setupFee: 0,
     students: 'Up to 80 students',
@@ -94,7 +94,7 @@ const plans = [
   },
   {
     name: 'Professional',
-    description: 'Growing tutorial centres',
+    description: 'Growing centres & schools',
     monthlyPrice: 279,
     setupFee: 0,
     students: 'Up to 200 students',
@@ -473,7 +473,7 @@ export default function LandingPage() {
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8 animate-fade-in delay-200">
             Stop using spreadsheets and WhatsApp. Manage students, fees, and payments
-            with software designed specifically for tutorial centres.
+            with software designed for tutorial centres and schools.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
@@ -684,7 +684,7 @@ export default function LandingPage() {
               Stop managing with spreadsheets. <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Start managing with confidence.</span>
             </h2>
             <p className="text-xl text-gray-600 leading-relaxed">
-              Tutorial centre owners spend hours every week on administrative tasks that could be automated.
+              School and tutorial centre owners spend hours every week on administrative tasks that could be automated.
               SA Tutorial Centers gives you back your time to focus on what matters—teaching.
             </p>
             <div className="mt-12 grid grid-cols-3 gap-8">
@@ -848,7 +848,7 @@ export default function LandingPage() {
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
               Loved by educators
             </h2>
-            <p className="text-xl text-gray-600">Real feedback from centre owners across South Africa</p>
+            <p className="text-xl text-gray-600">Real feedback from educators across South Africa</p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
@@ -892,7 +892,7 @@ export default function LandingPage() {
             Ready to get started?
           </h2>
           <p className="text-xl text-blue-100 mb-10 max-w-2xl mx-auto">
-            Join tutorial centres across South Africa. Start your 14-day free trial today—no credit card required.
+            Join schools and tutorial centres across South Africa. Start your 14-day free trial today—no credit card required.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
